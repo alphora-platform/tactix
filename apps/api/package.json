@@ -7,18 +7,20 @@
     "targets": {
       "build": {
         "executor": "nx:run-commands",
+        "cache": false,
+        "outputs": [
+          "{workspaceRoot}/apps/api/dist"
+        ],
         "options": {
-          "command": "webpack-cli build",
-          "args": [
-            "--node-env=production"
-          ],
+          "command": "npx webpack-cli build --node-env={args.nodeEnv}",
           "cwd": "apps/api"
         },
         "configurations": {
           "development": {
-            "args": [
-              "--node-env=development"
-            ]
+            "args": "--nodeEnv=development"
+          },
+          "production": {
+            "args": "--nodeEnv=production"
           }
         }
       },
@@ -83,15 +85,8 @@
       }
     }
   },
-  "dependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
-    "@nestjs/platform-express": "^11.0.0",
-    "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0",
-    "tslib": "^2.3.0"
-  },
   "devDependencies": {
-    "@nestjs/testing": "^11.0.0"
+    "@nestjs/testing": "^11.0.0",
+    "webpack-cli": "^6.0.1"
   }
 }
