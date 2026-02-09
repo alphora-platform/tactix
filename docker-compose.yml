@@ -14,6 +14,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - tactix-network
+
+  api:
+    container_name: tactix-api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: development
+    env_file:
+      - ./apps/api/.env.development
+    environment:
+      NX_DAEMON: 'true'
+      CHOKIDAR_USEPOLLING: 'true'
+      CHOKIDAR_INTERVAL: '1000'
+    ports:
+      - '5500:5500'
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+      - nx_cache:/usr/src/app/.nx
+    networks:
+      - tactix-network
+
+networks:
+  tactix-network:
+    driver: bridge
 
 volumes:
   postgres_data:
+  nx_cache:
