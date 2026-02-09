@@ -51,3 +51,8 @@ test-output
 .env
 .env.development
 .env.production
+
+# Log files
+package-log.json
+pnpm-lock.yaml
+yarn.lock
