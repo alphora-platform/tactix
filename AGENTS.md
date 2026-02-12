@@ -23,13 +23,13 @@ Chi tiết đầy đủ xem file `ROADMAP.md`
 ## Tech Stack
 
 - **Runtime:** Node.js + TypeScript (strict mode)
-- **Backend:** NestJS (monorepo with pnpm + Webpack)
+- **Backend:** NestJS (monorepo with npm + Webpack)
 - **Database:** PostgreSQL + TypeORM
 - **Cache/Queue:** Redis + BullMQ
 - **Frontend:** React + TailwindCSS
 - **Charts:** Recharts
 - **Deploy:** Docker (dev: hot-reload, prod: multi-stage build)
-- **Package Manager:** pnpm
+- **Package Manager:** npm
 
 ## Project Structure
 
@@ -116,7 +116,7 @@ meta_snapshots (snapshot_time, patch, comp_id, play_rate, winrate, avg_placement
 
 ```bash
 # Development
-pnpm install                          # Install dependencies
+npm install                          # Install dependencies
 nx serve backend                      # Start backend dev server
 nx serve frontend                     # Start frontend dev server
 nx run-many -t serve                  # Start all apps

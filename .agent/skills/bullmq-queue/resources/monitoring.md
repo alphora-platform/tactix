@@ -60,7 +60,7 @@ function setupBullBoard(app, queues: Queue[]) {
 }
 ```
 
-Install: `pnpm add @bull-board/api @bull-board/express`
+Install: `npm add @bull-board/api @bull-board/express`
 
 ## Debugging failed jobs
 
