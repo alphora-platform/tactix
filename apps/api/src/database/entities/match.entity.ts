@@ -3,6 +3,7 @@ import { Participant } from './participant.entity';
 
 @Entity('matches')
 @Index(['gameVersion', 'gameDatetime'])
+@Index(['patch', 'region'])
 export class Match {
   @PrimaryColumn({ name: 'match_id' })
   matchId!: string;
@@ -24,6 +25,23 @@ export class Match {
   @Column({ name: 'tft_set_number', type: 'int' })
   @Index()
   tftSetNumber!: number;
+
+  /**
+   * Short patch string extracted from game_version, e.g. "14.3".
+   * Populated by EtlService.processMatch() — null for matches written
+   * before ETL was introduced.
+   */
+  @Column({ nullable: true })
+  @Index()
+  patch!: string;
+
+  /**
+   * Region where the match was played (NA, EUW, KR, …).
+   * Nullable because early-collected matches predate this column.
+   */
+  @Column({ nullable: true })
+  @Index()
+  region!: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

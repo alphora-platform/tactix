@@ -350,7 +350,11 @@ export class DataCollectorService {
     };
   }
 
-  private async filterNewMatchIds(matchIds: string[]): Promise<string[]> {
+  /**
+   * Filters the given match ID list to only those not already in the DB.
+   * Public so the BullMQ processor can call it before enqueuing ETL jobs.
+   */
+  async filterNewMatchIds(matchIds: string[]): Promise<string[]> {
     if (matchIds.length === 0) return [];
 
     const existing = await this.matchRepo.find({
@@ -430,5 +434,12 @@ export class DataCollectorService {
         await this.augmentRepo.save(augments);
       }
     }
+  }
+  /**
+   * Stamps `lastFetchAt = now()` on a player record.
+   * Called by the BullMQ processor after enqueueing ETL jobs for a player.
+   */
+  async updatePlayerLastFetchAt(puuid: string): Promise<void> {
+    await this.playerRepo.update(puuid, { lastFetchAt: new Date() });
   }
 }

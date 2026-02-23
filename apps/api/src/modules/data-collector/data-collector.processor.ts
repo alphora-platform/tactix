@@ -5,12 +5,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Player } from '../../database/entities';
 import { Region, ALL_REGIONS } from '../riot-api/constants/regions.constants';
+import { RiotApiService } from '../riot-api/riot-api.service';
 import {
   RiotApiRateLimitException,
   RiotApiNotFoundException,
 } from '../riot-api/exceptions/riot-api.exceptions';
 import { DataCollectorService } from './data-collector.service';
 import { JOB_NAMES, QUEUE_NAMES } from './constants/queue.constants';
+import { EtlProcessMatchJobData } from './etl.processor';
 
 // ─── Job payload types ──────────────────────────────────────────────────────
 
@@ -31,13 +33,24 @@ interface CollectPlayerJobData {
 /**
  * Processes jobs from the 'match-collection' queue.
  *
- * Handles two job types:
- *  - `collect-region`:  fetches top-ranked players and enqueues per-player jobs.
- *  - `collect-player-matches`: fetches + saves matches for a single player.
+ * Two-stage pipeline:
+ *
+ *  Stage 1 — `collect-region`
+ *    Loads top-ranked players from DB and enqueues one per-player job.
+ *
+ *  Stage 2 — `collect-player-matches`
+ *    For each player:
+ *      1. Fetches new match IDs from Riot API.
+ *      2. Filters out IDs already in the DB.
+ *      3. Fetches **raw** RiotMatchDetail for each new ID.
+ *      4. Enqueues one `etl-process-match` job per match (passing raw JSON).
+ *      5. Stamps `lastFetchAt` on the player row.
+ *
+ *    The actual transformation + DB write is handled by `EtlProcessor`.
  *
  * Error strategy:
- *  - RiotApiRateLimitException (429): move job to delayed state (NOT a failed attempt).
- *  - RiotApiNotFoundException (404 / 403): return { skipped: true }, no retry.
+ *  - RiotApiRateLimitException (429): move job to delayed state — NOT a failed attempt.
+ *  - RiotApiNotFoundException (404/403): skip silently, no retry.
  *  - All other errors: re-throw → BullMQ exponential-backoff retry.
  */
 @Processor(QUEUE_NAMES.MATCH_COLLECTION, {
@@ -49,10 +62,13 @@ export class DataCollectorProcessor extends WorkerHost {
 
   constructor(
     private readonly dataCollectorService: DataCollectorService,
+    private readonly riotApi: RiotApiService,
     @InjectRepository(Player)
     private readonly playerRepo: Repository<Player>,
     @InjectQueue(QUEUE_NAMES.MATCH_COLLECTION)
-    private readonly matchQueue: Queue<CollectPlayerJobData>
+    private readonly matchQueue: Queue<CollectPlayerJobData>,
+    @InjectQueue(QUEUE_NAMES.ETL_PIPELINE)
+    private readonly etlQueue: Queue<EtlProcessMatchJobData>
   ) {
     super();
   }
@@ -124,26 +140,81 @@ export class DataCollectorProcessor extends WorkerHost {
   // ── collect-player-matches ──────────────────────────────────────────
 
   /**
-   * Fetches and saves new matches for a single player.
-   * Uses startTime for incremental fetching (matches newer than last fetch).
+   * Two-stage pipeline for a single player:
+   *  1. Fetch new match IDs from Riot API (incremental via startTime).
+   *  2. Filter IDs that are already in the DB.
+   *  3. Fetch raw RiotMatchDetail for each new match ID.
+   *  4. Enqueue one `etl-process-match` job per match with the raw JSON.
+   *  5. Stamp `lastFetchAt` on the player.
    */
   private async handleCollectPlayer(job: Job<CollectPlayerJobData>): Promise<unknown> {
     const { puuid, region, startTime } = job.data;
     const shortId = puuid.substring(0, 8);
 
     try {
-      const result = await this.dataCollectorService.collectPlayerMatchesByPuuid(
-        puuid,
-        region,
-        startTime
-      );
+      // ── 1. Fetch match IDs ────────────────────────────────────────
+      const matchIds = await this.riotApi.getMatchIdsByPuuid(region, puuid, 20, startTime);
+
+      if (matchIds.length === 0) {
+        await this.dataCollectorService.updatePlayerLastFetchAt(puuid);
+        this.logger.debug(`[${region}] ${shortId}... — no new match IDs`);
+        return { puuid, region, fetched: 0, enqueued: 0 };
+      }
+
+      await job.updateProgress(20);
+
+      // ── 2. Filter already-stored matches ──────────────────────────
+      const newMatchIds = await this.dataCollectorService.filterNewMatchIds(matchIds);
+
       this.logger.debug(
-        `[${region}] ${shortId}... saved=${result.matchesSaved} skipped=${result.skipped} errors=${result.errors}`
+        `[${region}] ${shortId}...: ${matchIds.length} IDs fetched, ${newMatchIds.length} new`
       );
-      return result;
+
+      if (newMatchIds.length === 0) {
+        await this.dataCollectorService.updatePlayerLastFetchAt(puuid);
+        return { puuid, region, fetched: matchIds.length, enqueued: 0 };
+      }
+
+      // ── 3 + 4. Fetch raw JSON → enqueue ETL job per match ─────────
+      const etlJobs: { name: string; data: EtlProcessMatchJobData }[] = [];
+
+      for (const matchId of newMatchIds) {
+        try {
+          const raw = await this.riotApi.getMatchDetail(region, matchId);
+          etlJobs.push({
+            name: JOB_NAMES.ETL_PROCESS_MATCH,
+            data: { raw, region } satisfies EtlProcessMatchJobData,
+          });
+        } catch (error) {
+          if (error instanceof RiotApiNotFoundException) {
+            this.logger.warn(`[${region}] Match ${matchId} not found — skipping`);
+            continue;
+          }
+          // Re-throw rate limit errors so the job-level handler below catches them.
+          throw error;
+        }
+      }
+
+      if (etlJobs.length > 0) {
+        await this.etlQueue.addBulk(etlJobs);
+      }
+
+      await job.updateProgress(90);
+
+      // ── 5. Stamp lastFetchAt ───────────────────────────────────────
+      await this.dataCollectorService.updatePlayerLastFetchAt(puuid);
+
+      await job.updateProgress(100);
+
+      this.logger.log(
+        `[${region}] ${shortId}...: enqueued ${etlJobs.length} ETL jobs ` +
+          `(${newMatchIds.length - etlJobs.length} skipped)`
+      );
+
+      return { puuid, region, fetched: matchIds.length, enqueued: etlJobs.length };
     } catch (error) {
       if (error instanceof RiotApiRateLimitException) {
-        // Delay, do NOT count as a failed attempt.
+        // Delay — do NOT count as a failed attempt.
         const delayMs = error.retryAfterSeconds * 1_000;
         this.logger.warn(
           `[${region}] 429 for ${shortId}... — delaying job ${job.id ?? ''} by ${delayMs}ms`
