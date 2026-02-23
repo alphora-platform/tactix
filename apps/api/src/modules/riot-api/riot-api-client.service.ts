@@ -29,45 +29,50 @@ export class RiotApiClientService {
     this.logger.debug(`GET ${url}`);
 
     try {
-      const response = await firstValueFrom(
+      const response = (await firstValueFrom(
         this.httpService.get<T>(url, {
           headers: { 'X-Riot-Token': this.apiKey },
           params,
-          timeout: 10000,
+          timeout: 10_000,
         })
-      );
-
-      this.rateLimiter.updateFromHeaders(response.headers as unknown as Record<string, string>);
+      )) as { data: T };
 
       return response.data;
     } catch (error) {
-      this.handleApiError(error, url);
+      return this.handleApiError(error, url);
     }
   }
 
-  private handleApiError(error: unknown, url: string): never {
+  private async handleApiError(error: unknown, url: string): Promise<never> {
     const axiosError = error as {
       response?: { status?: number; headers?: Record<string, string> };
       message?: string;
     };
 
     const status = axiosError?.response?.status;
+    const responseHeaders = axiosError?.response?.headers ?? {};
 
     switch (status) {
       case 404:
         throw new RiotApiNotFoundException(url);
+
       case 429: {
-        const retryAfter =
-          parseInt(axiosError.response?.headers?.['retry-after'] ?? '60', 10) || 60;
-        this.rateLimiter.updateFromHeaders(axiosError.response?.headers ?? {});
+        // Extract Retry-After and propagate to Redis so all workers pause.
+        const retryAfter = parseInt(responseHeaders['retry-after'] ?? '60', 10) || 60;
+        await this.rateLimiter.setGlobalPause(retryAfter);
         throw new RiotApiRateLimitException(retryAfter);
       }
+
       case 403:
-        throw new HttpException('Riot API key is invalid or expired', 403);
+        // Invalid / expired API key — treat as "not found" so processors skip without retrying.
+        this.logger.error(`Riot API 403 on ${url} — key invalid or expired. Skipping.`);
+        throw new RiotApiNotFoundException(url);
+
       case 500:
       case 502:
       case 503:
         throw new RiotApiServiceUnavailableException();
+
       default:
         this.logger.error(`Riot API error: ${axiosError?.message ?? 'Unknown error'} (${url})`);
         throw new HttpException(

@@ -41,6 +41,19 @@ services:
     networks:
       - tactix-network
 
+  redis:
+    image: redis:alpine
+    container_name: tactix-redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tactix-network
+
 networks:
   tactix-network:
     driver: bridge

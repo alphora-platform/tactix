@@ -247,16 +247,46 @@ export class DataCollectorService {
     return summary;
   }
 
-  private async collectPlayerMatches(player: Player): Promise<PlayerMatchResult> {
+  /**
+   * Public entry point for the BullMQ processor.
+   * Fetches and persists new matches for a single player identified by PUUID.
+   */
+  async collectPlayerMatchesByPuuid(
+    puuid: string,
+    region: Region,
+    startTime?: number
+  ): Promise<PlayerMatchResult> {
+    // Build a minimal player-like object so we can reuse the private implementation.
+    const player = await this.playerRepo.findOne({ where: { puuid } });
+    if (!player) {
+      this.logger.warn(`[${region}] Player ${puuid.substring(0, 8)}... not in DB — skipping`);
+      return {
+        puuid,
+        region,
+        matchIdsFetched: 0,
+        newMatches: 0,
+        matchesSaved: 0,
+        skipped: 0,
+        errors: 0,
+      };
+    }
+    return this.collectPlayerMatches(player, startTime);
+  }
+
+  private async collectPlayerMatches(
+    player: Player,
+    startTimeOverride?: number
+  ): Promise<PlayerMatchResult> {
     const region = player.region as Region;
     let matchesSaved = 0;
     let skipped = 0;
     let errors = 0;
 
-    // Incremental fetch: use lastFetchAt as startTime
-    const startTime = player.lastFetchAt
-      ? Math.floor(player.lastFetchAt.getTime() / 1000) + 1
-      : undefined;
+    // Incremental fetch: use the override when provided (e.g. from BullMQ job data),
+    // otherwise fall back to the player's last known fetch timestamp.
+    const startTime =
+      startTimeOverride ??
+      (player.lastFetchAt ? Math.floor(player.lastFetchAt.getTime() / 1_000) + 1 : undefined);
 
     // 1. Get match IDs
     const matchIds = await this.riotApi.getMatchIdsByPuuid(region, player.puuid, 20, startTime);

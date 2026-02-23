@@ -1,11 +1,40 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './modules/config/config.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { RiotApiModule } from './modules/riot-api/riot-api.module';
 import { DataCollectorModule } from './modules/data-collector/data-collector.module';
 
 @Module({
-  imports: [AppConfigModule, DatabaseModule, RiotApiModule, DataCollectorModule],
+  imports: [
+    // Config must be first — other modules depend on it.
+    AppConfigModule,
+
+    // BullMQ root connection — shared across all feature queues.
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get<string>('REDIS_HOST', 'localhost'),
+          port: config.get<number>('REDIS_PORT', 6379),
+          maxRetriesPerRequest: null, // Required by BullMQ
+        },
+        defaultJobOptions: {
+          removeOnComplete: { count: 1_000 },
+          removeOnFail: { count: 5_000 },
+        },
+      }),
+    }),
+
+    // NestJS cron scheduler (used by CollectorSchedulerService).
+    ScheduleModule.forRoot(),
+
+    DatabaseModule,
+    RiotApiModule,
+    DataCollectorModule,
+  ],
   controllers: [],
   providers: [],
 })
