@@ -20,6 +20,8 @@ export const JOB_NAMES = {
   COLLECT_PLAYER: 'collect-player-matches',
   /** Parses raw match JSON into structured entities. */
   PARSE_MATCHES: 'parse-matches',
+  /** Transforms a single raw match through the ETL pipeline into normalised DB rows. */
+  ETL_PROCESS_MATCH: 'etl-process-match',
   /** Detects dominant team compositions in recent matches. */
   DETECT_COMPS: 'detect-comps',
   /** Checks for meta shift versus previous day's data. */
