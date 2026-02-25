@@ -18,6 +18,8 @@ import { DataCollectorProcessor } from './data-collector.processor';
 import { CollectorSchedulerService } from './collector-scheduler.service';
 import { EtlService } from './etl.service';
 import { EtlProcessor } from './etl.processor';
+import { ViewRefreshService } from '../../database/view-refresh.service';
+import { ViewRefreshProcessor } from './view-refresh.processor';
 import { QUEUE_NAMES } from './constants/queue.constants';
 
 @Module({
@@ -54,6 +56,17 @@ import { QUEUE_NAMES } from './constants/queue.constants';
         removeOnFail: { count: 5_000, age: 7 * 24 * 3_600 },
       },
     }),
+
+    // ── View refresh queue ────────────────────────────────────────────
+    BullModule.registerQueue({
+      name: QUEUE_NAMES.VIEW_REFRESH,
+      defaultJobOptions: {
+        attempts: 2,
+        backoff: { type: 'fixed', delay: 30_000 }, // 30s fixed retry
+        removeOnComplete: { count: 50 },
+        removeOnFail: { count: 200 },
+      },
+    }),
   ],
   controllers: [DataCollectorController],
   providers: [
@@ -66,7 +79,11 @@ import { QUEUE_NAMES } from './constants/queue.constants';
     // ETL pipeline
     EtlService,
     EtlProcessor,
+
+    // View refresh pipeline
+    ViewRefreshService,
+    ViewRefreshProcessor,
   ],
-  exports: [DataCollectorService, EtlService],
+  exports: [DataCollectorService, EtlService, ViewRefreshService],
 })
 export class DataCollectorModule {}

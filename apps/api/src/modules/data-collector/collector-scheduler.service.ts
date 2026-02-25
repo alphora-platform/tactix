@@ -27,7 +27,9 @@ export class CollectorSchedulerService {
 
   constructor(
     @InjectQueue(QUEUE_NAMES.MATCH_COLLECTION)
-    private readonly matchQueue: Queue<CollectRegionJobData>
+    private readonly matchQueue: Queue<CollectRegionJobData>,
+    @InjectQueue(QUEUE_NAMES.VIEW_REFRESH)
+    private readonly viewRefreshQueue: Queue
   ) {}
 
   /**
@@ -70,5 +72,31 @@ export class CollectorSchedulerService {
       `[Scheduler] Enqueued ${ALL_REGIONS.length} collect-region jobs ` +
         `(batch ${batchId}): ${ALL_REGIONS.join(', ')}`
     );
+  }
+
+  /**
+   * Enqueues a materialized-view refresh job every 30 minutes.
+   *
+   * Priority 3 keeps view refreshes above regular collection (5) but below
+   * user-facing alerts (1). A unique jobId per run avoids BullMQ deduplication.
+   */
+  @Cron('0 */30 * * * *')
+  async scheduleViewRefresh(): Promise<void> {
+    const jobId = `refresh-views-${Date.now()}`;
+
+    await this.viewRefreshQueue.add(
+      JOB_NAMES.REFRESH_VIEWS,
+      {},
+      {
+        jobId,
+        priority: 3,
+        attempts: 2,
+        backoff: { type: 'fixed' as const, delay: 30_000 },
+        removeOnComplete: { count: 50 },
+        removeOnFail: { count: 200 },
+      }
+    );
+
+    this.logger.log(`[Scheduler] Enqueued view-refresh job (${jobId})`);
   }
 }
