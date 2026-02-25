@@ -64,8 +64,11 @@ export class RiotApiClientService {
       }
 
       case 403:
-        // Invalid / expired API key — treat as "not found" so processors skip without retrying.
-        this.logger.error(`Riot API 403 on ${url} — key invalid or expired. Skipping.`);
+        // 403 = expired key OR dev key accessing a restricted region.
+        this.logger.warn(
+          `Riot API 403 on ${url} — dev key may lack access to this region, ` +
+            `or key is invalid/expired. Skipping without retry.`
+        );
         throw new RiotApiNotFoundException(url);
 
       case 500:

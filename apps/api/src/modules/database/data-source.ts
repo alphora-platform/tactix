@@ -38,7 +38,7 @@ export const datasourceOption: DataSourceOptions = {
     ParticipantAugment,
     MetaSnapshot,
   ],
-  migrations: [],
+  migrations: [__dirname + '/../../database/migrations/*.{ts,js}'],
   synchronize: envBool(process.env.POSTGRES_SYNCHRONIZE) ?? false,
   dropSchema: envBool(process.env.POSTGRES_DROP_SCHEMA) ?? false,
   migrationsTableName: 'migrations',
