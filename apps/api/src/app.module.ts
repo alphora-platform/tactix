@@ -6,6 +6,9 @@ import { AppConfigModule } from './modules/config/config.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { RiotApiModule } from './modules/riot-api/riot-api.module';
 import { DataCollectorModule } from './modules/data-collector/data-collector.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { TrackerModule } from './modules/tracker/tracker.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 
 @Module({
   imports: [
@@ -33,7 +36,10 @@ import { DataCollectorModule } from './modules/data-collector/data-collector.mod
 
     DatabaseModule,
     RiotApiModule,
+    AnalyticsModule,
+    AlertsModule,
     DataCollectorModule,
+    TrackerModule,
   ],
   controllers: [],
   providers: [],

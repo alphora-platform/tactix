@@ -24,8 +24,12 @@ export const JOB_NAMES = {
   ETL_PROCESS_MATCH: 'etl-process-match',
   /** Detects dominant team compositions in recent matches. */
   DETECT_COMPS: 'detect-comps',
-  /** Checks for meta shift versus previous day's data. */
+  /** Checks for meta shift versus previous 12h snapshot. */
   CHECK_META_SHIFT: 'check-meta-shift',
+  /** Finds brand-new comps not seen in the past 48h. */
+  CHECK_NEW_COMP: 'check-new-comp',
+  /** Detects game version / patch changes. */
+  CHECK_PATCH_DROP: 'check-patch-drop',
   /** Sends a Discord alert. */
   SEND_DISCORD_ALERT: 'send-discord-alert',
   /** Refreshes all materialized views. */

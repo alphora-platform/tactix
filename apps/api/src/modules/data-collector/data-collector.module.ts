@@ -11,6 +11,7 @@ import {
   MetaSnapshot,
 } from '../../database/entities';
 import { RiotApiModule } from '../riot-api/riot-api.module';
+import { AlertsModule } from '../alerts/alerts.module';
 import { DataCollectorService } from './data-collector.service';
 import { DataCollectorController } from './data-collector.controller';
 import { MatchParser } from './match.parser';
@@ -25,6 +26,7 @@ import { QUEUE_NAMES } from './constants/queue.constants';
 @Module({
   imports: [
     RiotApiModule,
+    AlertsModule, // Provides QUEUE_NAMES.ALERTS queue to CollectorSchedulerService
     TypeOrmModule.forFeature([
       Player,
       Match,
