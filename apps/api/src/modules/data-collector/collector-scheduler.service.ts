@@ -10,6 +10,14 @@ interface CollectRegionJobData {
   tiers: Array<'CHALLENGER' | 'GRANDMASTER' | 'MASTER'>;
 }
 
+/** Shared alert job options — no retry, high priority. */
+const ALERT_JOB_OPTS = {
+  priority: 1,
+  attempts: 1,
+  removeOnComplete: { count: 200 },
+  removeOnFail: { count: 500 },
+} as const;
+
 /**
  * Scheduler for the data-collection pipeline.
  *
@@ -18,8 +26,13 @@ interface CollectRegionJobData {
  * (standard scheduled collection priority) with a unique jobId that includes
  * the current timestamp to prevent BullMQ deduplication from silently dropping runs.
  *
+ * Also schedules three alert checks:
+ *   - check-meta-shift  → hourly
+ *   - check-new-comp    → every 6 hours
+ *   - check-patch-drop  → every 30 minutes (same cadence as data collection)
+ *
  * The scheduler itself is intentionally lightweight — it does zero heavy work.
- * All heavy lifting is done inside DataCollectorProcessor.
+ * All heavy lifting is done inside DataCollectorProcessor and the alert processors.
  */
 @Injectable()
 export class CollectorSchedulerService {
@@ -29,7 +42,9 @@ export class CollectorSchedulerService {
     @InjectQueue(QUEUE_NAMES.MATCH_COLLECTION)
     private readonly matchQueue: Queue<CollectRegionJobData>,
     @InjectQueue(QUEUE_NAMES.VIEW_REFRESH)
-    private readonly viewRefreshQueue: Queue
+    private readonly viewRefreshQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.ALERTS)
+    private readonly alertQueue: Queue
   ) {}
 
   /**
@@ -99,4 +114,65 @@ export class CollectorSchedulerService {
 
     this.logger.log(`[Scheduler] Enqueued view-refresh job (${jobId})`);
   }
+
+  // ── Alert schedules ────────────────────────────────────────────────────────
+
+  /**
+   * Checks for meta shifts every hour.
+   *
+   * Compares current mv_comp_stats against the 12h-ago Redis snapshot.
+   * Alerts if win_rate or play_rate delta exceeds thresholds.
+   *
+   * Cron: `0 0 * * * *` — second 0, minute 0, every hour.
+   */
+  @Cron('0 0 * * * *')
+  async scheduleMetaShiftCheck(): Promise<void> {
+    const jobId = `meta-shift-${Date.now()}`;
+    await this.alertQueue.add(
+      JOB_NAMES.CHECK_META_SHIFT,
+      { threshold: 0.03 },
+      { ...ALERT_JOB_OPTS, jobId }
+    );
+    this.logger.log(`[Scheduler] Enqueued meta-shift check (${jobId})`);
+  }
+
+  /**
+   * Scans for brand-new comps every 6 hours.
+   *
+   * Finds comp_ids not present in the Redis registry (first seen > 48h threshold).
+   * Alerts if a new comp has win_rate >= 55% and sample_size >= 30.
+   *
+   * Cron: `0 0 */6 * * *` — second 0, minute 0, every 6th hour.
+   */
+  @Cron('0 0 */6 * * *')
+  async scheduleNewCompCheck(): Promise<void> {
+    const jobId = `new-comp-${Date.now()}`;
+    await this.alertQueue.add(
+      JOB_NAMES.CHECK_NEW_COMP,
+      {},
+      { ...ALERT_JOB_OPTS, jobId }
+    );
+    this.logger.log(`[Scheduler] Enqueued new-comp check (${jobId})`);
+  }
+
+  /**
+   * Checks for patch drops every 30 minutes.
+   *
+   * Runs on the same cadence as data collection so that as soon as new matches
+   * arrive after a patch, the version change is detected within one cycle.
+   * Also invalidates the tier-list Redis cache on detection.
+   *
+   * Cron: `0 */30 * * * *` — every 30 minutes.
+   */
+  @Cron('0 */30 * * * *')
+  async schedulePatchDropCheck(): Promise<void> {
+    const jobId = `patch-drop-${Date.now()}`;
+    await this.alertQueue.add(
+      JOB_NAMES.CHECK_PATCH_DROP,
+      {},
+      { ...ALERT_JOB_OPTS, jobId }
+    );
+    this.logger.debug(`[Scheduler] Enqueued patch-drop check (${jobId})`);
+  }
 }
+

@@ -19,7 +19,15 @@ export class ViewRefreshService {
   private readonly logger = new Logger(ViewRefreshService.name);
 
   /** Ordered list of views to refresh. Order matters if views depend on each other. */
-  private static readonly VIEWS = ['mv_comp_stats', 'mv_augment_stats', 'mv_item_stats'] as const;
+  private static readonly VIEWS = [
+    'mv_comp_stats',
+    'mv_augment_stats',
+    'mv_item_stats',
+    'mv_comp_trend',
+    'mv_item_combo_stats',
+    'mv_comp_augment_stats',
+    'mv_comp_stats_by_region',
+  ] as const;
 
   constructor(
     @InjectDataSource()
