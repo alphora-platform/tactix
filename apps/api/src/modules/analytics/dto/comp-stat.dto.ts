@@ -4,6 +4,8 @@ import type { Tier } from './tier-list.dto';
 export class CompStatDto {
   comp_id!: string;
   label!: string;
+  comp_label?: string;
+  trait_icons?: string[];
   win_rate!: number;
   top4_rate!: number;
   avg_placement!: number;

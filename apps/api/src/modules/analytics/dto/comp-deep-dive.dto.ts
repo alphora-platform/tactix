@@ -81,6 +81,8 @@ export class UnitPriorityDto {
 export class CompDeepDiveDto {
   comp_id!: string;
   patch!: string;
+  comp_label?: string;
+  trait_icons?: string[];
   best_items!: BestItemsDto[];
   augment_path!: AugmentPathDto;
   level_timing!: LevelTimingDto;

@@ -38,6 +38,9 @@ interface VersionRow {
  *   If the major.minor pair changes → full PATCH_DROP.
  *   If only the build number changes → HOTFIX.
  */
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
 @Processor(ALERT_QUEUE_NAME, { concurrency: 1 })
 export class PatchDropProcessor extends WorkerHost {
   private readonly logger = new Logger(PatchDropProcessor.name);
@@ -45,7 +48,8 @@ export class PatchDropProcessor extends WorkerHost {
   constructor(
     private readonly dataSource: DataSource,
     private readonly notification: NotificationService,
-    @Inject(ALERTS_REDIS_CLIENT) private readonly redis: Redis
+    @Inject(ALERTS_REDIS_CLIENT) private readonly redis: Redis,
+    @InjectQueue('patch-analysis') private readonly patchAnalysisQueue: Queue
   ) {
     super();
   }
@@ -131,6 +135,12 @@ export class PatchDropProcessor extends WorkerHost {
 
     // ── Step 3c: Store new version ────────────────────────────────────────
     await this.redis.set(LAST_GAME_VERSION_KEY, latestVersion);
+
+    // ── Step 3d: Trigger Patch Diff Analyzer ─────────────────────────────
+    // If it's a full patch drop (or hotfix), we can trigger the analyzer.
+    // The analyzer extracts the major.minor patch natively.
+    this.logger.log(`[PatchDrop] Enqueuing patch-analysis for ${newPatch}`);
+    await this.patchAnalysisQueue.add('analyze-patch', { patch: newPatch }, { priority: 2 });
 
     this.logger.log(`[PatchDrop] ${alertType} alert sent — ${lastVersion} → ${latestVersion}`);
     return { alert_type: alertType, previous: lastVersion, current: latestVersion };

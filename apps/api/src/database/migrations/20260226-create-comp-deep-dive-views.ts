@@ -57,7 +57,7 @@ export class CreateCompDeepDiveViews20260226150000 implements MigrationInterface
     // We cast to text so it is indexable; array equality works correctly.
     await qr.query(`
       CREATE UNIQUE INDEX idx_mv_item_combo_stats_pk
-        ON mv_item_combo_stats (character_id, items::text, patch)
+        ON mv_item_combo_stats (character_id, items, patch)
     `);
 
     // ── mv_comp_augment_stats ─────────────────────────────────────────────────

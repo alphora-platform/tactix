@@ -26,5 +26,14 @@ set -e
 #   echo "✅ Database has data, skipping seed..."
 # fi
 
-echo "🚀 Starting NX serve with hot reload..."
-npx nx serve api
+echo "🚀 Installing PM2 globally for log monitoring..."
+npm install -g pm2
+
+echo "🚀 Building backend for PM2..."
+npx nx run api:build
+
+echo "🚀 Starting PM2 processes (API & Worker)..."
+pm2 start ecosystem.config.js
+
+echo "🚀 Starting file watcher for hot reload..."
+npx nx run api:build-watch

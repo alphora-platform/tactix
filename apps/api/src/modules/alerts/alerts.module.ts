@@ -11,6 +11,14 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { ALERTS_REDIS_CLIENT } from './constants/alerts.constants';
 import { QUEUE_NAMES } from '../data-collector/constants/queue.constants';
 
+// Processors must ONLY run in the worker process.
+// AlertsModule is also imported by DataCollectorModule (api mode)
+// to provide the ALERTS queue for the scheduler — so the queue registration
+// is unconditional, but the processor providers are guarded.
+const isWorker = process.env.APP_MODE === 'worker';
+
+const alertProcessors = isWorker ? [MetaShiftProcessor, NewCompProcessor, PatchDropProcessor] : [];
+
 /**
  * AlertsModule — Worker Module (no controller).
  *
@@ -41,6 +49,9 @@ import { QUEUE_NAMES } from '../data-collector/constants/queue.constants';
         removeOnFail: { count: 500, age: 3 * 24 * 3_600 }, // Keep failures 3 days for debugging
       },
     }),
+    BullModule.registerQueue({
+      name: 'patch-analysis',
+    }),
   ],
 
   providers: [
@@ -60,9 +71,9 @@ import { QUEUE_NAMES } from '../data-collector/constants/queue.constants';
 
     NotificationService,
     AlertsService,
-    MetaShiftProcessor,
-    NewCompProcessor,
-    PatchDropProcessor,
+
+    // Processors — only active in APP_MODE=worker
+    ...alertProcessors,
   ],
 
   exports: [

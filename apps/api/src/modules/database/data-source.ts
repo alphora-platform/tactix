@@ -8,6 +8,8 @@ import {
   ParticipantTrait,
   ParticipantAugment,
   MetaSnapshot,
+  PatchPrediction,
+  PatchVersion,
 } from '../../database/entities';
 
 dotenv.config();
@@ -37,6 +39,8 @@ export const datasourceOption: DataSourceOptions = {
     ParticipantTrait,
     ParticipantAugment,
     MetaSnapshot,
+    PatchPrediction,
+    PatchVersion,
   ],
   migrations: [__dirname + '/../../database/migrations/*.{ts,js}'],
   synchronize: envBool(process.env.POSTGRES_SYNCHRONIZE) ?? false,

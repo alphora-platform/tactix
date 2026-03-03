@@ -10,7 +10,7 @@ COPY nx.json tsconfig.base.json tsconfig.json jest.preset.js ./
 COPY apps/api/package.json ./apps/api/
 
 RUN npm ci
-
+RUN npm install -g pm2
 #####################
 # DEVELOPMENT STAGE
 #####################

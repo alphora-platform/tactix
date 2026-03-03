@@ -1,16 +1,33 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { corsConfig } from './common/config/cors.config';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
+  const appMode = process.env.APP_MODE || 'api';
   const app = await NestFactory.create(AppModule);
+
+  if (appMode === 'worker') {
+    // In worker mode, we don't need to listen for incoming HTTP requests.
+    // Just initialize the app to start the cron jobs and BullMQ processors.
+    await app.init();
+    Logger.log(`🚀 Worker process is running (No HTTP server)`);
+    return;
+  }
+
+  // API or mixed mode behavior
+  const configService = app.get(ConfigService);
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
-  );
+
+  // Enable CORS
+  const corsOptions = corsConfig.useFactory(configService);
+  app.enableCors(corsOptions);
+
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`🚀 Application API is running on: http://localhost:${port}/${globalPrefix}`);
 }
 
 bootstrap();

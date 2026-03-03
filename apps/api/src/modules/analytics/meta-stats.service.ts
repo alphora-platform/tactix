@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { CompStatDto } from './dto/comp-stat.dto';
 import { CompDetectionService } from './comp-detection.service';
 import { TrendDirection } from './dto/trend.dto';
 import { TierClassificationService } from './tier-classification.service';
+import { FriendlyNameService } from '../metadata/friendly-name.service';
+import { AssetUrlService } from '../metadata/asset-url.service';
+import { PatchVersion } from '../../database/entities';
 
 interface MvCompStatsRow {
   comp_id: string;
@@ -32,7 +36,11 @@ export class MetaStatsService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly compDetection: CompDetectionService,
-    private readonly tierClassification: TierClassificationService
+    private readonly tierClassification: TierClassificationService,
+    private readonly friendlyNameService: FriendlyNameService,
+    private readonly assetUrlService: AssetUrlService,
+    @InjectRepository(PatchVersion)
+    private readonly patchVersionRepo: Repository<PatchVersion>
   ) {}
 
   /**
@@ -108,30 +116,111 @@ export class MetaStatsService {
       this.tierClassification.classifyAll(patch),
     ]);
 
-    return rows.map((row) => {
-      const tier = tierMap.get(row.comp_id);
-      const winRate = parseFloat(row.win_rate);
-      const top4Rate = parseFloat(row.top4_rate);
-      const avgPlacement = parseFloat(row.avg_placement);
-      const sampleSize = parseInt(row.sample_size, 10);
+    return Promise.all(
+      rows.map(async (row) => {
+        const tier = tierMap.get(row.comp_id);
+        const winRate = parseFloat(row.win_rate);
+        const top4Rate = parseFloat(row.top4_rate);
+        const avgPlacement = parseFloat(row.avg_placement);
+        const sampleSize = parseInt(row.sample_size, 10);
 
-      return {
-        comp_id: row.comp_id,
-        label: this.compDetection.getCompLabel(row.trait_combo),
-        win_rate: winRate,
-        top4_rate: top4Rate,
-        avg_placement: avgPlacement,
-        sample_size: sampleSize,
-        trend_direction: trendMap.get(row.comp_id),
-        tier,
-      };
-    });
+        const comp_label = await this.friendlyNameService.resolveCompLabel(row.trait_combo);
+        const trait_icons = await Promise.all(
+          row.trait_combo.map((t) => this.assetUrlService.getTraitIcon(t))
+        );
+
+        return {
+          comp_id: row.comp_id,
+          label: this.compDetection.getCompLabel(row.trait_combo),
+          comp_label,
+          trait_icons,
+          win_rate: winRate,
+          top4_rate: top4Rate,
+          avg_placement: avgPlacement,
+          sample_size: sampleSize,
+          trend_direction: trendMap.get(row.comp_id),
+          tier,
+        };
+      })
+    );
   }
 
   /**
-   * Reads the most recent game_version from the matches table and extracts the
-   * short patch string, e.g. "Version 14.3.610.1234" → "14.3".
+   * Returns the ordered list of recent patches for the API.
+   * The first entry is always the current (latest) patch.
    */
+  async getRecentPatches(limit = 8): Promise<{ current: string; patches: string[] }> {
+    const rows = await this.patchVersionRepo.find({
+      order: { lastSeenAt: 'DESC' },
+      take: limit,
+    });
+
+    const patches = rows.map((r) => r.patch);
+    const current = rows.find((r) => r.isCurrent)?.patch ?? patches[0] ?? '';
+    return { current, patches };
+  }
+
+  /**
+   * Synchronises the patch_versions table with actual data in the matches table.
+   *
+   * Called by EtlService after processing each match so the table stays
+   * up-to-date without a separate cron job.
+   *
+   * Algorithm:
+   *  1. Aggregate (patch, min(game_datetime), max(game_datetime), count) from matches.
+   *  2. Upsert into patch_versions.
+   *  3. Mark the row with the latest last_seen_at as is_current=true, rest false.
+   */
+  async syncPatchVersions(): Promise<void> {
+    interface PatchAgg {
+      patch: string;
+      first_seen: Date;
+      last_seen: Date;
+      cnt: string;
+    }
+
+    const rows = await this.dataSource.query<PatchAgg[]>(`
+      SELECT
+        patch,
+        MIN(game_datetime) AS first_seen,
+        MAX(game_datetime) AS last_seen,
+        COUNT(*)::text     AS cnt
+      FROM matches
+      WHERE patch IS NOT NULL AND patch != 'unknown'
+      GROUP BY patch
+    `);
+
+    if (rows.length === 0) return;
+
+    // Single bulk upsert via raw SQL — cleaner than TypeORM QueryBuilder chaining
+    for (const row of rows) {
+      await this.dataSource.query(
+        `
+        INSERT INTO patch_versions (patch, is_current, first_seen_at, last_seen_at, match_count)
+        VALUES ($1, false, $2, $3, $4)
+        ON CONFLICT (patch) DO UPDATE
+          SET last_seen_at = EXCLUDED.last_seen_at,
+              match_count  = EXCLUDED.match_count
+        `,
+        [row.patch, row.first_seen, row.last_seen, parseInt(row.cnt, 10)]
+      );
+    }
+
+    // Promote the patch with the most recent last_seen_at as is_current
+    const newestPatch = rows.reduce((a, b) =>
+      new Date(a.last_seen) > new Date(b.last_seen) ? a : b
+    ).patch;
+
+    await this.dataSource.transaction(async (em) => {
+      await em.query(`UPDATE patch_versions SET is_current = false`);
+      await em.query(`UPDATE patch_versions SET is_current = true WHERE patch = $1`, [newestPatch]);
+    });
+
+    this.logger.debug(`[PatchSync] Synced ${rows.length} patches — current: ${newestPatch}`);
+  }
+
+  // ── getCurrentPatch (kept for backwards-compat with existing controllers) ──
+
   async getCurrentPatch(): Promise<string> {
     const rows = await this.dataSource.query<PatchRow[]>(
       `SELECT DISTINCT game_version FROM matches ORDER BY game_version DESC LIMIT 1`

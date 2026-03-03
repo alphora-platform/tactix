@@ -10,6 +10,8 @@ import type {
   UnitRole,
   CompDeepDiveDto,
 } from './dto/comp-deep-dive.dto';
+import { FriendlyNameService } from '../metadata/friendly-name.service';
+import { AssetUrlService } from '../metadata/asset-url.service';
 
 // ── Raw query row shapes ───────────────────────────────────────────────────
 
@@ -71,7 +73,11 @@ const FLEX_THRESHOLD = 0.5;
 export class CompAnalyzerService {
   private readonly logger = new Logger(CompAnalyzerService.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly friendlyNameService: FriendlyNameService,
+    private readonly assetUrlService: AssetUrlService
+  ) {}
 
   // ── Public API ──────────────────────────────────────────────────────────
 
@@ -84,16 +90,28 @@ export class CompAnalyzerService {
   async getCompDeepDive(compId: string, patch: string): Promise<CompDeepDiveDto> {
     this.logger.debug(`getCompDeepDive compId=${compId} patch=${patch}`);
 
-    const [bestItems, augmentPath, levelTiming, unitPriority] = await Promise.all([
+    const [bestItems, augmentPath, levelTiming, unitPriority, statsRows] = await Promise.all([
       this.getBestItems(compId, patch),
       this.getOptimalAugments(compId, patch),
       this.getLevelTiming(compId, patch),
       this.getUnitPriority(compId, patch),
+      this.dataSource.query<{ trait_combo: string[] }[]>(
+        `SELECT trait_combo FROM mv_comp_stats WHERE comp_id = $1 AND patch = $2 LIMIT 1`,
+        [compId, patch]
+      ),
     ]);
+
+    const trait_combo = statsRows[0]?.trait_combo || [];
+    const comp_label = await this.friendlyNameService.resolveCompLabel(trait_combo);
+    const trait_icons = await Promise.all(
+      trait_combo.map((t) => this.assetUrlService.getTraitIcon(t))
+    );
 
     return {
       comp_id: compId,
       patch,
+      comp_label,
+      trait_icons,
       best_items: bestItems,
       augment_path: augmentPath,
       level_timing: levelTiming,
@@ -138,7 +156,7 @@ export class CompAnalyzerService {
         pu.character_id,
         AVG(pu.tier)::text    AS avg_tier,
         AVG(1)::text          AS avg_copies,  -- placeholder; full count in getUnitPriority
-        COUNT(DISTINCT pu.match_id)::float / NULLIF(COUNT(DISTINCT cg.match_id), 0)::text
+        (COUNT(DISTINCT pu.match_id)::float / NULLIF(COUNT(DISTINCT cg.match_id), 0))::text
           AS top4_appearance_rate
       FROM comp_games cg
       JOIN participant_units pu

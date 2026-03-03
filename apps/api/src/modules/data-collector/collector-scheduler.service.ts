@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -35,7 +35,7 @@ const ALERT_JOB_OPTS = {
  * All heavy lifting is done inside DataCollectorProcessor and the alert processors.
  */
 @Injectable()
-export class CollectorSchedulerService {
+export class CollectorSchedulerService implements OnApplicationBootstrap {
   private readonly logger = new Logger(CollectorSchedulerService.name);
 
   constructor(
@@ -47,12 +47,19 @@ export class CollectorSchedulerService {
     private readonly alertQueue: Queue
   ) {}
 
+  async onApplicationBootstrap() {
+    this.logger.log(`[Scheduler] Application started — triggering initial jobs immediately...`);
+    await this.scheduleRegionCollection();
+    await this.schedulePatchDropCheck();
+    await this.scheduleViewRefresh();
+  }
+
   /**
    * Fires at second 0 of every 30th minute: 00:00, 00:30, 01:00, 01:30, …
    *
-   * Cron expression breakdown: `0 *\/30 * * * *`
+   * Cron expression breakdown: `0 * /30 * * * *` (without the space)
    *  - 0          → second 0
-   *  - *\/30       → every 30 minutes
+   *  - * /30       → every 30 minutes
    *  - * * * *    → every hour, every day, every month, every weekday
    */
   @Cron('0 */30 * * * *')
@@ -142,16 +149,12 @@ export class CollectorSchedulerService {
    * Finds comp_ids not present in the Redis registry (first seen > 48h threshold).
    * Alerts if a new comp has win_rate >= 55% and sample_size >= 30.
    *
-   * Cron: `0 0 */6 * * *` — second 0, minute 0, every 6th hour.
+   * Cron: `0 0 * /6 * * *` (without space) — second 0, minute 0, every 6th hour.
    */
   @Cron('0 0 */6 * * *')
   async scheduleNewCompCheck(): Promise<void> {
     const jobId = `new-comp-${Date.now()}`;
-    await this.alertQueue.add(
-      JOB_NAMES.CHECK_NEW_COMP,
-      {},
-      { ...ALERT_JOB_OPTS, jobId }
-    );
+    await this.alertQueue.add(JOB_NAMES.CHECK_NEW_COMP, {}, { ...ALERT_JOB_OPTS, jobId });
     this.logger.log(`[Scheduler] Enqueued new-comp check (${jobId})`);
   }
 
@@ -162,17 +165,12 @@ export class CollectorSchedulerService {
    * arrive after a patch, the version change is detected within one cycle.
    * Also invalidates the tier-list Redis cache on detection.
    *
-   * Cron: `0 */30 * * * *` — every 30 minutes.
+   * Cron: `0 * /30 * * * *` (without space) — every 30 minutes.
    */
   @Cron('0 */30 * * * *')
   async schedulePatchDropCheck(): Promise<void> {
     const jobId = `patch-drop-${Date.now()}`;
-    await this.alertQueue.add(
-      JOB_NAMES.CHECK_PATCH_DROP,
-      {},
-      { ...ALERT_JOB_OPTS, jobId }
-    );
+    await this.alertQueue.add(JOB_NAMES.CHECK_PATCH_DROP, {}, { ...ALERT_JOB_OPTS, jobId });
     this.logger.debug(`[Scheduler] Enqueued patch-drop check (${jobId})`);
   }
 }
-

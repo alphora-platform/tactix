@@ -12,6 +12,17 @@
   "nx": {
     "name": "api",
     "targets": {
+      "build-watch": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "outputs": [
+          "{workspaceRoot}/apps/api/dist"
+        ],
+        "options": {
+          "command": "npx webpack-cli build --node-env=development --watch",
+          "cwd": "apps/api"
+        }
+      },
       "build": {
         "executor": "nx:run-commands",
         "cache": false,
