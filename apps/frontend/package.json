@@ -1,5 +1,11 @@
 {
   "name": "@org/frontend",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  }
 }

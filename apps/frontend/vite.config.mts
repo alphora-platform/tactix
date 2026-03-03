@@ -1,10 +1,26 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
+import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/frontend',
+  plugins: [
+    TanStackRouterVite({
+      routesDirectory: './src/routes',
+      generatedRouteTree: './src/routeTree.gen.ts',
+    }),
+    react(),
+    tailwindcss(),
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
   server: {
     port: 4200,
     host: 'localhost',
@@ -13,18 +29,11 @@ export default defineConfig(() => ({
     port: 4200,
     host: 'localhost',
   },
-  plugins: [react()],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [],
-  // },
   build: {
     outDir: './dist',
     emptyOutDir: true,
     reportCompressedSize: true,
-    commonjsOptions: {
-      transformMixedEsModules: true,
-    },
+    commonjsOptions: { transformMixedEsModules: true },
   },
   test: {
     name: '@org/frontend',
