@@ -1,14 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import {
+  MATERIALIZED_VIEW_DEFINITIONS,
+  MaterializedViewDefinition,
+} from './materialized-view.definitions';
 
 /**
  * Refreshes all analytics materialized views.
  *
  * Uses `REFRESH MATERIALIZED VIEW CONCURRENTLY` so the views remain readable
  * by the dashboard while the refresh is in progress. This requires each view
- * to have at least one unique index — created in the
- * `CreateMaterializedViews20260223` migration.
+ * to have at least one unique index — handled automatically by
+ * MaterializedViewSyncService on boot.
+ *
+ * The list of views to refresh is driven by MATERIALIZED_VIEW_DEFINITIONS
+ * (same source of truth as the sync service), so adding a new view only
+ * requires an entry in materialized-view.definitions.ts.
  *
  * Typical call path:
  *   CollectorSchedulerService (cron) → view-refresh queue
@@ -18,16 +26,10 @@ import { DataSource } from 'typeorm';
 export class ViewRefreshService {
   private readonly logger = new Logger(ViewRefreshService.name);
 
-  /** Ordered list of views to refresh. Order matters if views depend on each other. */
-  private static readonly VIEWS = [
-    'mv_comp_stats',
-    'mv_augment_stats',
-    'mv_item_stats',
-    'mv_comp_trend',
-    'mv_item_combo_stats',
-    'mv_comp_augment_stats',
-    'mv_comp_stats_by_region',
-  ] as const;
+  /** Derived from definitions — order matters if views depend on each other. */
+  private static readonly VIEWS = MATERIALIZED_VIEW_DEFINITIONS.map(
+    (d: MaterializedViewDefinition) => d.name
+  );
 
   constructor(
     @InjectDataSource()

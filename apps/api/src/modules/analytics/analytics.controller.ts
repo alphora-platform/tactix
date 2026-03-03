@@ -20,6 +20,21 @@ export class AnalyticsController {
     private readonly regionComparison: RegionComparisonService
   ) {}
 
+  // ── Patches endpoint ───────────────────────────────────────────────────────
+
+  /**
+   * GET /analytics/patches
+   *
+   * Returns the list of recent patches seen in match data, ordered newest first.
+   * The `current` field indicates the latest active patch.
+   *
+   * Response: { current: string; patches: string[] }
+   */
+  @Get('patches')
+  async getPatches() {
+    return this.metaStats.getRecentPatches();
+  }
+
   // ── Meta endpoint ──────────────────────────────────────────────────────────
 
   /**

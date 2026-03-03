@@ -26,7 +26,11 @@ export class CompDetectionService {
    * Strips any game-set prefix (e.g. "Set16_") and joins the result.
    * Example: ["Set16_Bastion", "Set16_Bruiser"] → "Bastion Bruiser"
    */
-  getCompLabel(traitCombo: string[]): string {
+  getCompLabel(traitCombo: string[] | null): string {
+    if (!traitCombo || traitCombo.length === 0) {
+      return 'Unknown';
+    }
+
     const stripped = traitCombo.slice(0, 2).map((name) => name.replace(/^Set\d+_/, ''));
 
     return stripped.join(' ');

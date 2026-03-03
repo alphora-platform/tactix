@@ -9,38 +9,59 @@ import { DataCollectorModule } from './modules/data-collector/data-collector.mod
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TrackerModule } from './modules/tracker/tracker.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { PatchAnalyzerModule } from './modules/patch-analyzer/patch-analyzer.module';
+import { MetadataModule } from './modules/metadata/metadata.module';
 
-@Module({
-  imports: [
-    // Config must be first — other modules depend on it.
-    AppConfigModule,
+// Determine mode
+const appMode = process.env.APP_MODE || 'api'; // default 'api'
 
-    // BullMQ root connection — shared across all feature queues.
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          host: config.get<string>('REDIS_HOST', 'localhost'),
-          port: config.get<number>('REDIS_PORT', 6379),
-          maxRetriesPerRequest: null, // Required by BullMQ
-        },
-        defaultJobOptions: {
-          removeOnComplete: { count: 1_000 },
-          removeOnFail: { count: 5_000 },
-        },
-      }),
+const baseModules: any[] = [
+  AppConfigModule,
+  BullModule.forRootAsync({
+    inject: [ConfigService],
+    useFactory: (config: ConfigService) => ({
+      connection: {
+        host: config.get<string>('REDIS_HOST', 'localhost'),
+        port: config.get<number>('REDIS_PORT', 6379),
+        maxRetriesPerRequest: null,
+      },
+      defaultJobOptions: {
+        removeOnComplete: { count: 1_000 },
+        removeOnFail: { count: 5_000 },
+      },
     }),
+  }),
+  ScheduleModule.forRoot(),
+  DatabaseModule,
+  RiotApiModule,
+  MetadataModule,
+];
 
-    // NestJS cron scheduler (used by CollectorSchedulerService).
-    ScheduleModule.forRoot(),
+const featureModules = [];
 
-    DatabaseModule,
-    RiotApiModule,
+if (appMode === 'api') {
+  featureModules.push(AnalyticsModule, DataCollectorModule, TrackerModule, PatchAnalyzerModule);
+} else if (appMode === 'worker') {
+  featureModules.push(
+    AnalyticsModule,
+    DataCollectorModule,
+    AlertsModule,
+    TrackerModule,
+    PatchAnalyzerModule
+  );
+} else {
+  // 'all' or undefined
+  featureModules.push(
     AnalyticsModule,
     AlertsModule,
     DataCollectorModule,
     TrackerModule,
-  ],
+    PatchAnalyzerModule
+  );
+}
+
+@Module({
+  imports: [...baseModules, ...featureModules],
   controllers: [],
   providers: [],
 })

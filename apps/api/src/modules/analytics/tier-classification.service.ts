@@ -4,6 +4,8 @@ import { DataSource } from 'typeorm';
 import type { Redis } from 'ioredis';
 import { CompDetectionService } from './comp-detection.service';
 import { Tier, TierListDto, TierListEntryDto } from './dto/tier-list.dto';
+import { FriendlyNameService } from '../metadata/friendly-name.service';
+import { AssetUrlService } from '../metadata/asset-url.service';
 import {
   ANALYTICS_REDIS_CLIENT,
   TIER_LIST_CACHE_PREFIX,
@@ -55,6 +57,8 @@ export class TierClassificationService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly compDetection: CompDetectionService,
+    private readonly friendlyNameService: FriendlyNameService,
+    private readonly assetUrlService: AssetUrlService,
     private readonly config: ConfigService,
     @Inject(ANALYTICS_REDIS_CLIENT) private readonly redis: Redis
   ) {}
@@ -244,15 +248,24 @@ export class TierClassificationService {
 
     for (const comp of scored) {
       const tier = tierMap.get(comp.comp_id) ?? 'C';
+
+      const comp_label = await this.friendlyNameService.resolveCompLabel(comp.trait_combo);
+      const trait_icons = await Promise.all(
+        comp.trait_combo.map((t) => this.assetUrlService.getTraitIcon(t))
+      );
+
       const entry: TierListEntryDto = {
         comp_id: comp.comp_id,
         label: this.compDetection.getCompLabel(comp.trait_combo),
+        comp_label,
+        trait_icons,
         tier,
         composite_score: Math.round(comp.composite_score * 10_000) / 10_000, // 4dp
         win_rate: comp.win_rate,
         top4_rate: comp.top4_rate,
         avg_placement: comp.avg_placement,
         sample_size: comp.sample_size,
+        trait_combo: comp.trait_combo,
       };
       tiers[tier].push(entry);
     }

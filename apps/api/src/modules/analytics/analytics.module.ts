@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { AnalyticsController } from './analytics.controller';
@@ -10,6 +11,7 @@ import { TierClassificationService } from './tier-classification.service';
 import { CompAnalyzerService } from './comp-analyzer.service';
 import { RegionComparisonService } from './region-comparison.service';
 import { ANALYTICS_REDIS_CLIENT } from './constants/analytics.constants';
+import { PatchVersion } from '../../database/entities';
 
 /**
  * AnalyticsModule — API + Worker (Phase 2)
@@ -34,6 +36,7 @@ import { ANALYTICS_REDIS_CLIENT } from './constants/analytics.constants';
  * kept separate from the BullMQ connection to avoid command interference.
  */
 @Module({
+  imports: [TypeOrmModule.forFeature([PatchVersion])],
   controllers: [AnalyticsController],
   providers: [
     AnalyticsService,

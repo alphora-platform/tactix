@@ -12,6 +12,7 @@ import {
 } from '../../database/entities';
 import { RiotApiModule } from '../riot-api/riot-api.module';
 import { AlertsModule } from '../alerts/alerts.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { DataCollectorService } from './data-collector.service';
 import { DataCollectorController } from './data-collector.controller';
 import { MatchParser } from './match.parser';
@@ -23,10 +24,20 @@ import { ViewRefreshService } from '../../database/view-refresh.service';
 import { ViewRefreshProcessor } from './view-refresh.processor';
 import { QUEUE_NAMES } from './constants/queue.constants';
 
+// Processors and scheduler must ONLY run in the worker process.
+// Registering them in the api process would cause the api to consume queue jobs
+// and emit worker-level logs (RateLimiter, Fetching match details, etc.).
+const isWorker = process.env.APP_MODE === 'worker';
+
+const workerOnlyProviders = isWorker
+  ? [DataCollectorProcessor, CollectorSchedulerService, EtlProcessor, ViewRefreshProcessor]
+  : [];
+
 @Module({
   imports: [
     RiotApiModule,
     AlertsModule, // Provides QUEUE_NAMES.ALERTS queue to CollectorSchedulerService
+    AnalyticsModule, // Provides MetaStatsService for patch sync in EtlService
     TypeOrmModule.forFeature([
       Player,
       Match,
@@ -72,19 +83,14 @@ import { QUEUE_NAMES } from './constants/queue.constants';
   ],
   controllers: [DataCollectorController],
   providers: [
-    // Collection pipeline
+    // Always available — used by controllers and other modules
     DataCollectorService,
     MatchParser,
-    DataCollectorProcessor,
-    CollectorSchedulerService,
-
-    // ETL pipeline
     EtlService,
-    EtlProcessor,
-
-    // View refresh pipeline
     ViewRefreshService,
-    ViewRefreshProcessor,
+
+    // Workers and scheduler — only active in APP_MODE=worker
+    ...workerOnlyProviders,
   ],
   exports: [DataCollectorService, EtlService, ViewRefreshService],
 })

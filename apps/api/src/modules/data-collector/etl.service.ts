@@ -9,6 +9,7 @@ import {
   ParticipantAugment,
 } from '../../database/entities';
 import { RiotMatchDetail } from '../riot-api/interfaces/riot-api.interfaces';
+import { MetaStatsService } from '../analytics/meta-stats.service';
 
 // ─── Validation constants ───────────────────────────────────────────────────
 
@@ -62,7 +63,8 @@ export class EtlService {
     @InjectRepository(ParticipantTrait)
     private readonly traitRepo: Repository<ParticipantTrait>,
     @InjectRepository(ParticipantAugment)
-    private readonly augmentRepo: Repository<ParticipantAugment>
+    private readonly augmentRepo: Repository<ParticipantAugment>,
+    private readonly metaStatsService: MetaStatsService
   ) {}
 
   /**
@@ -211,6 +213,12 @@ export class EtlService {
       `[ETL] ${matchId} → patch=${patch} region=${region ?? 'unknown'} ` +
         `participants=${participantsSaved}/${info.participants.length}`
     );
+
+    // Sync patch_versions table in the background — fire-and-forget so it
+    // never delays the match-processing pipeline.
+    this.metaStatsService.syncPatchVersions().catch((err: Error) => {
+      this.logger.warn(`[ETL] patch sync failed: ${err.message}`);
+    });
 
     return { skipped: false, matchId, participantsSaved };
   }

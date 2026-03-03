@@ -5,3 +5,5 @@ export { ParticipantUnit } from './participant-unit.entity';
 export { ParticipantTrait } from './participant-trait.entity';
 export { ParticipantAugment } from './participant-augment.entity';
 export { MetaSnapshot } from './meta-snapshot.entity';
+export { PatchPrediction } from './patch-prediction.entity';
+export { PatchVersion } from './patch-version.entity';
