@@ -1,1 +1,66 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import 'tailwindcss';
+
+/* ── Custom Tailwind source for gaming dark theme ───────────────────────── */
+
+:root {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #0d0f14;
+  color: #e0e0e0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0f14;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3040;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4050;
+}
+
+/* Selection ──────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(200, 155, 60, 0.3);
+  color: #e0e0e0;
+}
+
+/* Focus ring ─────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #c89b3c;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skeleton shimmer util ──────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #161a23 25%, #1e2433 50%, #161a23 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
