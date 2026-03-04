@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>TACTIX — TFT Meta Analytics</title>
@@ -11,6 +11,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0d0f14" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- Theme init: sync dark class before React mounts to prevent flash -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('tactix-theme');
+          var parsed = stored ? JSON.parse(stored) : null;
+          var mode = parsed && parsed.state && parsed.state.theme ? parsed.state.theme : 'dark';
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = mode === 'dark' || (mode === 'system' && prefersDark);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          // If localStorage is unavailable or JSON is corrupt, default to dark
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

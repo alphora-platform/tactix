@@ -1,335 +1,411 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMetaQuery } from '@/hooks/useAnalytics';
-import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import { TierBadge } from '@/components/ui/TierBadge';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Flame, TrendingDown, BarChart2 } from 'lucide-react';
+import { ChartCard, defaultChartTheme } from '@/components/ui/ChartCard';
+import { DataTableCard } from '@/components/ui/DataTableCard';
+import type { Column } from '@/components/ui/DataTableCard';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Flame, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils/cn';
+import { Link } from '@tanstack/react-router';
+import type { CompStatDto } from '@/lib/types/analytics.types';
 
 export const Route = createFileRoute('/trends/')({
   component: TrendsPage,
 });
 
+// ── Runtime extended type ──────────────────────────────────────────────────────
+type RichComp = CompStatDto & {
+  comp_label?: string;
+  trait_icons?: string[];
+};
+
+// ── Trend badge ────────────────────────────────────────────────────────────────
+function TrendBadge({ direction }: { direction?: string }) {
+  if (direction === 'RISING')
+    return (
+      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-accent-green/15 border border-accent-green/30 text-accent-green text-[10px] font-bold whitespace-nowrap">
+        <ArrowUp size={10} strokeWidth={3} />
+        RISING
+      </span>
+    );
+  if (direction === 'FALLING')
+    return (
+      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/30 text-accent-red text-[10px] font-bold whitespace-nowrap">
+        <ArrowDown size={10} strokeWidth={3} />
+        FALLING
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-bg-elevated border border-border text-text-secondary text-[10px] font-medium whitespace-nowrap">
+      <Minus size={10} strokeWidth={2} />
+      STABLE
+    </span>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 function TrendsPage() {
   const meta = useMetaQuery(30);
   const navigate = useNavigate();
 
-  const data = useMemo(() => {
+  // Dedup by comp_id, keep highest sample_size
+  const data = useMemo<RichComp[]>(() => {
     if (!meta.data) return [];
-
-    // Dedup by comp_id for display
-    const dedupMap = new Map();
-    for (const comp of meta.data) {
-      const existing = dedupMap.get(comp.comp_id);
+    const map = new Map<string, RichComp>();
+    for (const comp of meta.data as RichComp[]) {
+      const existing = map.get(comp.comp_id);
       if (!existing || existing.sample_size < comp.sample_size) {
-        dedupMap.set(comp.comp_id, comp);
+        map.set(comp.comp_id, comp);
       }
     }
-    return Array.from(dedupMap.values());
+    return Array.from(map.values());
   }, [meta.data]);
 
-  const chartData = useMemo(() => {
-    return data
-      .slice(0, 15)
-      .map((c) => {
-        let label = c.comp_label || c.label;
-        if (label.length > 20) label = label.substring(0, 20) + '...';
-        return {
-          comp_id: c.comp_id,
-          comp_label: label,
-          full_label: c.comp_label || c.label,
-          win_rate_pct: +(c.win_rate * 100).toFixed(1),
-        };
-      })
-      .sort((a, b) => a.win_rate_pct - b.win_rate_pct); // Sort desc structurally for Recharts to show top-to-bottom
-  }, [data]);
-
+  // Rising / Falling subsets
   const rising = useMemo(
-    () => data.filter((c) => c.trend_direction === 'RISING').slice(0, 5),
+    () => data.filter((c) => c.trend_direction === 'RISING').slice(0, 6),
     [data]
   );
   const falling = useMemo(
-    () => data.filter((c) => c.trend_direction === 'FALLING').slice(0, 5),
+    () => data.filter((c) => c.trend_direction === 'FALLING').slice(0, 6),
     [data]
   );
 
+  // Chart data — top 15 by win rate, ascending for Recharts horizontal bar
+  const chartData = useMemo(
+    () =>
+      [...data]
+        .sort((a, b) => b.win_rate - a.win_rate)
+        .slice(0, 15)
+        .map((c) => {
+          const full = c.comp_label || c.label;
+          return {
+            comp_id: c.comp_id,
+            comp_label: full.length > 18 ? full.slice(0, 18) + '…' : full,
+            full_label: full,
+            win_rate_pct: parseFloat((c.win_rate * 100).toFixed(1)),
+          };
+        })
+        .reverse(), // ascending so highest appears at top in vertical chart
+    [data]
+  );
+
+  // DataTableCard columns
+  const columns = useMemo<Column<RichComp>[]>(
+    () => [
+      {
+        key: 'tier',
+        title: 'Tier',
+        width: 60,
+        render: (_, rec) =>
+          rec.tier ? (
+            <TierBadge tier={rec.tier} size="sm" />
+          ) : (
+            <span className="text-text-secondary text-xs">—</span>
+          ),
+      },
+      {
+        key: 'label',
+        title: 'Comp',
+        render: (_, rec) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            {rec.trait_icons?.[0] && (
+              <img
+                src={rec.trait_icons[0]}
+                alt=""
+                className="w-5 h-5 rounded bg-black/50 border border-border/50 shrink-0"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
+            <span className="font-semibold text-text-primary truncate group-hover:text-accent-gold transition-colors">
+              {rec.comp_label || rec.label}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'trend_direction',
+        title: 'Trend',
+        width: 100,
+        align: 'center',
+        render: (_, rec) => <TrendBadge direction={rec.trend_direction} />,
+      },
+      {
+        key: 'win_rate',
+        title: 'Win %',
+        width: 80,
+        align: 'right',
+        sortable: true,
+        render: (_, rec) => {
+          const pct = rec.win_rate * 100;
+          return (
+            <span
+              className={cn(
+                'font-bold tabular-nums',
+                pct >= 55 ? 'text-accent-green' : pct < 45 ? 'text-accent-red' : 'text-yellow-400'
+              )}
+            >
+              {pct.toFixed(1)}%
+            </span>
+          );
+        },
+      },
+      {
+        key: 'top4_rate',
+        title: 'Top 4 %',
+        width: 90,
+        align: 'right',
+        sortable: true,
+        render: (_, rec) => (
+          <span className="text-text-primary font-medium tabular-nums">
+            {(rec.top4_rate * 100).toFixed(1)}%
+          </span>
+        ),
+      },
+      {
+        key: 'avg_placement',
+        title: 'Avg Place',
+        width: 90,
+        align: 'right',
+        sortable: true,
+        render: (_, rec) => (
+          <span className="text-text-primary font-mono tabular-nums text-xs">
+            {rec.avg_placement.toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        key: 'sample_size',
+        title: 'Games',
+        width: 80,
+        align: 'right',
+        sortable: true,
+        render: (_, rec) => (
+          <span className="text-text-secondary font-mono text-xs tabular-nums">
+            {rec.sample_size.toLocaleString()}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
   return (
-    <div className="space-y-6 max-w-6xl pb-10">
+    <div className="space-y-6 pb-10 animate-fade-in">
+      {/* ── 1. Page Header ────────────────────────────────────────────────── */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">Meta Trends</h1>
         <p className="text-sm text-text-secondary mt-0.5">
-          Track composition win rate momentum over time
+          Composition momentum over the last 24 hours
         </p>
       </div>
 
-      {meta.isLoading && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      )}
       {meta.error && <ErrorCard message="Failed to load trends" retry={() => meta.refetch()} />}
 
-      {meta.data && (
-        <>
-          {/* RISING / FALLING SECTION */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Rising */}
-            <div className="rounded-xl border border-border bg-bg-card p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <Flame className="text-orange-500 w-5 h-5" />
-                <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest">
-                  Rising (last 24h)
-                </h2>
-              </div>
-              <ul className="space-y-3">
-                {rising.length > 0 ? (
-                  rising.map((c) => (
-                    <li key={c.comp_id} className="flex items-center justify-between group">
-                      <Link
-                        to="/meta/$compId"
-                        params={{ compId: c.comp_id }}
-                        className="flex flex-1 items-center gap-2 min-w-0"
-                      >
-                        {c.trait_icons?.[0] && (
-                          <img
-                            src={c.trait_icons[0]}
-                            alt=""
-                            className="w-5 h-5 rounded bg-black/50"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <span className="text-sm font-bold text-text-primary group-hover:text-accent-gold transition-colors truncate">
-                          {c.comp_label || c.label}
-                        </span>
-                      </Link>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-text-secondary">
-                          {(c.win_rate * 100).toFixed(1)}% WR
-                        </span>
-                        <span className="text-xs font-bold text-green-400 drop-shadow-sm">
-                          ↑ RISING
-                        </span>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <p className="text-sm text-text-muted italic">No rising comps detected.</p>
-                )}
-              </ul>
-            </div>
+      {/* ── 2. Rising / Falling ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Rising */}
+        <TrendSection
+          icon={<Flame size={18} className="text-orange-400" />}
+          title="Rising"
+          subtitle="Gaining momentum"
+          headerClass="border-orange-500/20 bg-orange-500/5"
+          comps={rising}
+          direction="RISING"
+          loading={meta.isLoading}
+          emptyText="No rising comps detected this patch"
+        />
 
-            {/* Falling */}
-            <div className="rounded-xl border border-border bg-bg-card p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingDown className="text-blue-400 w-5 h-5" />
-                <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest">
-                  Falling (last 24h)
-                </h2>
-              </div>
-              <ul className="space-y-3">
-                {falling.length > 0 ? (
-                  falling.map((c) => (
-                    <li key={c.comp_id} className="flex items-center justify-between group">
-                      <Link
-                        to="/meta/$compId"
-                        params={{ compId: c.comp_id }}
-                        className="flex flex-1 items-center gap-2 min-w-0"
-                      >
-                        {c.trait_icons?.[0] && (
-                          <img
-                            src={c.trait_icons[0]}
-                            alt=""
-                            className="w-5 h-5 rounded bg-black/50"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <span className="text-sm font-bold text-text-primary group-hover:text-accent-gold transition-colors truncate">
-                          {c.comp_label || c.label}
-                        </span>
-                      </Link>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-text-secondary">
-                          {(c.win_rate * 100).toFixed(1)}% WR
-                        </span>
-                        <span className="text-xs font-bold text-red-400 drop-shadow-sm">
-                          ↓ FALLING
-                        </span>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <p className="text-sm text-text-muted italic">No falling comps detected.</p>
-                )}
-              </ul>
-            </div>
-          </div>
+        {/* Falling */}
+        <TrendSection
+          icon={<TrendingDown size={18} className="text-accent-red" />}
+          title="Falling"
+          subtitle="Losing momentum"
+          headerClass="border-accent-red/20 bg-accent-red/5"
+          comps={falling}
+          direction="FALLING"
+          loading={meta.isLoading}
+          emptyText="No falling comps detected this patch"
+        />
+      </div>
 
-          {/* HORIZONTAL BAR CHART */}
-          <div className="rounded-xl border border-border bg-bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <BarChart2 className="text-accent-blue w-5 h-5" />
-              <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest">
-                Top Win Rates
-              </h2>
-            </div>
-            <div className="w-full" style={{ height: Math.max(400, chartData.length * 35) }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={chartData}
-                  margin={{ top: 0, right: 30, left: 10, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#10b981" />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    type="number"
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                    tick={{ fill: '#737373', fontSize: 12 }}
-                    axisLine={{ stroke: '#333' }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="comp_label"
-                    width={180}
-                    tick={{ fill: '#f3f4f6', fontSize: 13, fontWeight: 500 }}
-                    axisLine={{ stroke: '#333' }}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    cursor={{ fill: '#ffffff0a' }}
-                    contentStyle={{
-                      background: '#161a23',
-                      border: '1px solid #2a3040',
-                      borderRadius: 8,
-                      fontSize: 13,
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-                      color: '#fff',
+      {/* ── 3. Win Rate Chart ─────────────────────────────────────────────── */}
+      <ChartCard
+        title="Top Win Rates"
+        subtitle="Top 15 comps sorted by win rate"
+        height={Math.max(320, chartData.length * 36)}
+        loading={meta.isLoading}
+        empty={!meta.isLoading && chartData.length === 0}
+        emptyText="No chart data available"
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            layout="vertical"
+            data={chartData}
+            margin={{ top: 4, right: 36, left: 8, bottom: 4 }}
+          >
+            <defs>
+              <linearGradient id="trendBarGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#10b981" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...defaultChartTheme.cartesianGrid} horizontal={false} vertical />
+            <XAxis
+              type="number"
+              domain={[0, 100]}
+              tickFormatter={(v) => `${v}%`}
+              {...defaultChartTheme.xAxis}
+            />
+            <YAxis
+              type="category"
+              dataKey="comp_label"
+              width={150}
+              tick={{ fill: '#e0e0e0', fontSize: 12, fontWeight: 500 }}
+              axisLine={{ stroke: '#2a3040' }}
+              tickLine={false}
+            />
+            <Tooltip
+              {...defaultChartTheme.tooltip}
+              formatter={(v: number | undefined) => [`${v ?? '—'}%`, 'Win Rate']}
+              labelFormatter={(_label, payload) => payload?.[0]?.payload?.full_label ?? _label}
+            />
+            <Bar
+              dataKey="win_rate_pct"
+              fill="url(#trendBarGrad)"
+              radius={[0, 4, 4, 0]}
+              barSize={20}
+              minPointSize={24}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      {/* ── 4. All Comps Table ────────────────────────────────────────────── */}
+      <DataTableCard
+        title="All Comps"
+        subtitle="Full composition breakdown with trend data"
+        columns={columns}
+        data={data}
+        rowKey="comp_id"
+        loading={meta.isLoading}
+        emptyText="No comp data available"
+        searchable
+        searchPlaceholder="Search comp name..."
+        onRowClick={(rec) => navigate({ to: '/meta/$compId', params: { compId: rec.comp_id } })}
+      />
+    </div>
+  );
+}
+
+// ── TrendSection ───────────────────────────────────────────────────────────────
+
+interface TrendSectionProps {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  headerClass: string;
+  comps: RichComp[];
+  direction: 'RISING' | 'FALLING';
+  loading: boolean;
+  emptyText: string;
+}
+
+function TrendSection({
+  icon,
+  title,
+  subtitle,
+  headerClass,
+  comps,
+  loading,
+  emptyText,
+}: TrendSectionProps) {
+  return (
+    <div className="rounded-xl border border-border bg-bg-card shadow-card overflow-hidden">
+      {/* Card header */}
+      <div
+        className={cn('flex items-center gap-3 px-5 py-3.5 border-b border-border', headerClass)}
+      >
+        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-bg-card/60 shrink-0">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold text-text-primary leading-snug">{title}</h2>
+          <p className="text-xs text-text-secondary">{subtitle}</p>
+        </div>
+        {!loading && (
+          <span className="ml-auto text-xs font-semibold text-text-secondary bg-bg-elevated px-2 py-0.5 rounded-full border border-border shrink-0">
+            {comps.length}
+          </span>
+        )}
+      </div>
+
+      {/* Comp list */}
+      {loading ? (
+        <ul className="divide-y divide-border/30">
+          {[...Array(4)].map((_, i) => (
+            <li key={i} className="flex items-center gap-3 px-5 py-3">
+              <div className="skeleton w-4 h-3 rounded-full shrink-0" />
+              <div className="skeleton w-5 h-5 rounded shrink-0" />
+              <div className="skeleton h-3 flex-1 rounded-full" />
+              <div className="skeleton h-3 w-14 rounded-full shrink-0" />
+              <div className="skeleton h-5 w-16 rounded-full shrink-0" />
+            </li>
+          ))}
+        </ul>
+      ) : comps.length === 0 ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-sm text-text-secondary">{emptyText}</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-border/30">
+          {comps.map((c, idx) => (
+            <li key={c.comp_id}>
+              <Link
+                to="/meta/$compId"
+                params={{ compId: c.comp_id }}
+                className="flex items-center gap-3 px-5 py-3 hover:bg-bg-elevated/60 transition-colors group"
+              >
+                {/* Rank */}
+                <span className="text-xs font-bold text-text-secondary w-4 tabular-nums shrink-0">
+                  {idx + 1}
+                </span>
+
+                {/* Trait icon */}
+                {c.trait_icons?.[0] ? (
+                  <img
+                    src={c.trait_icons[0]}
+                    alt=""
+                    className="w-5 h-5 rounded bg-black/50 border border-border/50 shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
                     }}
-                    formatter={(val: number) => [`${val}%`, 'Win Rate']}
-                    labelFormatter={(label, payload) => {
-                      if (payload && payload.length > 0) {
-                        return payload[0].payload.full_label;
-                      }
-                      return label;
-                    }}
                   />
-                  <Bar
-                    dataKey="win_rate_pct"
-                    fill="url(#barGrad)"
-                    radius={[0, 4, 4, 0]}
-                    barSize={20}
-                    minPointSize={40}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+                ) : (
+                  <div className="w-5 h-5 rounded bg-bg-elevated border border-border shrink-0" />
+                )}
 
-          {/* TABLE SECTION */}
-          <div className="rounded-xl border border-border bg-bg-card shadow-sm overflow-x-auto">
-            <div className="p-4 border-b border-border/50">
-              <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest">
-                All Comps Trends
-              </h2>
-            </div>
-            <table className="w-full text-sm text-left min-w-[600px]">
-              <thead>
-                <tr className="bg-bg-elevated/50 text-text-secondary border-b border-border/50 text-xs uppercase tracking-wider">
-                  <th className="px-5 py-3 font-semibold">Tier</th>
-                  <th className="px-5 py-3 font-semibold">Comp</th>
-                  <th className="px-5 py-3 font-semibold text-center">Trend</th>
-                  <th className="px-5 py-3 font-semibold text-right">Win %</th>
-                  <th className="px-5 py-3 font-semibold text-right">Top 4 %</th>
-                  <th className="px-5 py-3 font-semibold text-right">Avg Place</th>
-                  <th className="px-5 py-3 font-semibold text-right">Games</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/30">
-                {data.map((comp) => (
-                  <tr
-                    key={comp.comp_id}
-                    className="hover:bg-bg-elevated/50 cursor-pointer group transition-colors"
-                    onClick={() =>
-                      navigate({ to: '/meta/$compId', params: { compId: comp.comp_id } })
-                    }
-                  >
-                    <td className="px-5 py-3 w-16">
-                      {comp.tier ? (
-                        <TierBadge tier={comp.tier} size="sm" />
-                      ) : (
-                        <span className="text-text-muted">-</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        {comp.trait_icons?.[0] && (
-                          <img
-                            src={comp.trait_icons[0]}
-                            alt=""
-                            className="w-6 h-6 rounded bg-black/50 border border-border/50"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <span className="font-bold text-text-primary group-hover:text-accent-gold transition-colors">
-                          {comp.comp_label || comp.label}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      {comp.trend_direction === 'RISING' && (
-                        <span className="text-green-400 font-black text-lg drop-shadow-[0_0_2px_rgba(74,222,128,0.5)]">
-                          ↑
-                        </span>
-                      )}
-                      {comp.trend_direction === 'FALLING' && (
-                        <span className="text-red-500 font-black text-lg drop-shadow-[0_0_2px_rgba(239,68,68,0.5)]">
-                          ↓
-                        </span>
-                      )}
-                      {(comp.trend_direction === 'STABLE' || !comp.trend_direction) && (
-                        <span className="text-gray-500 font-bold text-lg">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <span
-                        className={cn(
-                          'font-bold',
-                          comp.win_rate * 100 >= 50 ? 'text-green-400' : 'text-text-primary'
-                        )}
-                      >
-                        {(comp.win_rate * 100).toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right text-text-primary font-medium">
-                      {(comp.top4_rate * 100).toFixed(1)}%
-                    </td>
-                    <td className="px-5 py-3 text-right text-text-primary font-mono text-xs">
-                      {comp.avg_placement.toFixed(2)}
-                    </td>
-                    <td className="px-5 py-3 text-right text-text-secondary font-mono text-xs">
-                      {comp.sample_size.toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+                {/* Comp name */}
+                <span className="text-sm font-semibold text-text-primary truncate flex-1 group-hover:text-accent-gold transition-colors">
+                  {c.comp_label || c.label}
+                </span>
+
+                {/* Win rate */}
+                <span className="text-xs text-text-secondary tabular-nums shrink-0">
+                  {(c.win_rate * 100).toFixed(1)}%
+                </span>
+
+                {/* Trend badge */}
+                <TrendBadge direction={c.trend_direction} />
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
