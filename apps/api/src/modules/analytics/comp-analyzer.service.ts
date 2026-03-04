@@ -171,7 +171,7 @@ export class CompAnalyzerService {
     if (unitRows.length === 0) return [];
 
     const characterIds = unitRows.map((r) => r.character_id);
-    const placeholders = characterIds.map((_, i) => `$${i + 3}`).join(', ');
+    const placeholders = characterIds.map((_, i) => `$${i + 2}`).join(', ');
 
     // Step 2: Fetch top-N item combos per unit from mv_item_combo_stats.
     const rows = await this.dataSource.query<ItemComboRow[]>(
@@ -190,7 +190,7 @@ export class CompAnalyzerService {
         AND array_length(items, 1) > 0
       ORDER BY character_id, win_rate DESC
       `,
-      [patch, patch, ...characterIds]
+      [patch, ...characterIds]
     );
 
     // Group by character and take top N.
