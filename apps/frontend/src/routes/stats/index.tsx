@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Button, Input, Progress, Switch, Table } from 'antd';
+import type { TableProps } from 'antd';
 import {
   User,
   AlertTriangle,
@@ -7,6 +9,7 @@ import {
   Target,
   Award,
   Trophy,
+  BarChart2,
   Gamepad2,
   Activity,
   BookOpen,
@@ -15,6 +18,7 @@ import {
   Zap,
   ArrowUp,
   ArrowDown,
+  Search,
 } from 'lucide-react';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import {
@@ -24,32 +28,35 @@ import {
   useProficiencyQuery,
   useRecentGamesQuery,
 } from '@/hooks/useTracker';
-
 import { useSettingsStore } from '@/lib/store/settings.store';
 import { StatCard } from '@/components/ui/StatCard';
-import { ChartCard, defaultChartTheme } from '@/components/ui/ChartCard';
-import { DataTableCard } from '@/components/ui/DataTableCard';
-import type { Column } from '@/components/ui/DataTableCard';
+import { ChartCard } from '@/components/ui/ChartCard';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonCard } from '@/components/ui/SkeletonCard';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { cn } from '@/lib/utils/cn';
 import type { CompProficiencyEntry, RecentGameDto } from '@/lib/types/tracker.types';
-
-// DataTable row types (index signature for DataTableCard generic)
-type ProfRow = CompProficiencyEntry & { [k: string]: unknown };
-type RecentRow = RecentGameDto & { [k: string]: unknown };
 
 export const Route = createFileRoute('/stats/')({
   component: MyStatsPage,
 });
 
-// ── Severity badge ────────────────────────────────────────────────────────────
 const SEVERITY_STYLES = {
-  HIGH: 'text-accent-red   bg-accent-red/10   border-accent-red/30',
-  MEDIUM: 'text-accent-gold  bg-accent-gold/10  border-accent-gold/30',
-  LOW: 'text-text-secondary bg-bg-elevated    border-border',
+  HIGH: 'text-accent-red bg-accent-red/10 border-accent-red/30',
+  MEDIUM: 'text-accent-gold bg-accent-gold/10 border-accent-gold/30',
+  LOW: 'text-text-secondary bg-bg-elevated border-border',
 } as const;
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+const TABLE_CLASS =
+  '[&_.ant-table]:!bg-transparent [&_.ant-table-container]:!border-[var(--border-default)] [&_.ant-table-thead>tr>th]:!border-[var(--border-subtle)] [&_.ant-table-thead>tr>th]:!bg-[var(--bg-surface)] [&_.ant-table-thead>tr>th]:!text-slate-300 [&_.ant-table-tbody>tr>td]:!border-[var(--border-subtle)] [&_.ant-table-tbody>tr>td]:!bg-transparent [&_.ant-table-placeholder]:!bg-transparent [&_.ant-pagination-item]:!border-[var(--border-default)] [&_.ant-pagination-item>a]:!text-slate-300 [&_.ant-pagination-item-active]:!border-blue-500 [&_.ant-pagination-item-active>a]:!text-blue-400 [&_.ant-pagination-prev_.ant-pagination-item-link]:!border-[var(--border-default)] [&_.ant-pagination-next_.ant-pagination-item-link]:!border-[var(--border-default)] [&_.ant-pagination-prev_.ant-pagination-item-link]:!text-slate-300 [&_.ant-pagination-next_.ant-pagination-item-link]:!text-slate-300';
+
+function getTiltStrokeColor(score: number): string {
+  if (score > 70) return '#22c55e';
+  if (score >= 40) return '#facc15';
+  return '#ef4444';
+}
+
 function MyStatsPage() {
   const { puuid, setPuuid } = useSettingsStore();
   const [input, setInput] = useState('');
@@ -63,7 +70,6 @@ function MyStatsPage() {
   return <StatsDashboard />;
 }
 
-// ── PUUID Prompt ──────────────────────────────────────────────────────────────
 function PuuidPrompt({
   input,
   setInput,
@@ -74,65 +80,63 @@ function PuuidPrompt({
   onSubmit: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
+    <div className="flex min-h-[70vh] flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Icon */}
-        <div className="flex justify-center mb-6">
+        <div className="mb-6 flex justify-center">
           <div className="relative">
-            <div className="w-20 h-20 rounded-2xl bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center shadow-glow">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-accent-gold/30 bg-accent-gold/10 shadow-glow">
               <User size={36} className="text-accent-gold" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accent-blue/20 border border-accent-blue/40 flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-accent-blue/40 bg-accent-blue/20">
               <Activity size={14} className="text-accent-blue" />
             </div>
           </div>
         </div>
 
-        {/* Text */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">Track Your Performance</h1>
-          <p className="text-sm text-text-secondary leading-relaxed max-w-sm mx-auto">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 font-['Rajdhani'] text-2xl font-bold tracking-tight text-slate-50">
+            Track Your Performance
+          </h1>
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-text-secondary">
             Enter your Riot PUUID to unlock personal stats, tilt detection, placement history, and
             weekly improvement reports.
           </p>
         </div>
 
-        {/* How to find PUUID hint */}
-        <div className="bg-bg-card border border-border rounded-xl p-4 mb-5 text-sm">
-          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">
+        <div className="mb-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 text-sm">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
             How to find your PUUID
           </p>
-          <ol className="space-y-1.5 text-xs text-text-secondary list-decimal list-inside">
+          <ol className="list-inside list-decimal space-y-1.5 text-xs text-text-secondary">
             <li>
               Go to{' '}
               <a
                 href="https://account.riotgames.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-accent-blue hover:underline inline-flex items-center gap-0.5"
+                className="inline-flex items-center gap-0.5 text-accent-blue hover:underline"
               >
                 account.riotgames.com
                 <ExternalLink size={10} />
               </a>
             </li>
-            <li>Open browser DevTools → Network tab</li>
+            <li>Open browser DevTools - Network tab</li>
             <li>
-              Reload page, find the <code className="bg-bg-elevated px-1 rounded">userinfo</code>{' '}
+              Reload page, find the <code className="rounded bg-bg-elevated px-1">userinfo</code>{' '}
               request
             </li>
             <li>
-              Copy the <code className="bg-bg-elevated px-1 rounded">sub</code> field from the
+              Copy the <code className="rounded bg-bg-elevated px-1">sub</code> field from the
               response
             </li>
           </ol>
         </div>
 
-        {/* Input */}
         <div className="space-y-3">
           <div className="relative">
             <User
               size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary"
             />
             <input
               type="text"
@@ -140,28 +144,27 @@ function PuuidPrompt({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && input.trim() && onSubmit()}
               placeholder="Paste your PUUID here..."
-              className="w-full rounded-xl border border-border bg-bg-card pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-secondary focus:border-accent-gold/60 focus:outline-none transition-colors font-mono"
+              className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] py-3 pl-10 pr-4 font-mono text-sm text-text-primary placeholder:text-text-secondary transition-colors focus:border-accent-gold/60 focus:outline-none"
             />
           </div>
           <button
             onClick={onSubmit}
             disabled={!input.trim()}
-            className="w-full rounded-xl bg-accent-gold py-3 text-sm font-bold text-bg-primary hover:bg-accent-gold/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 shadow-glow"
+            className="w-full rounded-xl bg-accent-gold py-3 text-sm font-bold text-bg-primary shadow-glow transition-all duration-150 hover:bg-accent-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Load My Stats
           </button>
         </div>
 
-        <p className="text-center text-xs text-text-secondary mt-4 flex items-center justify-center gap-1.5">
+        <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-text-secondary">
           <CheckCircle2 size={12} className="text-accent-green" />
-          Your PUUID is saved locally — never sent to any third-party
+          Your PUUID is saved locally - never sent to any third-party
         </p>
       </div>
     </div>
   );
 }
 
-// ── Stats Dashboard ───────────────────────────────────────────────────────────
 function StatsDashboard() {
   const { clearPuuid } = useSettingsStore();
   const placements = usePlacementsQuery();
@@ -170,7 +173,9 @@ function StatsDashboard() {
   const prof = useProficiencyQuery();
   const recentGames = useRecentGamesQuery(10);
 
-  // Placement chart data
+  const [compSearch, setCompSearch] = useState('');
+  const [betterThanMetaOnly, setBetterThanMetaOnly] = useState(false);
+
   const placementData = useMemo(
     () =>
       placements.data?.distribution.map((d) => ({
@@ -182,60 +187,75 @@ function StatsDashboard() {
     [placements.data]
   );
 
-  // ── Proficiency table columns ────────────────────────────────────────────
-  const profColumns = useMemo<Column<ProfRow>[]>(
+  const proficiencyRows = useMemo(() => {
+    let rows = prof.data?.comps ?? [];
+
+    if (compSearch.trim()) {
+      const query = compSearch.trim().toLowerCase();
+      rows = rows.filter((row) => row.label.toLowerCase().includes(query));
+    }
+
+    if (betterThanMetaOnly) {
+      rows = rows.filter((row) => row.skill_delta < 0);
+    }
+
+    return rows;
+  }, [prof.data, compSearch, betterThanMetaOnly]);
+
+  const profColumns = useMemo<TableProps<CompProficiencyEntry>['columns']>(
     () => [
       {
+        title: 'COMP',
+        dataIndex: 'label',
         key: 'label',
-        title: 'Comp',
-        render: (_: unknown, rec: ProfRow) => (
-          <span className="font-semibold text-text-primary truncate">{rec.label}</span>
+        render: (_: unknown, rec: CompProficiencyEntry) => (
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+              <BookOpen size={13} />
+            </span>
+            <span className="truncate font-semibold text-text-primary">{rec.label}</span>
+          </div>
         ),
       },
       {
+        title: 'GAMES',
+        dataIndex: 'games_played',
         key: 'games_played',
-        title: 'Games',
-        width: 70,
+        width: 110,
         align: 'right',
-        sortable: true,
-        render: (_: unknown, rec: ProfRow) => (
-          <span className="text-text-secondary tabular-nums">{rec.games_played}</span>
-        ),
+        sorter: (a, b) => a.games_played - b.games_played,
+        render: (value: number) => <span className="tabular-nums text-text-secondary">{value}</span>,
       },
       {
+        title: 'AVG PLACE',
+        dataIndex: 'avg_placement',
         key: 'avg_placement',
-        title: 'Avg Place',
-        width: 90,
+        width: 130,
         align: 'right',
-        sortable: true,
-        render: (_: unknown, rec: ProfRow) => (
-          <span className="font-mono tabular-nums text-text-primary">
-            {rec.avg_placement.toFixed(2)}
-          </span>
+        sorter: (a, b) => a.avg_placement - b.avg_placement,
+        render: (value: number) => (
+          <span className="font-mono tabular-nums text-text-primary">{value.toFixed(2)}</span>
         ),
       },
       {
+        title: 'VS META',
+        dataIndex: 'skill_delta',
         key: 'skill_delta',
-        title: 'vs Meta',
-        width: 90,
+        width: 120,
         align: 'right',
-        sortable: true,
-        render: (_: unknown, rec: ProfRow) => {
-          const better = rec.skill_delta < 0;
+        sorter: (a, b) => a.skill_delta - b.skill_delta,
+        render: (value: number) => {
+          const better = value < 0;
           return (
             <span
               className={cn(
                 'inline-flex items-center gap-0.5 text-xs font-bold tabular-nums',
-                better ? 'text-accent-green' : 'text-accent-red'
+                better ? 'text-emerald-400' : 'text-rose-400'
               )}
             >
-              {better ? (
-                <ArrowDown size={11} strokeWidth={3} />
-              ) : (
-                <ArrowUp size={11} strokeWidth={3} />
-              )}
+              {better ? <ArrowDown size={11} strokeWidth={3} /> : <ArrowUp size={11} strokeWidth={3} />}
               {better ? '' : '+'}
-              {rec.skill_delta.toFixed(2)}
+              {value.toFixed(2)}
             </span>
           );
         },
@@ -244,16 +264,16 @@ function StatsDashboard() {
     []
   );
 
-  // ── Recent games table columns ────────────────────────────────────────────
-  const recentColumns = useMemo<Column<RecentRow>[]>(
+  const recentColumns = useMemo<TableProps<RecentGameDto>['columns']>(
     () => [
       {
+        title: 'DATE',
+        dataIndex: 'game_datetime',
         key: 'game_datetime',
-        title: 'Date',
-        width: 90,
-        render: (_: unknown, rec: RecentRow) => (
-          <span className="text-text-secondary text-xs tabular-nums whitespace-nowrap">
-            {new Date(String(rec.game_datetime)).toLocaleDateString(undefined, {
+        width: 130,
+        render: (value: string) => (
+          <span className="whitespace-nowrap text-xs tabular-nums text-text-secondary">
+            {new Date(value).toLocaleDateString(undefined, {
               month: 'short',
               day: 'numeric',
             })}
@@ -261,193 +281,171 @@ function StatsDashboard() {
         ),
       },
       {
+        title: 'DURATION',
+        dataIndex: 'game_length_minutes',
         key: 'game_length_minutes',
-        title: 'Duration',
-        width: 80,
-        render: (_: unknown, rec: RecentRow) => (
-          <span className="text-text-secondary text-xs tabular-nums">
-            {Math.round(Number(rec.game_length_minutes))}m
-          </span>
+        width: 110,
+        render: (value: number) => (
+          <span className="text-xs tabular-nums text-text-secondary">{Math.round(value)}m</span>
         ),
       },
       {
+        title: 'COMP',
+        dataIndex: 'comp_label',
         key: 'comp_label',
-        title: 'Comp',
-        render: (_: unknown, rec: RecentRow) => (
-          <span className="font-medium text-text-primary truncate">
-            {(rec.comp_label as string) || 'Unknown'}
-          </span>
+        render: (value: string) => (
+          <span className="truncate font-medium text-text-primary">{value || 'Unknown'}</span>
         ),
       },
       {
+        title: 'PLACE',
+        dataIndex: 'placement',
         key: 'placement',
-        title: 'Place',
-        width: 70,
-        align: 'right' as const,
-        sortable: true,
-        render: (_: unknown, rec: RecentRow) => {
-          const p = Number(rec.placement);
-          return (
-            <span
-              className={cn(
-                'font-bold tabular-nums',
-                p === 1 ? 'text-accent-gold' : p <= 4 ? 'text-accent-green' : 'text-text-secondary'
-              )}
-            >
-              #{p}
-            </span>
-          );
-        },
+        width: 100,
+        align: 'right',
+        sorter: (a, b) => a.placement - b.placement,
+        render: (placement: number) => (
+          <span
+            className={cn(
+              'font-bold tabular-nums',
+              placement === 1
+                ? 'text-amber-400'
+                : placement <= 4
+                  ? 'text-emerald-400'
+                  : 'text-rose-400'
+            )}
+          >
+            #{placement}
+          </span>
+        ),
       },
     ],
     []
   );
 
   const isLoading = placements.isLoading;
+  const recentRows = recentGames.data ?? [];
 
   return (
-    <div className="space-y-5 pb-24 sm:pb-10 animate-fade-in">
-      {/* ── Page Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-text-primary">My Stats</h1>
-          <p className="text-xs text-text-secondary mt-0.5">Personal performance tracker</p>
-        </div>
-        <button
-          onClick={clearPuuid}
-          className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-accent-red border border-border hover:border-accent-red/40 rounded-lg px-3 py-1.5 transition-all duration-150"
-        >
-          <LogOut size={13} />
-          Switch Account
-        </button>
+    <div className="animate-fade-in space-y-5">
+      <PageHeader
+        title="My Stats"
+        subtitle="Personal performance tracker"
+        actions={
+          <Button
+            onClick={clearPuuid}
+            ghost
+            icon={<LogOut size={14} />}
+            className="!border-[var(--border-default)] !text-slate-300 hover:!border-blue-500/60 hover:!bg-white/5 hover:!text-slate-100"
+          >
+            Switch Account
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <SkeletonCard key={index} rows={3} showHeader />
+          ))
+        ) : (
+          <>
+            <StatCard
+              title="Avg Placement"
+              value={
+                placements.data?.avg_placement != null ? placements.data.avg_placement.toFixed(2) : '-'
+              }
+              subtitle="lower is better"
+              icon={Target}
+              iconColor="text-blue-400"
+              iconBg="bg-blue-500/10"
+              accentColor="border-l-blue-500"
+              className="bg-[var(--bg-surface)] border-[var(--border-default)]"
+            />
+            <StatCard
+              title="Top 4 Rate"
+              value={
+                placements.data?.top4_rate != null ? `${(placements.data.top4_rate * 100).toFixed(1)}%` : '-'
+              }
+              subtitle="podium finishes"
+              icon={Award}
+              iconColor="text-emerald-400"
+              iconBg="bg-emerald-500/10"
+              accentColor="border-l-emerald-500"
+              className="bg-[var(--bg-surface)] border-[var(--border-default)]"
+            />
+            <StatCard
+              title="Win Rate"
+              value={
+                placements.data?.win_rate != null ? `${(placements.data.win_rate * 100).toFixed(1)}%` : '-'
+              }
+              subtitle="1st place finishes"
+              icon={Trophy}
+              iconColor="text-amber-400"
+              iconBg="bg-amber-500/10"
+              accentColor="border-l-amber-500"
+              className="bg-[var(--bg-surface)] border-[var(--border-default)]"
+            />
+            <StatCard
+              title="Total Games"
+              value={placements.data?.total_games?.toLocaleString() ?? '-'}
+              subtitle="games analyzed"
+              icon={BarChart2}
+              iconColor="text-violet-400"
+              iconBg="bg-violet-500/10"
+              accentColor="border-l-violet-500"
+              className="bg-[var(--bg-surface)] border-[var(--border-default)]"
+            />
+          </>
+        )}
       </div>
 
-      {/* ── 1. Stat Cards ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Avg Placement"
-          value={
-            placements.data?.avg_placement != null ? placements.data.avg_placement.toFixed(2) : '—'
-          }
-          subtitle="lower is better"
-          icon={Target}
-          iconColor="text-accent-gold"
-          iconBg="bg-accent-gold/10"
-          accentColor="border-l-accent-gold"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Top 4 Rate"
-          value={
-            placements.data?.top4_rate != null
-              ? `${(placements.data.top4_rate * 100).toFixed(1)}%`
-              : '—'
-          }
-          subtitle="podium finishes"
-          icon={Award}
-          iconColor="text-accent-green"
-          iconBg="bg-accent-green/10"
-          accentColor="border-l-accent-green"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Win Rate"
-          value={
-            placements.data?.win_rate != null
-              ? `${(placements.data.win_rate * 100).toFixed(1)}%`
-              : '—'
-          }
-          subtitle="1st place finishes"
-          icon={Trophy}
-          iconColor="text-accent-blue"
-          iconBg="bg-accent-blue/10"
-          accentColor="border-l-accent-blue"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Total Games"
-          value={placements.data?.total_games?.toLocaleString() ?? '—'}
-          subtitle="games analyzed"
-          icon={Gamepad2}
-          iconColor="text-text-secondary"
-          iconBg="bg-bg-elevated"
-          accentColor="border-l-border"
-          loading={isLoading}
-        />
-      </div>
-
-      {/* ── Errors ──────────────────────────────────────────────────────────── */}
       {placements.error && (
         <ErrorCard message="Failed to load placement data" retry={() => placements.refetch()} />
       )}
 
-      {/* ── Zero-games empty state ──────────────────────────────────────────── */}
       {!placements.isLoading && placements.data?.total_games === 0 && (
-        <div className="rounded-xl border border-border bg-bg-card shadow-card p-10 text-center">
-          <Gamepad2
-            size={48}
-            className="mx-auto mb-4 text-text-secondary opacity-20"
-            strokeWidth={1.5}
-          />
-          <p className="text-base font-bold text-text-primary mb-2">No games recorded yet</p>
-          <p className="text-sm text-text-secondary max-w-xs mx-auto">
-            Play some TFT games and come back — your stats will appear here once data has been
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 text-center shadow-card">
+          <Gamepad2 size={48} className="mx-auto mb-4 text-text-secondary opacity-20" strokeWidth={1.5} />
+          <p className="mb-2 text-base font-bold text-text-primary">No games recorded yet</p>
+          <p className="mx-auto max-w-xs text-sm text-text-secondary">
+            Play some TFT games and come back - your stats will appear here once data has been
             collected.
           </p>
         </div>
       )}
 
-      {/* ── 2. Tilt Status ──────────────────────────────────────────────────── */}
       {tilt.isLoading && (
-        <div className="rounded-xl border border-border bg-bg-card shadow-card p-5">
-          <div className="flex items-center gap-3">
-            <div className="skeleton w-10 h-10 rounded-xl shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="skeleton h-4 w-32 rounded-full" />
-              <div className="skeleton h-3 w-48 rounded-full" />
-            </div>
-            <div className="skeleton h-2 w-36 rounded-full shrink-0" />
-          </div>
+        <div className="animate-pulse rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+          <div className="mb-3 h-4 w-40 rounded-full bg-[var(--bg-overlay)]/70" />
+          <div className="mb-4 h-3 w-64 rounded-full bg-[var(--bg-overlay)]/70" />
+          <div className="h-2 w-full rounded-full bg-[var(--bg-overlay)]/70" />
         </div>
       )}
-      {tilt.error && (
-        <ErrorCard message="Failed to load tilt status" retry={() => tilt.refetch()} />
-      )}
+      {tilt.error && <ErrorCard message="Failed to load tilt status" retry={() => tilt.refetch()} />}
       {tilt.data && (
-        <div
-          className={cn(
-            'rounded-xl border p-5 shadow-card transition-colors',
-            tilt.data.is_tilted
-              ? 'border-accent-red/40 bg-accent-red/5'
-              : 'border-accent-green/30 bg-accent-green/5'
-          )}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-            {/* Icon + title */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
               <div
                 className={cn(
-                  'flex items-center justify-center w-10 h-10 rounded-xl shrink-0',
+                  'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border',
                   tilt.data.is_tilted
-                    ? 'bg-accent-red/15 border border-accent-red/30'
-                    : 'bg-accent-green/15 border border-accent-green/30'
+                    ? 'border-accent-red/30 bg-accent-red/15 text-accent-red'
+                    : 'border-accent-green/30 bg-accent-green/15 text-accent-green'
                 )}
               >
-                {tilt.data.is_tilted ? (
-                  <AlertTriangle size={20} className="text-accent-red" />
-                ) : (
-                  <CheckCircle2 size={20} className="text-accent-green" />
-                )}
+                {tilt.data.is_tilted ? <AlertTriangle size={19} /> : <CheckCircle2 size={19} />}
               </div>
               <div className="min-w-0">
-                <h2 className="text-sm font-bold text-text-primary">
+                <h2 className="text-lg font-semibold text-slate-100">
                   {tilt.data.is_tilted ? 'Tilt Detected' : 'Playing Well'}
                 </h2>
-                <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
+                <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">
                   {tilt.data.recommendation}
                 </p>
-                {tilt.data.streak_type !== 'NONE' && (
-                  <p className="text-xs text-text-secondary mt-1 flex items-center gap-1">
+                {tilt.data.streak_type && tilt.data.streak_type !== 'NONE' && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-text-secondary">
                     <Zap
                       size={11}
                       className={
@@ -460,114 +458,143 @@ function StatsDashboard() {
               </div>
             </div>
 
-            {/* Tilt score */}
-            <div className="shrink-0 w-full sm:w-36">
-              <div className="flex items-center justify-between mb-1.5">
+            <div className="w-full shrink-0 sm:w-72">
+              <div className="mb-2 flex items-end justify-between">
                 <span className="text-xs text-text-secondary">Tilt Score</span>
-                <span
-                  className={cn(
-                    'text-sm font-bold tabular-nums',
-                    tilt.data.is_tilted ? 'text-accent-red' : 'text-accent-green'
-                  )}
-                >
+                <span className="text-3xl font-bold tabular-nums text-text-primary">
                   {tilt.data.tilt_score}/100
                 </span>
               </div>
-              <div className="h-2 bg-bg-elevated rounded-full overflow-hidden border border-border/50">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all duration-500',
-                    tilt.data.is_tilted ? 'bg-accent-red' : 'bg-accent-green'
-                  )}
-                  style={{ width: `${tilt.data.tilt_score}%` }}
-                />
-              </div>
+              <Progress
+                percent={Math.max(0, Math.min(100, tilt.data.tilt_score))}
+                showInfo={false}
+                strokeColor={getTiltStrokeColor(tilt.data.tilt_score)}
+                trailColor="rgba(148, 163, 184, 0.2)"
+              />
             </div>
           </div>
         </div>
       )}
 
-      {/* ── 3. Placement Distribution Chart ─────────────────────────────────── */}
       <ChartCard
         title="Placement Distribution"
         subtitle="How often you finish in each placement"
-        height={180}
+        height={220}
         loading={placements.isLoading}
-        empty={!placements.isLoading && placementData.length === 0}
-        emptyText="No placement data yet"
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={placementData}
-            barSize={32}
-            margin={{ top: 4, right: 12, left: -16, bottom: 0 }}
-          >
-            <XAxis dataKey="name" {...defaultChartTheme.xAxis} axisLine={false} />
-            <YAxis {...defaultChartTheme.yAxis} axisLine={false} width={28} />
-            <Tooltip
-              {...defaultChartTheme.tooltip}
-              formatter={(v: number | undefined) => [`${v ?? 0} games`, 'Count']}
+        {!placements.isLoading && placementData.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <EmptyState
+              title="No placement data yet"
+              description="Play some games to see your placement distribution."
             />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {placementData.map((d, i) => (
-                <Cell
-                  key={i}
-                  fill={
-                    d.placement === 1
-                      ? '#c89b3c' // accent-gold for 1st
-                      : d.placement <= 4
-                      ? '#66bb6a' // accent-green for top 4
-                      : '#2a3040' // border color for 5-8
-                  }
-                  fillOpacity={d.placement <= 4 ? 0.9 : 0.6}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={placementData} barSize={30} margin={{ top: 6, right: 12, left: -8, bottom: 0 }}>
+              <XAxis
+                dataKey="name"
+                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                axisLine={{ stroke: 'var(--border-default)' }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                axisLine={{ stroke: 'var(--border-default)' }}
+                tickLine={false}
+                width={32}
+              />
+              <Tooltip
+                formatter={(v: number | undefined) => [`${v ?? 0} games`, 'Count']}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                contentStyle={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 12,
+                }}
+                labelStyle={{ color: 'var(--text-secondary)', marginBottom: 4 }}
+                itemStyle={{ color: 'var(--text-primary)' }}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {placementData.map((d, i) => (
+                  <Cell
+                    key={i}
+                    fill={
+                      d.placement === 1
+                        ? 'var(--accent-primary)'
+                        : d.placement <= 4
+                          ? 'var(--text-secondary)'
+                          : 'var(--text-muted)'
+                    }
+                    fillOpacity={d.placement <= 4 ? 0.9 : 0.75}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </ChartCard>
 
-      {/* ── 4. Comp Proficiency Table ────────────────────────────────────────── */}
-      {prof.error && (
-        <ErrorCard message="Failed to load proficiency data" retry={() => prof.refetch()} />
-      )}
-      <DataTableCard
-        title="Comp Proficiency"
-        subtitle="Your performance vs. the global meta"
-        columns={profColumns as unknown as Column<Record<string, unknown>>[]}
-        data={(prof.data?.comps ?? []) as unknown as Record<string, unknown>[]}
-        rowKey="comp_id"
-        loading={prof.isLoading}
-        emptyText="Play more games across different comps to build your proficiency profile"
-        searchable
-        searchPlaceholder="Search comp..."
-        actions={
-          <span className="text-xs text-text-secondary flex items-center gap-1">
-            <BookOpen size={12} />↓ better than meta
-          </span>
-        }
-      />
+      {prof.error && <ErrorCard message="Failed to load proficiency data" retry={() => prof.refetch()} />}
+      <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">Comp Proficiency</h2>
+            <p className="mt-1 text-sm text-slate-400">Your performance vs. the global meta</p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Input
+              value={compSearch}
+              onChange={(e) => setCompSearch(e.target.value)}
+              placeholder="Search comp..."
+              prefix={<Search size={15} className="text-slate-400" />}
+              size="large"
+              className="w-full sm:w-64 [&.ant-input-affix-wrapper]:!border-[var(--border-default)] [&.ant-input-affix-wrapper]:!bg-[var(--bg-elevated)] [&_.ant-input]:!text-slate-100 [&_.ant-input::placeholder]:!text-slate-400"
+            />
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2">
+              <Switch checked={betterThanMetaOnly} onChange={setBetterThanMetaOnly} size="small" />
+              <span className="text-xs text-text-secondary">better than meta</span>
+            </div>
+          </div>
+        </div>
+        <Table
+          rowKey="comp_id"
+          columns={profColumns}
+          dataSource={proficiencyRows}
+          loading={prof.isLoading}
+          pagination={{ pageSize: 8, hideOnSinglePage: true, showSizeChanger: false }}
+          locale={{
+            emptyText: (
+              <EmptyState
+                title="No comp proficiency data"
+                description="Try changing filters or play more games."
+              />
+            ),
+          }}
+          className={TABLE_CLASS}
+        />
+      </div>
 
-      {/* ── 5. Weekly Weaknesses ─────────────────────────────────────────────── */}
       {weekly.data && weekly.data.weaknesses.length > 0 && (
-        <div className="rounded-xl border border-border bg-bg-card shadow-card overflow-hidden">
-          <div className="px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-text-primary">
-              Weekly Report — Areas to Improve
-            </h2>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Based on your last {weekly.data.total_games} games this patch
+        <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-slate-100">Weekly Report - Areas to Improve</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Based on your last <span className="tabular-nums">{weekly.data.total_games}</span>{' '}
+              games this patch
             </p>
           </div>
-          <ul className="divide-y divide-border/30">
+          <ul className="divide-y divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)]">
             {weekly.data.weaknesses.map((w, i) => (
               <li
                 key={i}
-                className="flex items-start gap-3 px-5 py-3.5 hover:bg-bg-elevated/40 transition-colors"
+                className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--bg-elevated)]/40"
               >
                 <span
                   className={cn(
-                    'mt-0.5 text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border shrink-0 whitespace-nowrap',
+                    'mt-0.5 shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
                     SEVERITY_STYLES[w.severity]
                   )}
                 >
@@ -575,22 +602,18 @@ function StatsDashboard() {
                 </span>
                 <div className="min-w-0">
                   <span className="text-sm font-semibold text-text-primary">{w.area}</span>
-                  <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-                    {w.description}
-                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">{w.description}</p>
                 </div>
               </li>
             ))}
           </ul>
           {weekly.data.improvement_tips.length > 0 && (
-            <div className="px-5 py-4 border-t border-border/50 bg-bg-elevated/30">
-              <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
-                Tips
-              </p>
+            <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-5 py-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">Tips</p>
               <ul className="space-y-1">
                 {weekly.data.improvement_tips.map((tip, i) => (
-                  <li key={i} className="text-xs text-text-secondary flex items-start gap-1.5">
-                    <span className="text-accent-gold mt-0.5">•</span>
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-text-secondary">
+                    <span className="mt-0.5 text-accent-gold">•</span>
                     {tip}
                   </li>
                 ))}
@@ -600,23 +623,39 @@ function StatsDashboard() {
         </div>
       )}
 
-      {/* ── 6. Recent Games Table ────────────────────────────────────────────── */}
       {recentGames.error && (
         <ErrorCard message="Failed to load recent games" retry={() => recentGames.refetch()} />
       )}
-      <DataTableCard
-        title="Recent Games"
-        subtitle={
-          recentGames.data?.length
-            ? `Last ${recentGames.data.length} games played`
-            : 'Your latest matches'
-        }
-        columns={recentColumns as unknown as Column<Record<string, unknown>>[]}
-        data={(recentGames.data ?? []) as unknown as Record<string, unknown>[]}
-        rowKey="match_id"
-        loading={recentGames.isLoading}
-        emptyText="No recent games found — play some TFT to populate this table"
-      />
+      <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-slate-100">Recent Games</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            {recentRows.length ? (
+              <>
+                Last <span className="tabular-nums">{recentRows.length}</span> games played
+              </>
+            ) : (
+              'Your latest matches'
+            )}
+          </p>
+        </div>
+        <Table
+          rowKey="match_id"
+          columns={recentColumns}
+          dataSource={recentRows}
+          loading={recentGames.isLoading}
+          pagination={false}
+          locale={{
+            emptyText: (
+              <EmptyState
+                title="No recent games found"
+                description="Your latest matches will appear here."
+              />
+            ),
+          }}
+          className={TABLE_CLASS}
+        />
+      </div>
     </div>
   );
 }

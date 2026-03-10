@@ -1,0 +1,32 @@
+:root {
+  --bg-base: #020617; /* slate-950 */
+  --bg-surface: #0f172a; /* slate-900 */
+  --bg-elevated: #1e293b; /* slate-800 */
+  --bg-overlay: #334155; /* slate-700 */
+  --border-default: rgba(148, 163, 184, 0.12);
+  --border-subtle: rgba(148, 163, 184, 0.06);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --accent-primary: #3B82F6;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+}
+
+.ant-table-wrapper .ant-table {
+  background: transparent;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background: var(--bg-elevated);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.ant-select-selector,
+.ant-input {
+  background: var(--bg-elevated) !important;
+  border-color: var(--border-default) !important;
+}

@@ -1,34 +1,35 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
   darkMode: 'class',
   content: ['./apps/frontend/src/**/*.{ts,tsx}', './apps/frontend/index.html'],
   theme: {
     extend: {
       colors: {
-        // ── Backgrounds ─────────────────────────────────────────────────────
-        'bg-primary': '#0d0f14',
-        'bg-card': '#161a23',
-        'bg-elevated': '#1e2433',
+        primary: '#3B82F6',
+        surface: {
+          base: 'var(--bg-base)',
+          DEFAULT: 'var(--bg-surface)',
+          elevated: 'var(--bg-elevated)',
+          overlay: 'var(--bg-overlay)',
+        },
 
-        // ── Accents ──────────────────────────────────────────────────────────
+        // Backward-compatible aliases for existing components.
+        'bg-primary': 'var(--bg-base)',
+        'bg-card': 'var(--bg-surface)',
+        'bg-elevated': 'var(--bg-elevated)',
         'accent-gold': '#c89b3c',
-        'accent-blue': '#4fc3f7',
+        'accent-blue': 'var(--accent-primary)',
         'accent-red': '#ef5350',
         'accent-green': '#66bb6a',
-
-        // ── Text ─────────────────────────────────────────────────────────────
-        'text-primary': '#e0e0e0',
-        'text-secondary': '#9e9e9e',
-
-        // ── Borders ───────────────────────────────────────────────────────────
-        border: '#2a3040',
-
-        // ── Tier colors ───────────────────────────────────────────────────────
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        border: 'var(--border-default)',
         tier: {
-          S: '#c89b3c', // gold
-          A: '#4fc3f7', // blue
-          B: '#66bb6a', // green
-          C: '#9e9e9e', // grey
+          S: '#c89b3c',
+          A: 'var(--accent-primary)',
+          B: '#66bb6a',
+          C: '#9e9e9e',
         },
       },
       fontFamily: {
@@ -71,3 +72,5 @@ export default {
   },
   plugins: [],
 };
+
+export default config;

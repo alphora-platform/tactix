@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MetadataCacheService } from './metadata-cache.service';
 
-const PREFIX_REGEX = /^(TFT\d+_|Set\d+_)/i;
+const PREFIX_REGEX = /^(TFT\d+_?|Set\d+_?|TFT_?)/i;
 
 @Injectable()
 export class FriendlyNameService {

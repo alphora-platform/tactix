@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Badge, Button } from 'antd';
 import {
   Globe,
   Home,
@@ -11,6 +12,8 @@ import {
   ChevronRight,
   Menu,
   Bell,
+  Search,
+  Users,
 } from 'lucide-react';
 import { PatchSelector } from './PatchSelector';
 import { RegionFilter } from './RegionFilter';
@@ -18,16 +21,14 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import { cn } from '../../lib/utils/cn';
 import { useChampions, useTraits, useItems, useAugments } from '../../lib/hooks/useMetadata';
 
-// ── Nav items ──────────────────────────────────────────────────────────────────
-
 const NAV_ITEMS = [
   { to: '/meta', label: 'Meta', icon: Home },
   { to: '/trends', label: 'Trends', icon: TrendingUp },
   { to: '/regions', label: 'Regions', icon: Globe },
   { to: '/stats', label: 'My Stats', icon: User },
+  { to: '/player', label: 'Player', icon: Users },
+  { to: '/match', label: 'Match', icon: Search },
 ] as const;
-
-// ── Breadcrumb map ─────────────────────────────────────────────────────────────
 
 const BREADCRUMB_MAP: Record<string, string> = {
   '/meta': 'Meta Overview',
@@ -42,8 +43,6 @@ function getBreadcrumb(pathname: string): string {
   }
   return 'Dashboard';
 }
-
-// ── Sidebar state — persisted to localStorage ─────────────────────────────────
 
 const SIDEBAR_KEY = 'tactix-sidebar-open';
 
@@ -64,10 +63,7 @@ function setSidebarOpen(val: boolean) {
   }
 }
 
-// ── AppLayout ──────────────────────────────────────────────────────────────────
-
-export function AppLayout({ children }: { children: React.ReactNode }) {
-  // Preload metadata
+export function AppLayout({ children }: { children: ReactNode }) {
   useChampions();
   useTraits();
   useItems();
@@ -86,62 +82,57 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Close mobile filters sheet when route changes
   useEffect(() => {
     setFiltersOpen(false);
   }, [location]);
 
   return (
-    <div className="flex flex-col sm:flex-row h-full bg-bg-primary overflow-hidden">
-      {/* ── Desktop Sidebar ──────────────────────────────────────────────────── */}
+    <div className="flex h-full flex-col overflow-hidden bg-[var(--bg-base)] sm:flex-row">
       <aside
         className={cn(
-          'hidden sm:flex flex-col bg-bg-card border-r border-border shrink-0',
-          'transition-all duration-300 ease-in-out overflow-hidden',
+          'hidden shrink-0 flex-col border-r border-[var(--border-default)] bg-[var(--bg-surface)] sm:flex',
+          'overflow-hidden transition-all duration-300 ease-in-out',
           sidebarOpen ? 'w-60' : 'w-16'
         )}
       >
-        {/* Logo + collapse toggle */}
-        <div className="flex h-16 items-center border-b border-border flex-shrink-0 px-3 gap-2">
-          {/* Logo — visible when expanded */}
+        <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-[var(--border-default)] px-3">
           <div
             className={cn(
-              'flex items-center gap-2 flex-1 min-w-0 overflow-hidden transition-all duration-300',
-              sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+              'flex min-w-0 flex-1 items-center gap-3 overflow-hidden transition-all duration-300',
+              sidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'
             )}
           >
-            <span className="text-xl font-black tracking-widest text-accent-gold whitespace-nowrap">
-              TACTIX
-            </span>
-            <span className="text-[10px] text-text-secondary font-mono whitespace-nowrap mt-0.5">
-              TFT META
-            </span>
+            <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]" />
+            <div className="min-w-0">
+              <p className="font-['Rajdhani'] text-xl font-bold leading-none tracking-[0.18em] text-slate-100">
+                TACTIX
+              </p>
+              <p className="mt-1 text-[10px] font-semibold tracking-[0.2em] text-blue-400">
+                TFT META
+              </p>
+            </div>
           </div>
 
-          {/* Collapsed: show "T" monogram */}
           {!sidebarOpen && (
-            <span className="text-xl font-black text-accent-gold w-full text-center select-none">
-              T
-            </span>
+            <div className="flex w-full items-center justify-center">
+              <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" />
+            </div>
           )}
 
-          {/* Toggle button */}
           <button
             onClick={toggleSidebar}
             aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             className={cn(
-              'flex items-center justify-center rounded-lg p-1.5 shrink-0',
-              'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
-              'transition-colors duration-150',
-              !sidebarOpen && 'absolute left-3' // keep toggle accessible when collapsed
+              'flex shrink-0 items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors duration-150',
+              'hover:bg-white/5 hover:text-slate-200',
+              !sidebarOpen && 'absolute left-3'
             )}
           >
             {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-4 px-2 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 overflow-x-hidden overflow-y-auto px-2 py-4">
           <div className="space-y-1">
             {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
               const active = location.startsWith(to);
@@ -151,29 +142,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   to={to}
                   title={!sidebarOpen ? label : undefined}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
-                    'transition-all duration-150 outline-none relative group',
-                    sidebarOpen ? 'justify-start' : 'justify-center',
+                    'group relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium outline-none transition-colors duration-150',
+                    sidebarOpen ? 'justify-start rounded-r-lg' : 'justify-center rounded-lg',
                     active
-                      ? 'bg-accent-gold/15 text-accent-gold border border-accent-gold/30'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated border border-transparent'
+                      ? 'bg-blue-500/10 text-blue-400 border-l-2 border-blue-500'
+                      : 'border-l-2 border-transparent text-slate-400 hover:bg-white/5 hover:text-slate-200'
                   )}
                 >
-                  <Icon size={20} className="shrink-0" />
-
-                  {/* Label — slides in/out with sidebar */}
+                  <Icon size={19} className="shrink-0" />
                   <span
                     className={cn(
-                      'whitespace-nowrap overflow-hidden transition-all duration-300',
-                      sidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'
+                      'overflow-hidden whitespace-nowrap transition-all duration-300',
+                      sidebarOpen ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0'
                     )}
                   >
                     {label}
                   </span>
 
-                  {/* Tooltip when collapsed */}
                   {!sidebarOpen && (
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-bg-elevated border border-border text-text-primary text-xs rounded-md opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-50 shadow-card transition-opacity duration-150">
+                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-slate-200 opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100">
                       {label}
                     </div>
                   )}
@@ -183,89 +170,64 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* Bottom user / disclaimer */}
         <div
           className={cn(
-            'border-t border-border flex items-center gap-3 px-3 py-3 overflow-hidden',
-            sidebarOpen ? 'justify-start' : 'justify-center'
+            'mx-2 mb-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-3',
+            sidebarOpen ? 'py-2' : 'flex items-center justify-center py-3'
           )}
         >
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-accent-gold/20 border border-accent-gold/30 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-accent-gold select-none">TFT</span>
-          </div>
-
-          {/* Name + sub — hidden when collapsed */}
-          <div
-            className={cn(
-              'overflow-hidden transition-all duration-300 min-w-0',
-              sidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'
-            )}
-          >
-            <p className="text-xs font-semibold text-text-primary whitespace-nowrap">Tactix</p>
-            <p className="text-[10px] text-text-secondary whitespace-nowrap">
-              Not affiliated with Riot
-            </p>
-          </div>
+          {sidebarOpen ? (
+            <>
+              <p className="text-[11px] font-semibold text-slate-300">Tactix</p>
+              <p className="text-[10px] text-[var(--text-muted)]">Not affiliated with Riot</p>
+            </>
+          ) : (
+            <span className="text-[11px] font-semibold text-slate-400">Tx</span>
+          )}
         </div>
       </aside>
 
-      {/* ── Main content area ─────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
-        {/* Topbar (header) */}
-        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-bg-card px-4">
-          {/* Left: hamburger (desktop) + breadcrumb */}
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Desktop sidebar toggle (hamburger) */}
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-default)] bg-[var(--bg-surface)] px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={toggleSidebar}
               aria-label="Toggle sidebar"
-              className="hidden sm:flex items-center justify-center rounded-lg p-2 text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors duration-150 shrink-0"
+              className="hidden shrink-0 items-center justify-center rounded-lg p-2 text-slate-400 transition-colors duration-150 hover:bg-white/5 hover:text-slate-200 sm:flex"
             >
               <Menu size={18} />
             </button>
 
-            {/* Mobile: TACTIX wordmark */}
-            <span className="sm:hidden font-black text-lg text-accent-gold tracking-widest">
+            <span className="font-['Rajdhani'] text-lg font-bold tracking-[0.15em] text-slate-100 sm:hidden">
               TACTIX
             </span>
 
-            {/* Breadcrumb — desktop only */}
-            <div className="hidden sm:flex items-center gap-2 min-w-0">
-              <span className="text-text-secondary text-xs select-none">/</span>
-              <span className="text-sm font-semibold text-text-primary truncate">{breadcrumb}</span>
+            <div className="hidden min-w-0 items-center gap-2 sm:flex">
+              <span className="select-none text-xs text-slate-500">/</span>
+              <span className="truncate text-sm font-semibold text-slate-100">{breadcrumb}</span>
             </div>
           </div>
 
-          {/* Right: desktop controls */}
-          <div className="hidden sm:flex items-center gap-2.5">
+          <div className="hidden items-center gap-2.5 sm:flex">
             <PatchSelector />
             <RegionFilter />
-
-            {/* Divider */}
-            <div className="w-px h-5 bg-border shrink-0" />
-
             <ThemeToggle />
 
-            {/* Divider */}
-            <div className="w-px h-5 bg-border shrink-0" />
-
-            {/* Notification placeholder */}
-            <button
-              aria-label="Notifications"
-              className="flex items-center justify-center rounded-lg p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors duration-150 relative"
-            >
-              <Bell size={17} />
-              {/* Notification dot */}
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-accent-gold rounded-full" />
-            </button>
+            <Badge dot color="#3B82F6" offset={[-2, 3]}>
+              <Button
+                aria-label="Notifications"
+                ghost
+                shape="circle"
+                icon={<Bell size={16} />}
+                className="!border-[var(--border-default)] !text-slate-300 hover:!border-blue-500/60 hover:!bg-white/5 hover:!text-slate-100"
+              />
+            </Badge>
           </div>
 
-          {/* Mobile: filter button — 44×44 touch target */}
           <div className="sm:hidden">
             <button
               onClick={() => setFiltersOpen(true)}
-              className="p-3 text-text-secondary hover:text-text-primary bg-bg-elevated rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-[var(--bg-elevated)] p-3 text-slate-400 transition-colors hover:text-slate-200"
               aria-label="Open filters"
             >
               <Filter size={18} />
@@ -273,13 +235,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 sm:pb-6 animate-fade-in">
+        <main className="animate-fade-in flex-1 overflow-y-auto bg-[var(--bg-base)] px-6 py-8 pb-24 sm:pb-8">
           {children}
         </main>
 
-        {/* Mobile bottom nav */}
-        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg-card border-t border-border flex items-center justify-around h-[60px] px-2">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[60px] items-center justify-around border-t border-[var(--border-default)] bg-[var(--bg-surface)] px-2 sm:hidden">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
             const active = location.startsWith(to);
             return (
@@ -287,8 +247,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 key={to}
                 to={to}
                 className={cn(
-                  'flex flex-col items-center justify-center flex-1 min-h-[44px] gap-0.5 py-2',
-                  active ? 'text-accent-gold' : 'text-text-secondary hover:text-text-primary'
+                  'flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-2',
+                  active ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
                 )}
               >
                 <Icon
@@ -302,23 +262,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </div>
 
-      {/* ── Mobile Filters Bottom Sheet ────────────────────────────────────────── */}
       {filtersOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-50 bg-black/60 sm:hidden"
             onClick={() => setFiltersOpen(false)}
           />
 
-          {/* Sheet */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-bg-card border-t border-border rounded-t-2xl p-5 sm:hidden animate-slide-up">
-            {/* Sheet header */}
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-base text-text-primary">Filters & Settings</h3>
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-[var(--border-default)] bg-[var(--bg-surface)] p-5 animate-slide-up sm:hidden">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-100">Filters & Settings</h3>
               <button
                 onClick={() => setFiltersOpen(false)}
-                className="text-text-secondary hover:text-text-primary p-2.5 rounded-md hover:bg-bg-elevated transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200"
                 aria-label="Close"
               >
                 <X size={20} />
@@ -326,38 +282,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="space-y-5 pb-safe">
-              {/* Patch */}
               <div>
-                <label className="text-xs text-text-secondary font-semibold uppercase mb-2 block tracking-wider">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Game Patch
                 </label>
-                <div
-                  className="w-full"
-                  onClick={() => setTimeout(() => setFiltersOpen(false), 200)}
-                >
-                  <PatchSelector />
-                </div>
+                <PatchSelector className="w-full" onValueChange={() => setFiltersOpen(false)} />
               </div>
 
-              {/* Region */}
               <div>
-                <label className="text-xs text-text-secondary font-semibold uppercase mb-2 block tracking-wider">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Region
                 </label>
-                <div
-                  className="w-full"
-                  onClick={() => setTimeout(() => setFiltersOpen(false), 200)}
-                >
-                  <RegionFilter />
-                </div>
+                <RegionFilter className="w-full" onValueChange={() => setFiltersOpen(false)} />
               </div>
 
-              {/* Theme */}
               <div>
-                <label className="text-xs text-text-secondary font-semibold uppercase mb-2 block tracking-wider">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Theme
                 </label>
-                <ThemeToggle />
+                <ThemeToggle className="w-full" />
               </div>
             </div>
           </div>

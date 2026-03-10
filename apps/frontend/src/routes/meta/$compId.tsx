@@ -19,8 +19,9 @@ import { ItemIcon } from '@/components/game/ItemIcon';
 import { AugmentIcon } from '@/components/game/AugmentIcon';
 import { cn } from '@/lib/utils/cn';
 import { useState } from 'react';
-import { getChampionName } from '@/lib/utils/gameAssets';
-import { useChampions } from '@/lib/hooks/useMetadata';
+import { getChampionName, getAugmentName } from '@/lib/utils/gameAssets';
+import { resolveCompName } from '@/lib/utils/compName';
+import { useChampions, useAugments, useTraits } from '@/lib/hooks/useMetadata';
 import {
   AreaChart,
   Area,
@@ -46,11 +47,28 @@ const ROLE_STYLES = {
   optional: 'text-text-secondary bg-bg-elevated   border border-border',
 } as const;
 
-const ROLE_ORDER = { core: 0, flex: 1, optional: 2 };
+const ROLE_CONFIG = {
+  core: {
+    label: 'CORE',
+    color: 'text-accent-gold',
+    border: 'border-accent-gold/30',
+    bg: 'bg-accent-gold/5',
+  },
+  flex: {
+    label: 'FLEX',
+    color: 'text-accent-blue',
+    border: 'border-accent-blue/30',
+    bg: 'bg-accent-blue/5',
+  },
+  optional: {
+    label: 'OPTIONAL',
+    color: 'text-text-secondary',
+    border: 'border-border',
+    bg: 'bg-bg-elevated/30',
+  },
+} as const;
 
-function cleanAugmentName(raw: string) {
-  return raw.replace(/^TFT\w+_/i, '').replace(/_/g, ' ');
-}
+// cleanAugmentName removed — replaced by getAugmentName() + augment metadata
 
 // ── Star row ──────────────────────────────────────────────────────────────────
 function AvgTierStars({ avgTier }: { avgTier: number }) {
@@ -77,32 +95,19 @@ function CompDetailPage() {
   const trend = useCompTrendQuery(compId);
   const meta = useMetaQuery(30);
   const { data: champions } = useChampions();
+  const { data: augments } = useAugments();
+  const { data: traits } = useTraits();
 
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
 
-  // Find stat from global meta list
-  const stat = meta.data?.find((c) => c.comp_id === compId) as
-    | ((typeof meta.data extends (infer R)[] | undefined ? R : never) & {
-        comp_label?: string;
-        trait_icons?: string[];
-      })
-    | undefined;
+  // Find stat from global meta list (comp_label + trait_icons now in CompStatDto)
+  const stat = meta.data?.find((c) => c.comp_id === compId);
 
   // Trend chart data
   const trendChartData =
     trend.data?.windows
       .map((w) => ({ window: w.time_window, win_rate: +(w.win_rate * 100).toFixed(1) }))
       .reverse() ?? [];
-
-  // Sorted unit priority
-  const sortedUnits = [...(detail.data?.unit_priority ?? [])].sort((a, b) => {
-    const ro = ROLE_ORDER[a.role] - ROLE_ORDER[b.role];
-    return ro !== 0 ? ro : b.priority_score - a.priority_score;
-  });
-
-  const coreUnits = sortedUnits.filter((u) => u.role === 'core');
-  const flexUnits = sortedUnits.filter((u) => u.role === 'flex');
-  const optUnits = sortedUnits.filter((u) => u.role === 'optional');
 
   // Level distribution bar data
   const levelDist = detail.data?.level_timing?.top_players_level_dist;
@@ -115,11 +120,9 @@ function CompDetailPage() {
       ]
     : [];
 
-  const compName = detail.data?.comp_label || trend.data?.label || stat?.comp_label || compId;
-  const traitIcons =
-    (detail.data as { trait_icons?: string[] } | undefined)?.trait_icons ??
-    (stat as { trait_icons?: string[] } | undefined)?.trait_icons ??
-    [];
+  const rawLabel = detail.data?.comp_label || trend.data?.label || stat?.comp_label;
+  const compName = resolveCompName(compId, rawLabel, traits);
+  const traitIcons = detail.data?.trait_icons ?? stat?.trait_icons ?? [];
 
   const isInitialLoad = meta.isLoading && !stat;
 
@@ -176,7 +179,7 @@ function CompDetailPage() {
                   <h1 className="text-2xl font-black text-text-primary tracking-tight">
                     {compName}
                   </h1>
-                  {stat?.tier && <TierBadge tier={stat.tier} size="lg" />}
+                  {stat?.tier && <TierBadge tier={stat.tier} size="md" />}
                   {stat?.trend_direction === 'RISING' && (
                     <span className="flex items-center gap-1 text-xs font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 px-2 py-0.5 rounded-full">
                       <ArrowUp size={11} strokeWidth={3} /> RISING
@@ -250,49 +253,62 @@ function CompDetailPage() {
       {/* ── 3. Unit Priority ───────────────────────────────────────────────── */}
       {(detail.data || detail.isLoading) && (
         <section>
-          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">
             Unit Priority
           </h2>
 
           {detail.isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl border border-border bg-bg-card p-3 space-y-2 min-h-[150px]"
-                >
-                  <div className="skeleton h-4 w-14 rounded-full mx-auto" />
-                  <div className="skeleton w-12 h-12 rounded-lg mx-auto" />
-                  <div className="skeleton h-3 w-16 rounded-full mx-auto" />
-                  <div className="skeleton h-2 w-full rounded-full" />
+            /* Skeleton: two mock role groups */
+            <div className="space-y-5">
+              {[4, 3].map((count, gi) => (
+                <div key={gi}>
+                  <div className="skeleton h-6 w-20 rounded-full mb-3" />
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                    {[...Array(count)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="rounded-lg border border-border bg-bg-card p-2 space-y-1.5"
+                      >
+                        <div className="skeleton w-12 h-12 rounded-lg mx-auto" />
+                        <div className="skeleton h-2.5 w-full rounded-full" />
+                        <div className="skeleton h-2 w-8 rounded-full mx-auto" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="space-y-6">
-              {[
-                { label: 'Core', units: coreUnits, accent: true },
-                { label: 'Flex', units: flexUnits, accent: false },
-                { label: 'Optional', units: optUnits, accent: false },
-              ]
-                .filter((g) => g.units.length > 0)
-                .map(({ label, units, accent }) => (
-                  <div key={label}>
-                    <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2 flex items-center gap-2">
+              {(['core', 'flex', 'optional'] as const).map((role) => {
+                const roleUnits = (detail.data?.unit_priority ?? [])
+                  .filter((u) => u.role === role)
+                  .sort((a, b) => b.priority_score - a.priority_score);
+
+                if (roleUnits.length === 0) return null;
+
+                const cfg = ROLE_CONFIG[role];
+
+                return (
+                  <div key={role}>
+                    {/* Role section header */}
+                    <div className="flex items-center gap-3 mb-3">
                       <span
                         className={cn(
-                          'inline-block w-2 h-2 rounded-full',
-                          label === 'Core'
-                            ? 'bg-accent-gold'
-                            : label === 'Flex'
-                            ? 'bg-accent-blue'
-                            : 'bg-border'
+                          'text-[11px] font-black uppercase tracking-widest px-2.5 py-1 rounded border',
+                          cfg.color,
+                          cfg.border,
+                          cfg.bg
                         )}
-                      />
-                      {label}
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {units.slice(0, 8).map((unit) => (
+                      >
+                        {cfg.label}
+                      </span>
+                      <div className="h-px flex-1 bg-border/50" />
+                    </div>
+
+                    {/* Unit grid */}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                      {roleUnits.map((unit) => (
                         <UnitCard
                           key={unit.character_id}
                           unit={unit}
@@ -300,12 +316,13 @@ function CompDetailPage() {
                             (b) => b.unit === unit.character_id
                           )}
                           champions={champions}
-                          accent={accent}
+                          roleCfg={cfg}
                         />
                       ))}
                     </div>
                   </div>
-                ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -353,6 +370,7 @@ function CompDetailPage() {
                     labelColor={color}
                     augments={detail.data?.augment_path[key] ?? []}
                     loading={detail.isLoading}
+                    augmentsMeta={augments}
                   />
                 ))}
               </div>
@@ -490,33 +508,23 @@ interface UnitCardProps {
   unit: UnitPriorityDto;
   bestItems?: BestItemsDto;
   champions: ReturnType<typeof useChampions>['data'];
-  accent: boolean;
+  roleCfg: (typeof ROLE_CONFIG)[keyof typeof ROLE_CONFIG];
 }
 
-function UnitCard({ unit, bestItems, champions, accent }: UnitCardProps) {
+function UnitCard({ unit, bestItems, champions, roleCfg }: UnitCardProps) {
   const name = getChampionName(unit.character_id, champions);
   const topItems = bestItems?.combos[0]?.items.slice(0, 3) ?? [];
-  const priorityPct = Math.min(100, Math.round(unit.priority_score * 100));
+  const appearPct = Math.round(unit.top4_appearance_rate * 100);
 
   return (
     <div
       className={cn(
-        'rounded-xl border bg-bg-card p-3 flex flex-col items-center gap-2 text-center',
-        'hover:-translate-y-0.5 transition-all duration-200',
-        accent ? 'border-accent-gold/40 bg-accent-gold/5' : 'border-border hover:border-border/80'
+        'rounded-lg border bg-bg-card/60 p-2 flex flex-col items-center gap-1.5 text-center',
+        'hover:bg-bg-elevated transition-colors',
+        roleCfg.border
       )}
     >
-      {/* Role badge */}
-      <span
-        className={cn(
-          'text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full',
-          ROLE_STYLES[unit.role]
-        )}
-      >
-        {unit.role}
-      </span>
-
-      {/* Champion portrait */}
+      {/* Champion portrait + stars (inline in ChampionSquare) */}
       <ChampionSquare
         apiName={unit.character_id}
         size="lg"
@@ -525,30 +533,16 @@ function UnitCard({ unit, bestItems, champions, accent }: UnitCardProps) {
       />
 
       {/* Name */}
-      <span className="text-xs font-bold text-text-primary truncate w-full">{name}</span>
+      <span className="text-[11px] font-semibold text-text-primary leading-tight truncate w-full">
+        {name}
+      </span>
 
-      {/* Avg tier stars */}
-      <AvgTierStars avgTier={unit.avg_tier} />
-
-      {/* Priority bar */}
-      <div className="w-full">
-        <div className="h-1 bg-border rounded-full overflow-hidden">
-          <div
-            className={cn(
-              'h-full rounded-full transition-all',
-              accent ? 'bg-accent-gold' : 'bg-accent-blue'
-            )}
-            style={{ width: `${priorityPct}%` }}
-          />
-        </div>
-        <p className="text-[9px] text-text-secondary mt-0.5 text-right tabular-nums">
-          {priorityPct}%
-        </p>
-      </div>
+      {/* Top-4 appearance rate */}
+      <span className={cn('text-[10px] font-mono', roleCfg.color)}>{appearPct}%</span>
 
       {/* Best item icons */}
       {topItems.length > 0 && (
-        <div className="flex items-center gap-1 justify-center">
+        <div className="flex gap-0.5 justify-center">
           {topItems.map((item, i) => (
             <ItemIcon key={i} apiName={item} size="sm" />
           ))}
@@ -582,11 +576,13 @@ function AugmentColumn({
   labelColor,
   augments,
   loading,
+  augmentsMeta,
 }: {
   label: string;
   labelColor: string;
   augments: AugmentDto[];
   loading: boolean;
+  augmentsMeta?: Parameters<typeof getAugmentName>[1];
 }) {
   return (
     <div className="p-4">
@@ -614,7 +610,7 @@ function AugmentColumn({
                   className="text-xs font-semibold text-text-primary truncate"
                   title={aug.augment_name}
                 >
-                  {cleanAugmentName(aug.augment_name)}
+                  {getAugmentName(aug.augment_name, augmentsMeta)}
                 </p>
                 <p className="text-[10px] text-accent-green font-mono tabular-nums">
                   {(aug.win_rate * 100).toFixed(1)}% WR

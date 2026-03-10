@@ -36,6 +36,32 @@ export function ChampionSquare({
   const cost = champions?.[apiName]?.cost || 1;
   const costColor = getCostColor(cost);
 
+  // ── With stars: flex-col so the star row is in normal flow (no overflow) ──
+  if (showStars > 0) {
+    return (
+      <div className={cn('flex flex-col items-center gap-0.5', className)} title={name}>
+        <img
+          src={url}
+          alt={name}
+          className={cn(SIZES[size], 'rounded-md object-cover bg-black/50 box-border')}
+          style={showCost ? { border: `2px solid ${costColor}` } : {}}
+          onError={(e) => {
+            e.currentTarget.src = '/assets/placeholder-champion.png';
+          }}
+        />
+        {/* Stars row — sits below the image, never clips */}
+        <div className="flex gap-px justify-center">
+          {Array.from({ length: showStars }).map((_, i) => (
+            <span key={i} style={{ color: costColor, fontSize: '9px', lineHeight: 1 }}>
+              ★
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Without stars: original inline-block layout unchanged ────────────────
   return (
     <div className={cn('relative inline-block', SIZES[size], className)} title={name}>
       <img
@@ -47,15 +73,6 @@ export function ChampionSquare({
           e.currentTarget.src = '/assets/placeholder-champion.png';
         }}
       />
-      {showStars > 0 && (
-        <div className="absolute -bottom-2 left-0 right-0 flex justify-center drop-shadow-md z-10 space-x-0.5">
-          {Array.from({ length: showStars }).map((_, i) => (
-            <span key={i} className="text-yellow-400 text-[10px] leading-none drop-shadow-sm">
-              ⭐
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

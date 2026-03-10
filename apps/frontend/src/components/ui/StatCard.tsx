@@ -46,7 +46,7 @@ export function StatCard({
     return (
       <div
         className={cn(
-          'bg-bg-card border border-border rounded-xl p-5 shadow-card',
+          'bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 shadow-card animate-pulse',
           accentColor && `border-l-[3px] ${accentColor}`,
           className
         )}
@@ -54,14 +54,14 @@ export function StatCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 space-y-3">
             {/* Title skeleton */}
-            <div className="skeleton h-3.5 w-24 rounded-full" />
+            <div className="h-3.5 w-24 rounded-full bg-[var(--bg-overlay)]/70" />
             {/* Value skeleton */}
-            <div className="skeleton h-8 w-32 rounded-lg" />
+            <div className="h-8 w-32 rounded-lg bg-[var(--bg-overlay)]/70" />
             {/* Subtitle / trend skeleton */}
-            <div className="skeleton h-3 w-20 rounded-full" />
+            <div className="h-3 w-20 rounded-full bg-[var(--bg-overlay)]/70" />
           </div>
           {/* Icon skeleton */}
-          <div className="skeleton size-10 rounded-full shrink-0" />
+          <div className="size-10 rounded-full shrink-0 bg-[var(--bg-overlay)]/70" />
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'group relative bg-bg-card border border-border rounded-xl p-5 shadow-card',
+        'group relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 shadow-card',
         'hover:-translate-y-0.5 transition-all duration-200',
         accentColor && `border-l-[3px] ${accentColor}`,
         className

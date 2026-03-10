@@ -72,22 +72,22 @@ export function ChartCard({
   return (
     <div
       className={cn(
-        'bg-bg-card border border-border rounded-xl shadow-card overflow-hidden',
+        'rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-card overflow-hidden',
         className
       )}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] px-6 py-4">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-text-primary leading-snug truncate">{title}</h3>
-          {subtitle && <p className="text-xs text-text-secondary mt-0.5 truncate">{subtitle}</p>}
+          <h3 className="truncate text-lg font-semibold leading-snug text-slate-100">{title}</h3>
+          {subtitle && <p className="mt-1 truncate text-sm text-slate-400">{subtitle}</p>}
         </div>
 
         {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
       </div>
 
       {/* ── Chart area ──────────────────────────────────────────────────── */}
-      <div className="px-2 pt-2 pb-4" style={{ height }}>
+      <div className="px-6 pb-6 pt-4" style={{ height }}>
         {loading ? (
           /* ── Loading skeleton ────────────────────────────────────────── */
           <div className="h-full flex flex-col gap-3 px-3 pt-3 pb-1">

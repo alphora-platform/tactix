@@ -7,7 +7,9 @@ import type {
 
 export function formatRawName(apiName: string): string {
   if (!apiName) return '';
-  const stripped = apiName.replace(/^(TFT\d+_|Set\d+_|TFT_)/i, '');
+  // Strip compound set prefix first, then single prefix
+  const stripped = apiName.replace(/^(TFT\d*_Set\d+_?|TFT\d+_?|Set\d+_?|TFT_?)/i, '');
+  // Split camelCase boundaries
   const split = stripped.replace(/([A-Z])/g, ' $1').trim();
   return split
     .split(' ')

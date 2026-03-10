@@ -16,6 +16,10 @@ export interface CompStatDto {
   trend_direction?: TrendDirection;
   tier?: Tier;
   composite_score?: number;
+  /** Friendly display name returned by the backend, if available */
+  comp_label?: string;
+  /** Trait icon URLs returned by the backend, if available */
+  trait_icons?: string[];
 }
 
 // ── GET /analytics/tier-list ───────────────────────────────────────────────
