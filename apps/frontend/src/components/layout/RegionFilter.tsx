@@ -1,47 +1,48 @@
-import { ChevronDown, Check } from 'lucide-react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Select } from 'antd';
+import { ChevronDown } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings.store';
+import { cn } from '@/lib/utils/cn';
 
 const REGIONS = [
-  { code: '', label: 'All Regions' },
-  { code: 'KR', label: '🇰🇷 Korea' },
-  { code: 'EUW', label: '🇪🇺 EUW' },
-  { code: 'NA', label: '🇺🇸 NA' },
-  { code: 'EUNE', label: 'EUNE' },
-  { code: 'BR', label: '🇧🇷 Brazil' },
-];
+  { value: '', label: 'All Regions' },
+  { value: 'KR', label: 'Korea (KR)' },
+  { value: 'EUW', label: 'Europe West (EUW)' },
+  { value: 'NA', label: 'North America (NA)' },
+  { value: 'EUNE', label: 'Europe Nordic & East (EUNE)' },
+  { value: 'BR', label: 'Brazil (BR)' },
+  { value: 'JP', label: 'Japan (JP)' },
+  { value: 'OCE', label: 'Oceania (OCE)' },
+] as const;
 
-export function RegionFilter() {
+interface RegionFilterProps {
+  className?: string;
+  onValueChange?: () => void;
+}
+
+export function RegionFilter({ className, onValueChange }: RegionFilterProps) {
   const { selectedRegion, setSelectedRegion } = useSettingsStore();
-  const current = REGIONS.find((r) => r.code === selectedRegion) ?? REGIONS[0]!;
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary hover:border-accent-blue/50 transition-colors outline-none">
-          {current.label}
-          <ChevronDown size={13} className="text-text-secondary" />
-        </button>
-      </DropdownMenu.Trigger>
-
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-40 rounded-xl border border-border bg-bg-card p-1 shadow-card animate-fade-in"
-          sideOffset={4}
-          align="end"
-        >
-          {REGIONS.map(({ code, label }) => (
-            <DropdownMenu.Item
-              key={code}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:bg-bg-elevated outline-none"
-              onSelect={() => setSelectedRegion(code)}
-            >
-              {selectedRegion === code && <Check size={12} className="text-accent-blue" />}
-              <span className={selectedRegion === code ? 'text-accent-blue' : ''}>{label}</span>
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+    <Select
+      aria-label="Region selector"
+      value={selectedRegion}
+      variant="filled"
+      options={REGIONS}
+      suffixIcon={<ChevronDown size={14} className="text-slate-400" />}
+      onChange={(value) => {
+        setSelectedRegion(value);
+        onValueChange?.();
+      }}
+      className={cn(
+        'min-w-[220px]',
+        '[&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border [&_.ant-select-selector]:!border-[var(--border-default)]',
+        '[&_.ant-select-selector]:!bg-[var(--bg-elevated)] [&_.ant-select-selector]:!shadow-none',
+        '[&_.ant-select-selection-item]:!text-sm [&_.ant-select-selection-item]:!text-slate-100',
+        '[&_.ant-select-selection-placeholder]:!text-slate-400',
+        '[&_.ant-select-arrow]:!text-slate-400',
+        className
+      )}
+      popupClassName="[&_.ant-select-item]:!text-sm [&_.ant-select-item-option-content]:!text-slate-100"
+    />
   );
 }

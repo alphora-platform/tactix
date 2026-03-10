@@ -1,30 +1,24 @@
-import type { Tier } from '@/lib/types/analytics.types';
-import { clsx } from 'clsx';
+import { getTierConfig } from '@/lib/utils/display.utils';
+import { cn } from '@/lib/utils/cn';
 
 interface TierBadgeProps {
-  tier: Tier;
-  size?: 'sm' | 'md' | 'lg';
+  tier: 'S' | 'A' | 'B' | 'C';
+  size?: 'sm' | 'md';
 }
 
-const TIER_STYLES: Record<Tier, string> = {
-  S: 'bg-accent-gold/20 text-accent-gold border-accent-gold/40',
-  A: 'bg-accent-blue/20 text-accent-blue border-accent-blue/40',
-  B: 'bg-accent-green/20 text-accent-green border-accent-green/40',
-  C: 'bg-bg-elevated text-text-secondary border-border',
-};
-
 export function TierBadge({ tier, size = 'md' }: TierBadgeProps) {
+  const config = getTierConfig(tier);
+
   return (
     <span
-      className={clsx(
-        'inline-flex items-center justify-center font-bold border rounded',
-        TIER_STYLES[tier],
-        size === 'sm' && 'text-xs w-5 h-5',
-        size === 'md' && 'text-sm w-7 h-7',
-        size === 'lg' && 'text-base w-9 h-9'
+      className={cn(
+        'inline-flex items-center rounded-full border border-[var(--border-subtle)] font-semibold',
+        config.color,
+        config.bgColor,
+        size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
       )}
     >
-      {tier}
+      {config.label}
     </span>
   );
 }

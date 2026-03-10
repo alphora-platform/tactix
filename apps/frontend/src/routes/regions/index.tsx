@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useMemo } from 'react';
-import { Globe, ArrowRightLeft, BarChart2, TrendingUp, Star, ChevronDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Tabs, Checkbox, Input, Table } from 'antd';
+import type { TableProps } from 'antd';
+import { Globe, ArrowRightLeft, BarChart3, TrendingUp, Star, ChevronDown } from 'lucide-react';
 import {
   useRegionalMetaQuery,
   useRegionalExclusiveQuery,
@@ -8,9 +10,10 @@ import {
 } from '@/hooks/useAnalytics';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import { StatCard } from '@/components/ui/StatCard';
-import { ChartCard, defaultChartTheme } from '@/components/ui/ChartCard';
-import { DataTableCard } from '@/components/ui/DataTableCard';
-import type { Column } from '@/components/ui/DataTableCard';
+import { ChartCard } from '@/components/ui/ChartCard';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonCard } from '@/components/ui/SkeletonCard';
+import { PageHeader } from '@/components/ui/PageHeader';
 import {
   BarChart,
   Bar,
@@ -22,223 +25,243 @@ import {
   Legend,
 } from 'recharts';
 import { cn } from '@/lib/utils/cn';
+import { resolveCompName } from '@/lib/utils/compName';
+import { formatWinRate, getWinRateColor } from '@/lib/utils/display.utils';
+import { useTraits } from '@/lib/hooks/useMetadata';
 import type {
   RegionalCompDto,
   RegionalExclusiveDto,
   CompHeadToHeadDto,
 } from '@/lib/types/analytics.types';
 
-// ── DataTable row types (need index signature for DataTableCard generic) ──────
-type HeatmapRow = RegionalCompDto & { [k: string]: unknown };
-type CompareRow = CompHeadToHeadDto & { [k: string]: unknown };
+interface HeatmapTableRow extends RegionalCompDto {
+  display_name: string;
+  normalized_global_wr: number;
+  diff_pct: number;
+}
+
+type CompareRow = CompHeadToHeadDto;
 
 export const Route = createFileRoute('/regions/')({
   component: RegionsPage,
 });
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
 const REGION_COLORS: Record<string, string> = {
-  KR: '#c89b3c', // accent-gold
-  EUW: '#4fc3f7', // accent-blue
-  NA: '#66bb6a', // accent-green
-  EUNE: '#ef5350', // accent-red
-  JP: '#ab47bc', // purple
-  OCE: '#26c6da', // cyan
-  BR: '#ff7043', // orange
-  TR: '#ec407a', // pink
+  KR: '#3B82F6',
+  EUW: '#22c55e',
+  NA: '#f59e0b',
+  EUNE: '#ef4444',
+  JP: '#a855f7',
+  OCE: '#06b6d4',
+  BR: '#f97316',
+  TR: '#ec4899',
 };
 
 const ALL_REGIONS = ['KR', 'EUW', 'NA', 'EUNE', 'JP', 'OCE', 'BR', 'TR'];
-
 type TabKey = 'divergence' | 'exclusive' | 'compare';
 
-// Heatmap color: low WR=red, high WR=green via interpolation
-function wrToHeatColor(wr: number): string {
-  // wr is 0–1 decimal
-  const pct = Math.min(1, Math.max(0, wr));
-  if (pct >= 0.55) return '#66bb6a22'; // green tint
-  if (pct >= 0.5) return '#c89b3c22'; // gold tint
-  return '#ef535022'; // red tint
-}
-function wrToTextColor(wr: number): string {
-  const pct = Math.min(1, Math.max(0, wr));
-  if (pct >= 0.55) return '#66bb6a';
-  if (pct >= 0.5) return '#c89b3c';
-  return '#ef5350';
+const TABLE_CLASS =
+  '[&_.ant-table]:!bg-transparent [&_.ant-table-container]:!border-[var(--border-default)] [&_.ant-table-thead>tr>th]:!border-[var(--border-subtle)] [&_.ant-table-thead>tr>th]:!bg-[var(--bg-surface)] [&_.ant-table-thead>tr>th]:!text-slate-300 [&_.ant-table-tbody>tr>td]:!border-[var(--border-subtle)] [&_.ant-table-tbody>tr>td]:!bg-transparent [&_.ant-table-placeholder]:!bg-transparent [&_.ant-pagination-item]:!border-[var(--border-default)] [&_.ant-pagination-item>a]:!text-slate-300 [&_.ant-pagination-item-active]:!border-blue-500 [&_.ant-pagination-item-active>a]:!text-blue-400';
+
+function normalizeRate(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return value > 1 ? value / 100 : value;
 }
 
-// ── Root page ─────────────────────────────────────────────────────────────────
+function normalizeDiffPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.abs(value) <= 1 ? value * 100 : value;
+}
 
 function RegionsPage() {
   const [tab, setTab] = useState<TabKey>('divergence');
   const [regionA, setRegionA] = useState('KR');
   const [regionB, setRegionB] = useState('EUW');
 
-  const TABS: { key: TabKey; label: string }[] = [
-    { key: 'divergence', label: 'Regional Divergence' },
-    { key: 'exclusive', label: 'Region Exclusives' },
-    { key: 'compare', label: 'Head-to-Head' },
-  ];
-
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">Region Comparison</h1>
-        <p className="text-sm text-text-secondary mt-0.5">
-          How the meta differs across global servers
-        </p>
-      </div>
-
-      {/* ── Tab bar ──────────────────────────────────────────────────────────── */}
-      <div className="flex gap-0 border-b border-border overflow-x-auto hide-scrollbar">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              'px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors relative shrink-0',
-              tab === key
-                ? 'text-accent-gold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-accent-gold'
-                : 'text-text-secondary hover:text-text-primary'
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Tab content ──────────────────────────────────────────────────────── */}
-      {tab === 'divergence' && <DivergenceTab />}
-      {tab === 'exclusive' && <ExclusiveTab />}
-      {tab === 'compare' && (
+  const tabItems = [
+    {
+      key: 'divergence',
+      label: 'Regional Divergence',
+      children: <DivergenceTab />,
+    },
+    {
+      key: 'exclusive',
+      label: 'Region Exclusives',
+      children: <ExclusiveTab />,
+    },
+    {
+      key: 'compare',
+      label: 'Head-to-Head',
+      children: (
         <CompareTab
           regionA={regionA}
           regionB={regionB}
           onRegionAChange={setRegionA}
           onRegionBChange={setRegionB}
         />
-      )}
+      ),
+    },
+  ];
+
+  return (
+    <div className="animate-fade-in space-y-6">
+      <PageHeader
+        title="Region Comparison"
+        subtitle="How the meta differs across global servers"
+      />
+
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setTab(key as TabKey)}
+        items={tabItems}
+        type="line"
+        size="middle"
+        className="[&_.ant-tabs-tab]:!text-slate-400 [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:!text-blue-400 [&_.ant-tabs-ink-bar]:!bg-blue-500"
+      />
     </div>
   );
 }
 
-// ── DivergenceTab ─────────────────────────────────────────────────────────────
-
 function DivergenceTab() {
   const regional = useRegionalMetaQuery();
   const exclusive = useRegionalExclusiveQuery();
+  const { data: traits } = useTraits();
 
-  // Active region filter
-  const availableRegions = regional.data?.regions ?? [];
   const [activeRegions, setActiveRegions] = useState<string[]>([]);
+  const [heatmapSearch, setHeatmapSearch] = useState('');
 
+  const availableRegions = regional.data?.regions ?? [];
   const selectedRegions = activeRegions.length > 0 ? activeRegions : availableRegions;
 
-  // Derived stats
+  const allRows = useMemo<HeatmapTableRow[]>(() => {
+    return (regional.data?.comps ?? []).map((comp) => ({
+      ...comp,
+      display_name: resolveCompName(comp.comp_id, comp.label, traits),
+      normalized_global_wr: normalizeRate(comp.global_win_rate),
+      diff_pct: normalizeDiffPercent(comp.regional_diff),
+    }));
+  }, [regional.data, traits]);
+
+  const filteredRows = useMemo(() => {
+    if (!heatmapSearch.trim()) return allRows;
+
+    const query = heatmapSearch.trim().toLowerCase();
+    return allRows.filter((row) => row.display_name.toLowerCase().includes(query));
+  }, [allRows, heatmapSearch]);
+
   const maxDiffComp = useMemo(
     () =>
-      regional.data?.comps.reduce(
-        (best, c) => (c.regional_diff > (best?.regional_diff ?? 0) ? c : best),
-        null as RegionalCompDto | null
+      allRows.reduce(
+        (best, row) => (Math.abs(row.diff_pct) > Math.abs(best?.diff_pct ?? -1) ? row : best),
+        null as HeatmapTableRow | null
       ),
-    [regional.data]
+    [allRows]
   );
 
-  // Table data — apply region filter (show subset of columns)
-  const tableComps = useMemo<HeatmapRow[]>(
-    () => (regional.data?.comps ?? []) as HeatmapRow[],
-    [regional.data]
-  );
-
-  // Grouped bar chart — top 8 comps by global WR
   const chartData = useMemo(() => {
-    if (!regional.data) return [];
-    return [...regional.data.comps]
-      .sort((a, b) => b.global_win_rate - a.global_win_rate)
+    return [...allRows]
+      .sort((a, b) => b.normalized_global_wr - a.normalized_global_wr)
       .slice(0, 8)
-      .map((c) => {
-        const name = c.label.length > 14 ? c.label.slice(0, 14) + '…' : c.label;
-        const entry: Record<string, string | number> = { name };
+      .map((row) => {
+        const entry: Record<string, string | number> = {
+          name: row.display_name,
+        };
+
         for (const region of selectedRegions.slice(0, 5)) {
-          entry[region] = parseFloat(((c.by_region[region]?.win_rate ?? 0) * 100).toFixed(1));
+          const wr = normalizeRate(row.by_region[region]?.win_rate ?? 0);
+          entry[region] = Number((wr * 100).toFixed(1));
         }
+
         return entry;
       });
-  }, [regional.data, selectedRegions]);
+  }, [allRows, selectedRegions]);
 
-  // Heatmap / table columns
-  const heatmapColumns = useMemo<Column<HeatmapRow>[]>(() => {
-    const regionCols: Column<HeatmapRow>[] = selectedRegions.slice(0, 6).map((region) => ({
-      key: region,
+  const heatmapColumns = useMemo<TableProps<HeatmapTableRow>['columns']>(() => {
+    const regionCols = selectedRegions.slice(0, 6).map((region) => ({
       title: region,
-      width: 72,
+      key: region,
+      dataIndex: region,
+      width: 100,
       align: 'center' as const,
-      render: (_, rec) => {
+      render: (_: unknown, rec: HeatmapTableRow) => {
         const stats = rec.by_region[region];
-        if (!stats) return <span className="text-text-secondary/40 text-xs">—</span>;
-        const wr = stats.win_rate;
+        if (!stats) return <span className="text-xs text-text-secondary/40">-</span>;
+
+        const wr = normalizeRate(stats.win_rate);
         return (
-          <span
-            className="text-xs font-bold tabular-nums px-1.5 py-0.5 rounded"
-            style={{
-              color: wrToTextColor(wr),
-              background: wrToHeatColor(wr),
-            }}
-          >
-            {(wr * 100).toFixed(1)}%
+          <span className={cn('text-xs font-semibold tabular-nums', getWinRateColor(wr))}>
+            {formatWinRate(wr)}
           </span>
         );
+      },
+      onCell: (rec: HeatmapTableRow) => {
+        const stats = rec.by_region[region];
+        if (!stats) return {};
+
+        const wr = normalizeRate(stats.win_rate);
+        const delta = wr - rec.normalized_global_wr;
+
+        if (!['KR', 'EUW', 'NA'].includes(region)) {
+          return {};
+        }
+
+        const isAbove = delta >= 0;
+
+        return {
+          style: {
+            backgroundColor: isAbove ? 'rgba(34,197,94,0.13)' : 'rgba(239,68,68,0.13)',
+            color: isAbove ? '#4ade80' : '#fb7185',
+          },
+        };
       },
     }));
 
     return [
       {
-        key: 'label',
-        title: 'Comp',
-        render: (_: unknown, rec: HeatmapRow) => (
-          <span className="text-sm font-semibold text-text-primary truncate">{rec.label}</span>
-        ),
+        title: 'COMP',
+        key: 'display_name',
+        dataIndex: 'display_name',
+        fixed: 'left',
+        width: 220,
+        render: (value: string) => <span className="font-medium text-slate-100">{value}</span>,
       },
       {
-        key: 'global_win_rate',
-        title: 'Global WR',
-        width: 82,
-        align: 'right' as const,
-        sortable: true,
-        render: (_: unknown, rec: HeatmapRow) => (
-          <span className="text-sm font-bold tabular-nums text-text-primary">
-            {(rec.global_win_rate * 100).toFixed(1)}%
-          </span>
+        title: 'GLOBAL WR',
+        key: 'normalized_global_wr',
+        dataIndex: 'normalized_global_wr',
+        width: 110,
+        align: 'right',
+        sorter: (a, b) => a.normalized_global_wr - b.normalized_global_wr,
+        render: (value: number) => (
+          <span className={cn('tabular-nums', getWinRateColor(value))}>{formatWinRate(value)}</span>
         ),
       },
       ...regionCols,
       {
-        key: 'regional_diff',
-        title: 'Diff',
-        width: 70,
-        align: 'right' as const,
-        sortable: true,
-        render: (_: unknown, rec: HeatmapRow) => (
+        title: 'DIFF',
+        key: 'diff_pct',
+        dataIndex: 'diff_pct',
+        width: 95,
+        align: 'right',
+        sorter: (a, b) => a.diff_pct - b.diff_pct,
+        render: (value: number) => (
           <span
             className={cn(
-              'text-xs font-bold tabular-nums',
-              rec.regional_diff > 5
-                ? 'text-accent-red'
-                : rec.regional_diff > 2
-                ? 'text-accent-gold'
-                : 'text-text-secondary'
+              'font-semibold tabular-nums',
+              value >= 0 ? 'text-emerald-400' : 'text-rose-400'
             )}
           >
-            {rec.regional_diff.toFixed(1)}%
+            {value >= 0 ? '+' : ''}
+            {value.toFixed(1)}%
           </span>
         ),
       },
-    ] satisfies Column<HeatmapRow>[];
+    ];
   }, [selectedRegions]);
 
   const isLoading = regional.isLoading || exclusive.isLoading;
+
+  const checkboxValue = selectedRegions;
 
   return (
     <div className="space-y-5">
@@ -246,92 +269,101 @@ function DivergenceTab() {
         <ErrorCard message="Failed to load regional data" retry={() => regional.refetch()} />
       )}
 
-      {/* ── Stat Cards ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           title="Regions Tracked"
-          value={regional.data?.regions.length ?? '—'}
+          value={regional.data?.regions.length ?? '-'}
           subtitle="active servers"
           icon={Globe}
-          iconColor="text-accent-blue"
-          iconBg="bg-accent-blue/10"
-          accentColor="border-l-accent-blue"
+          iconColor="text-blue-400"
+          iconBg="bg-blue-500/10"
+          accentColor="border-l-blue-500"
           loading={regional.isLoading}
         />
         <StatCard
           title="Comps Analyzed"
-          value={regional.data?.comps.length ?? '—'}
+          value={regional.data?.comps.length ?? '-'}
           subtitle="this patch"
-          icon={BarChart2}
-          iconColor="text-accent-gold"
-          iconBg="bg-accent-gold/10"
-          accentColor="border-l-accent-gold"
+          icon={BarChart3}
+          iconColor="text-slate-300"
+          iconBg="bg-slate-500/10"
+          accentColor="border-l-slate-500"
           loading={regional.isLoading}
         />
         <StatCard
           title="Highest Divergence"
-          value={maxDiffComp ? `${maxDiffComp.regional_diff.toFixed(1)}%` : '—'}
-          subtitle={maxDiffComp?.label ?? 'comp name'}
+          value={maxDiffComp ? `${Math.abs(maxDiffComp.diff_pct).toFixed(1)}%` : '-'}
+          subtitle={maxDiffComp?.display_name ?? 'comp name'}
           icon={TrendingUp}
-          iconColor="text-accent-red"
-          iconBg="bg-accent-red/10"
-          accentColor="border-l-accent-red"
+          iconColor="text-orange-400"
+          iconBg="bg-orange-500/10"
+          accentColor="border-l-orange-500"
           loading={regional.isLoading}
         />
         <StatCard
           title="Region Exclusives"
-          value={exclusive.data?.length ?? '—'}
+          value={exclusive.data?.length ?? '-'}
           subtitle="region-specific picks"
           icon={Star}
-          iconColor="text-accent-green"
-          iconBg="bg-accent-green/10"
-          accentColor="border-l-accent-green"
+          iconColor="text-violet-400"
+          iconBg="bg-violet-500/10"
+          accentColor="border-l-violet-500"
           loading={exclusive.isLoading}
         />
       </div>
 
-      {/* ── Region filter chips ──────────────────────────────────────────────── */}
       {availableRegions.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-text-secondary font-medium">Regions:</span>
-          {availableRegions.map((r) => {
-            const active = activeRegions.length === 0 || activeRegions.includes(r);
-            return (
-              <button
-                key={r}
-                onClick={() =>
-                  setActiveRegions((prev) =>
-                    prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]
-                  )
-                }
-                className={cn(
-                  'text-xs font-bold px-2.5 py-1 rounded-full border transition-all',
-                  active
-                    ? 'border-transparent text-bg-primary'
-                    : 'border-border text-text-secondary hover:border-border/80'
-                )}
-                style={active ? { background: REGION_COLORS[r] ?? '#9e9e9e' } : undefined}
-              >
-                {r}
-              </button>
-            );
-          })}
-          {activeRegions.length > 0 && (
-            <button
-              onClick={() => setActiveRegions([])}
-              className="text-xs text-text-secondary hover:text-accent-gold transition-colors"
-            >
-              Reset
-            </button>
-          )}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-text-secondary">Regions</p>
+          <Checkbox.Group
+            value={checkboxValue}
+            onChange={(values) => {
+              const next = values as string[];
+              if (next.length === availableRegions.length) {
+                setActiveRegions([]);
+              } else {
+                setActiveRegions(next);
+              }
+            }}
+          >
+            <div className="flex flex-wrap gap-2">
+              {availableRegions.map((region) => {
+                const checked = checkboxValue.includes(region);
+                const color = REGION_COLORS[region] ?? '#64748b';
+
+                return (
+                  <label key={region} className="cursor-pointer">
+                    <Checkbox value={region} className="!hidden" />
+                    <span
+                      className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold transition-colors"
+                      style={
+                        checked
+                          ? {
+                              borderColor: color,
+                              backgroundColor: color,
+                              color: '#020617',
+                            }
+                          : {
+                              borderColor: `${color}99`,
+                              color,
+                              backgroundColor: 'transparent',
+                            }
+                      }
+                    >
+                      {region}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </Checkbox.Group>
         </div>
       )}
 
-      {/* ── Grouped Bar Chart ────────────────────────────────────────────────── */}
       <ChartCard
         title="Win Rate by Region"
-        subtitle="Top 8 comps — regional win rate comparison"
-        height={300}
+        subtitle="Top 8 comps - regional win rate comparison"
+        height={320}
         loading={regional.isLoading}
         empty={!regional.isLoading && chartData.length === 0}
         emptyText="No regional data available"
@@ -339,32 +371,35 @@ function DivergenceTab() {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
-            margin={{ top: 4, right: 12, left: -20, bottom: 4 }}
-            barGap={2}
-            barCategoryGap="25%"
+            margin={{ top: 8, right: 16, left: -14, bottom: 36 }}
+            barGap={3}
+            barCategoryGap="22%"
           >
-            <CartesianGrid {...defaultChartTheme.cartesianGrid} />
+            <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" />
             <XAxis
               dataKey="name"
-              {...defaultChartTheme.xAxis}
-              tick={{ fill: '#9e9e9e', fontSize: 10 }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
               interval={0}
-              angle={-20}
+              angle={-30}
               textAnchor="end"
-              height={44}
+              height={60}
             />
-            <YAxis {...defaultChartTheme.yAxis} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
-            <Tooltip
-              {...defaultChartTheme.tooltip}
-              formatter={(v: number | undefined) => [`${v ?? '—'}%`, '']}
+            <YAxis
+              tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+              tickFormatter={(v: number) => `${v}%`}
+              domain={[0, 100]}
+              width={40}
             />
-            <Legend wrapperStyle={{ fontSize: 11, color: '#9e9e9e' }} />
+            <Tooltip formatter={(v: number | undefined) => [formatWinRate(v ?? 0), '']} />
+            <Legend verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 11 }} />
+
             {selectedRegions.slice(0, 5).map((region) => (
               <Bar
                 key={region}
                 dataKey={region}
-                fill={REGION_COLORS[region] ?? '#9e9e9e'}
-                fillOpacity={0.85}
+                name={region}
+                fill={REGION_COLORS[region] ?? '#94a3b8'}
+                fillOpacity={0.9}
                 radius={[3, 3, 0, 0]}
                 maxBarSize={20}
               />
@@ -373,47 +408,78 @@ function DivergenceTab() {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* ── Heatmap Table ────────────────────────────────────────────────────── */}
-      <DataTableCard
-        title="Regional Heatmap"
-        subtitle="Win rate per region — color coded by performance"
-        columns={heatmapColumns as unknown as Column<Record<string, unknown>>[]}
-        data={tableComps as unknown as Record<string, unknown>[]}
-        rowKey="comp_id"
-        loading={isLoading}
-        emptyText="No data available"
-        searchable
-        searchPlaceholder="Search comp..."
-      />
+      <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">Regional Heatmap</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Win rate per region - color coded against global average
+            </p>
+          </div>
+          <Input.Search
+            value={heatmapSearch}
+            onChange={(e) => setHeatmapSearch(e.target.value)}
+            onSearch={(value) => setHeatmapSearch(value)}
+            allowClear
+            placeholder="Search comp..."
+            size="large"
+            className="w-full sm:w-80 [&_.ant-input]:!border-[var(--border-default)] [&_.ant-input]:!bg-[var(--bg-elevated)] [&_.ant-input]:!text-slate-100 [&_.ant-input::placeholder]:!text-slate-400 [&_.ant-input-search-button]:!border-[var(--border-default)] [&_.ant-input-search-button]:!bg-[var(--bg-elevated)] [&_.ant-input-search-button]:!text-slate-200"
+          />
+        </div>
+
+        {isLoading ? (
+          <SkeletonCard rows={10} showHeader />
+        ) : (
+          <Table
+            rowKey="comp_id"
+            columns={heatmapColumns}
+            dataSource={filteredRows}
+            sticky
+            scroll={{ x: 1100 }}
+            pagination={{ pageSize: 10, showSizeChanger: false }}
+            locale={{
+              emptyText: (
+                <EmptyState
+                  title="No regional heatmap data"
+                  description="Try another patch or adjust selected regions."
+                />
+              ),
+            }}
+            className={TABLE_CLASS}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
-// ── ExclusiveTab ──────────────────────────────────────────────────────────────
-
 function ExclusiveTab() {
   const { data, isLoading, error, refetch } = useRegionalExclusiveQuery();
+  const { data: traits } = useTraits();
 
   return (
     <div className="space-y-4">
       {error && <ErrorCard message="Failed to load region exclusives" retry={() => refetch()} />}
 
       <p className="text-xs text-text-secondary">
-        Comps with ≥50% win rate in one region but outperform other regions by at least 10pp —
+        Comps with &gt;=50% win rate in one region but outperform other regions by at least 10pp -
         high-value region-specific picks.
       </p>
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="rounded-xl border border-border bg-bg-card p-5 space-y-3">
+            <div
+              key={i}
+              className="space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div className="skeleton h-4 flex-1 rounded-full" />
                 <div className="skeleton h-5 w-16 rounded-full" />
               </div>
               <div className="flex gap-4">
-                {[...Array(3)].map((_, j) => (
-                  <div key={j} className="space-y-1 flex-1">
+                {[...Array(3)].map((__, j) => (
+                  <div key={j} className="flex-1 space-y-1">
                     <div className="skeleton h-2.5 w-16 rounded-full" />
                     <div className="skeleton h-5 w-12 rounded-full" />
                   </div>
@@ -423,13 +489,13 @@ function ExclusiveTab() {
           ))}
         </div>
       ) : !data || data.length === 0 ? (
-        <div className="text-center py-12 text-text-secondary text-sm">
+        <div className="py-12 text-center text-sm text-text-secondary">
           No region-exclusive picks found for this patch.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {data.map((comp) => (
-            <ExclusiveCard key={comp.comp_id} comp={comp} />
+            <ExclusiveCard key={comp.comp_id} comp={comp} traits={traits} />
           ))}
         </div>
       )}
@@ -437,26 +503,31 @@ function ExclusiveTab() {
   );
 }
 
-function ExclusiveCard({ comp }: { comp: RegionalExclusiveDto }) {
+function ExclusiveCard({
+  comp,
+  traits,
+}: {
+  comp: RegionalExclusiveDto;
+  traits?: ReturnType<typeof useTraits>['data'];
+}) {
   const regionColor = REGION_COLORS[comp.strong_region] ?? '#9e9e9e';
   const advantage = comp.strong_win_rate - comp.other_regions_avg;
+  const displayName = resolveCompName(comp.comp_id, comp.label, traits);
 
   return (
     <div
-      className="rounded-xl border bg-bg-card shadow-card overflow-hidden"
+      className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-card"
       style={{ borderColor: `${regionColor}40` }}
     >
-      {/* Top bar accent */}
-      <div className="h-[2px]" style={{ background: regionColor }} />
+      <div className="h-0.5" style={{ background: regionColor }} />
 
-      <div className="p-5">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <span className="font-bold text-text-primary text-sm leading-snug min-w-0 truncate">
-            {comp.label}
+      <div className="p-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <span className="min-w-0 truncate text-sm font-bold leading-snug text-text-primary">
+            {displayName}
           </span>
           <span
-            className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0 whitespace-nowrap"
+            className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold"
             style={{
               color: regionColor,
               background: `${regionColor}20`,
@@ -467,26 +538,25 @@ function ExclusiveCard({ comp }: { comp: RegionalExclusiveDto }) {
           </span>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-bg-elevated rounded-lg p-2.5">
-            <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wide mb-1 whitespace-nowrap">
+          <div className="rounded-lg bg-bg-elevated p-2.5">
+            <p className="mb-1 whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-text-secondary">
               {comp.strong_region} WR
             </p>
             <p className="text-base font-bold tabular-nums" style={{ color: regionColor }}>
-              {comp.strong_win_rate.toFixed(1)}%
+              {formatWinRate(comp.strong_win_rate)}
             </p>
           </div>
-          <div className="bg-bg-elevated rounded-lg p-2.5">
-            <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wide mb-1 whitespace-nowrap">
+          <div className="rounded-lg bg-bg-elevated p-2.5">
+            <p className="mb-1 whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-text-secondary">
               Others Avg
             </p>
             <p className="text-base font-bold tabular-nums text-text-secondary">
-              {comp.other_regions_avg.toFixed(1)}%
+              {formatWinRate(comp.other_regions_avg)}
             </p>
           </div>
-          <div className="bg-bg-elevated rounded-lg p-2.5">
-            <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wide mb-1">
+          <div className="rounded-lg bg-bg-elevated p-2.5">
+            <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-text-secondary">
               Edge
             </p>
             <p className="text-base font-bold tabular-nums text-accent-green">
@@ -495,16 +565,13 @@ function ExclusiveCard({ comp }: { comp: RegionalExclusiveDto }) {
           </div>
         </div>
 
-        {/* Sample */}
-        <p className="text-[10px] text-text-secondary mt-3 text-right tabular-nums">
+        <p className="mt-3 text-right text-[10px] tabular-nums text-text-secondary">
           {comp.sample_size.toLocaleString()} games
         </p>
       </div>
     </div>
   );
 }
-
-// ── CompareTab ────────────────────────────────────────────────────────────────
 
 const COMPARE_REGIONS = ALL_REGIONS;
 
@@ -520,98 +587,103 @@ function CompareTab({
   onRegionBChange: (v: string) => void;
 }) {
   const { data, isLoading, error, refetch } = useRegionCompareQuery({ regionA, regionB });
+  const { data: traits } = useTraits();
 
   const colorA = REGION_COLORS[regionA] ?? '#9e9e9e';
   const colorB = REGION_COLORS[regionB] ?? '#9e9e9e';
 
   const selectClass =
-    'appearance-none rounded-lg border border-border bg-bg-card pl-3 pr-8 py-2 text-sm font-semibold text-text-primary focus:border-accent-gold/60 focus:outline-none transition-colors cursor-pointer';
+    'appearance-none cursor-pointer rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] py-2 pl-3 pr-8 text-sm font-semibold text-text-primary transition-colors focus:border-accent-gold/60 focus:outline-none';
 
-  // Table columns
-  const compareColumns = useMemo<Column<CompareRow>[]>(
-    () =>
-      [
-        {
-          key: 'label',
-          title: 'Comp',
-          render: (_: unknown, rec: CompareRow) => (
-            <span className="font-semibold text-text-primary text-sm truncate">{rec.label}</span>
-          ),
-        },
-        {
-          key: 'region_a_win_rate',
-          title: regionA,
-          width: 70,
-          align: 'right' as const,
-          sortable: true,
-          render: (_: unknown, rec: CompareRow) => (
-            <span className="font-bold tabular-nums text-sm" style={{ color: colorA }}>
-              {rec.region_a_win_rate.toFixed(1)}%
-            </span>
-          ),
-        },
-        {
-          key: 'region_b_win_rate',
-          title: regionB,
-          width: 70,
-          align: 'right' as const,
-          sortable: true,
-          render: (_: unknown, rec: CompareRow) => (
-            <span className="font-bold tabular-nums text-sm" style={{ color: colorB }}>
-              {rec.region_b_win_rate.toFixed(1)}%
-            </span>
-          ),
-        },
-        {
-          key: 'delta',
-          title: 'Δ',
-          width: 65,
-          align: 'right' as const,
-          sortable: true,
-          render: (_: unknown, rec: CompareRow) => (
+  const compareColumns = useMemo<TableProps<CompareRow>['columns']>(
+    () => [
+      {
+        title: 'Comp',
+        key: 'label',
+        dataIndex: 'label',
+        render: (_: unknown, rec: CompareRow) => (
+          <span className="truncate text-sm font-semibold text-text-primary">
+            {resolveCompName(rec.comp_id, rec.label, traits)}
+          </span>
+        ),
+      },
+      {
+        title: regionA,
+        key: 'region_a_win_rate',
+        dataIndex: 'region_a_win_rate',
+        width: 84,
+        align: 'right',
+        sorter: (a, b) => a.region_a_win_rate - b.region_a_win_rate,
+        render: (value: number) => (
+          <span className={cn('text-sm font-bold tabular-nums', getWinRateColor(value))}>
+            {formatWinRate(value)}
+          </span>
+        ),
+      },
+      {
+        title: regionB,
+        key: 'region_b_win_rate',
+        dataIndex: 'region_b_win_rate',
+        width: 84,
+        align: 'right',
+        sorter: (a, b) => a.region_b_win_rate - b.region_b_win_rate,
+        render: (value: number) => (
+          <span className={cn('text-sm font-bold tabular-nums', getWinRateColor(value))}>
+            {formatWinRate(value)}
+          </span>
+        ),
+      },
+      {
+        title: 'Δ',
+        key: 'delta',
+        dataIndex: 'delta',
+        width: 80,
+        align: 'right',
+        sorter: (a, b) => a.delta - b.delta,
+        render: (value: number) => (
+          <span
+            className={cn(
+              'text-sm font-bold tabular-nums',
+              value > 0
+                ? 'text-accent-green'
+                : value < 0
+                ? 'text-accent-red'
+                : 'text-text-secondary'
+            )}
+          >
+            {value > 0 ? '+' : ''}
+            {value.toFixed(1)}%
+          </span>
+        ),
+      },
+      {
+        title: 'Winner',
+        key: 'winner',
+        dataIndex: 'winner',
+        width: 86,
+        align: 'center',
+        render: (winner: string) =>
+          winner === 'TIED' ? (
+            <span className="text-xs text-text-secondary">-</span>
+          ) : (
             <span
-              className={cn(
-                'font-bold tabular-nums text-sm',
-                rec.delta > 0
-                  ? 'text-accent-green'
-                  : rec.delta < 0
-                  ? 'text-accent-red'
-                  : 'text-text-secondary'
-              )}
+              className="rounded-full px-2 py-0.5 text-xs font-bold"
+              style={{
+                color: REGION_COLORS[winner] ?? '#9e9e9e',
+                background: `${REGION_COLORS[winner] ?? '#9e9e9e'}20`,
+              }}
             >
-              {rec.delta > 0 ? '+' : ''}
-              {rec.delta.toFixed(1)}%
+              {winner}
             </span>
           ),
-        },
-        {
-          key: 'winner',
-          title: 'Winner',
-          width: 70,
-          align: 'center' as const,
-          render: (_: unknown, rec: CompareRow) =>
-            rec.winner === 'TIED' ? (
-              <span className="text-text-secondary text-xs">—</span>
-            ) : (
-              <span
-                className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{
-                  color: REGION_COLORS[rec.winner] ?? '#9e9e9e',
-                  background: `${REGION_COLORS[rec.winner] ?? '#9e9e9e'}20`,
-                }}
-              >
-                {rec.winner}
-              </span>
-            ),
-        },
-      ] satisfies Column<CompareRow>[],
-    [regionA, regionB, colorA, colorB]
+      },
+    ],
+    [regionA, regionB, colorA, colorB, traits]
   );
 
   return (
     <div className="space-y-5">
-      {/* Region pickers */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative">
           <select
             value={regionA}
@@ -619,20 +691,20 @@ function CompareTab({
             className={selectClass}
             style={{ borderColor: `${colorA}60`, color: colorA }}
           >
-            {COMPARE_REGIONS.filter((r) => r !== regionB).map((r) => (
-              <option key={r} value={r} style={{ color: '#e0e0e0' }}>
-                {r}
+            {COMPARE_REGIONS.filter((r) => r !== regionB).map((region) => (
+              <option key={region} value={region} style={{ color: '#e0e0e0' }}>
+                {region}
               </option>
             ))}
           </select>
           <ChevronDown
             size={14}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary"
           />
         </div>
 
         <div className="flex items-center justify-center">
-          <ArrowRightLeft size={16} className="text-text-secondary rotate-90 sm:rotate-0" />
+          <ArrowRightLeft size={16} className="rotate-90 text-text-secondary sm:rotate-0" />
         </div>
 
         <div className="relative">
@@ -642,35 +714,34 @@ function CompareTab({
             className={selectClass}
             style={{ borderColor: `${colorB}60`, color: colorB }}
           >
-            {COMPARE_REGIONS.filter((r) => r !== regionA).map((r) => (
-              <option key={r} value={r} style={{ color: '#e0e0e0' }}>
-                {r}
+            {COMPARE_REGIONS.filter((r) => r !== regionA).map((region) => (
+              <option key={region} value={region} style={{ color: '#e0e0e0' }}>
+                {region}
               </option>
             ))}
           </select>
           <ChevronDown
             size={14}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary"
           />
         </div>
       </div>
 
       {error && <ErrorCard message="Failed to compare regions" retry={() => refetch()} />}
 
-      {/* Meta Similarity */}
       {(data || isLoading) && (
-        <div className="rounded-xl border border-border bg-bg-card p-5 shadow-card">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-accent-blue/10 border border-accent-blue/30 flex items-center justify-center shrink-0">
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-blue/30 bg-accent-blue/10">
                 <Globe size={20} className="text-accent-blue" />
               </div>
               <div>
-                <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
                   Meta Similarity
                 </p>
                 {isLoading ? (
-                  <div className="skeleton h-7 w-20 rounded mt-1" />
+                  <div className="skeleton mt-1 h-7 w-20 rounded" />
                 ) : (
                   <p className="text-2xl font-bold tabular-nums text-text-primary">
                     {(data!.meta_similarity * 100).toFixed(1)}%
@@ -679,20 +750,19 @@ function CompareTab({
               </div>
             </div>
             {!isLoading && data && (
-              <p className="text-sm text-text-secondary max-w-xs">
+              <p className="max-w-xs text-sm text-text-secondary">
                 {data.meta_similarity > 0.85
                   ? 'These regions share a very similar meta.'
                   : data.meta_similarity > 0.65
                   ? 'Moderate meta divergence between regions.'
-                  : 'Significantly different metas — check exclusives!'}
+                  : 'Significantly different metas - check exclusives!'}
               </p>
             )}
           </div>
 
-          {/* Progress bar */}
           {!isLoading && data && (
             <div className="mt-4">
-              <div className="h-2 bg-bg-elevated rounded-full overflow-hidden border border-border/50">
+              <div className="h-2 overflow-hidden rounded-full border border-border/50 bg-bg-elevated">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -711,18 +781,24 @@ function CompareTab({
         </div>
       )}
 
-      {/* Head-to-head table */}
       {data && (
-        <DataTableCard
-          title={`${regionA} vs ${regionB}`}
-          subtitle="Per-comp win rate comparison"
-          columns={compareColumns as unknown as Column<Record<string, unknown>>[]}
-          data={data.comps as unknown as Record<string, unknown>[]}
+        <Table
           rowKey="comp_id"
+          columns={compareColumns}
+          dataSource={data.comps}
           loading={isLoading}
-          emptyText="No comparison data available"
-          searchable
-          searchPlaceholder="Search comp..."
+          sticky
+          scroll={{ x: 860 }}
+          pagination={{ pageSize: 10, showSizeChanger: false }}
+          locale={{
+            emptyText: (
+              <EmptyState
+                title="No comparison data available"
+                description="No matching comps were found for this region pair."
+              />
+            ),
+          }}
+          className={TABLE_CLASS}
         />
       )}
     </div>

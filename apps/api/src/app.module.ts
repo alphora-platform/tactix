@@ -11,6 +11,7 @@ import { TrackerModule } from './modules/tracker/tracker.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { PatchAnalyzerModule } from './modules/patch-analyzer/patch-analyzer.module';
 import { MetadataModule } from './modules/metadata/metadata.module';
+import { RawDataModule } from './modules/raw-data/raw-data.module';
 
 // Determine mode
 const appMode = process.env.APP_MODE || 'api'; // default 'api'
@@ -40,14 +41,21 @@ const baseModules: any[] = [
 const featureModules = [];
 
 if (appMode === 'api') {
-  featureModules.push(AnalyticsModule, DataCollectorModule, TrackerModule, PatchAnalyzerModule);
+  featureModules.push(
+    AnalyticsModule,
+    DataCollectorModule,
+    TrackerModule,
+    PatchAnalyzerModule,
+    RawDataModule
+  );
 } else if (appMode === 'worker') {
   featureModules.push(
     AnalyticsModule,
     DataCollectorModule,
     AlertsModule,
     TrackerModule,
-    PatchAnalyzerModule
+    PatchAnalyzerModule,
+    RawDataModule
   );
 } else {
   // 'all' or undefined
@@ -56,7 +64,8 @@ if (appMode === 'api') {
     AlertsModule,
     DataCollectorModule,
     TrackerModule,
-    PatchAnalyzerModule
+    PatchAnalyzerModule,
+    RawDataModule
   );
 }
 

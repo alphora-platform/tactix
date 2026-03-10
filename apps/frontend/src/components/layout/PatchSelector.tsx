@@ -1,77 +1,44 @@
-import { ChevronDown, Check, Loader2 } from 'lucide-react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { useQuery } from '@tanstack/react-query';
+import { Select } from 'antd';
+import { ChevronDown } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings.store';
-import { fetchPatches } from '@/lib/api/analytics.api';
+import { cn } from '@/lib/utils/cn';
 
-export function PatchSelector() {
+const PATCH_OPTIONS = [
+  { value: '', label: '16.5 (Latest)' },
+  { value: '16.4', label: '16.4' },
+  { value: '16.3', label: '16.3' },
+  { value: '16.2', label: '16.2' },
+] as const;
+
+interface PatchSelectorProps {
+  className?: string;
+  onValueChange?: () => void;
+}
+
+export function PatchSelector({ className, onValueChange }: PatchSelectorProps) {
   const { selectedPatch, setSelectedPatch } = useSettingsStore();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['patches'],
-    queryFn: fetchPatches,
-    staleTime: 10 * 60 * 1000, // 10 minutes — patches don't change often
-  });
-
-  const label = selectedPatch || 'Latest';
-  const patches = data?.patches ?? [];
-
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary hover:border-accent-gold/50 transition-colors outline-none">
-          <span className="text-text-secondary text-xs mr-0.5">Patch</span>
-          {label}
-          <ChevronDown size={13} className="text-text-secondary" />
-        </button>
-      </DropdownMenu.Trigger>
-
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-36 rounded-xl border border-border bg-bg-card p-1 shadow-card animate-fade-in"
-          sideOffset={4}
-          align="end"
-        >
-          {/* Latest — resolves to current patch server-side */}
-          <DropdownMenu.Item
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:bg-bg-elevated outline-none"
-            onSelect={() => setSelectedPatch('')}
-          >
-            {!selectedPatch && <Check size={12} className="text-accent-gold" />}
-            <span className={!selectedPatch ? 'text-accent-gold' : ''}>Latest</span>
-            {data?.current && (
-              <span className="ml-auto text-xs text-text-secondary">{data.current}</span>
-            )}
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Separator className="my-1 h-px bg-border" />
-
-          {/* Loading skeleton */}
-          {isLoading && (
-            <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs text-text-secondary">
-              <Loader2 size={12} className="animate-spin" />
-              Loading patches…
-            </div>
-          )}
-
-          {/* Patch list from API */}
-          {patches.map((patch) => (
-            <DropdownMenu.Item
-              key={patch}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:bg-bg-elevated outline-none"
-              onSelect={() => setSelectedPatch(patch)}
-            >
-              {selectedPatch === patch && <Check size={12} className="text-accent-gold" />}
-              <span className={selectedPatch === patch ? 'text-accent-gold' : ''}>{patch}</span>
-            </DropdownMenu.Item>
-          ))}
-
-          {/* Empty state — DB has no patch data yet */}
-          {!isLoading && patches.length === 0 && (
-            <div className="px-3 py-2 text-xs text-text-secondary italic">No patches found</div>
-          )}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+    <Select
+      aria-label="Patch selector"
+      value={selectedPatch}
+      variant="filled"
+      options={PATCH_OPTIONS}
+      suffixIcon={<ChevronDown size={14} className="text-slate-400" />}
+      onChange={(value) => {
+        setSelectedPatch(value);
+        onValueChange?.();
+      }}
+      className={cn(
+        'min-w-[164px]',
+        '[&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border [&_.ant-select-selector]:!border-[var(--border-default)]',
+        '[&_.ant-select-selector]:!bg-[var(--bg-elevated)] [&_.ant-select-selector]:!shadow-none',
+        '[&_.ant-select-selection-item]:!text-sm [&_.ant-select-selection-item]:!text-slate-100',
+        '[&_.ant-select-selection-placeholder]:!text-slate-400',
+        '[&_.ant-select-arrow]:!text-slate-400',
+        className
+      )}
+      popupClassName="[&_.ant-select-item]:!text-sm [&_.ant-select-item-option-content]:!text-slate-100"
+    />
   );
 }

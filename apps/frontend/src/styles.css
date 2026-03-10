@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import './styles/globals.css';
 @import 'tailwindcss';
 
 /* ── Custom Tailwind source for gaming dark theme ───────────────────────── */
@@ -22,9 +22,9 @@ body,
 }
 
 body {
-  background-color: #0d0f14;
-  color: #e0e0e0;
-  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,32 +35,32 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d0f14;
+  background: var(--bg-base);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a3040;
+  background: var(--bg-overlay);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a4050;
+  background: var(--text-muted);
 }
 
 /* Selection ──────────────────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(200, 155, 60, 0.3);
-  color: #e0e0e0;
+  background: var(--accent-glow);
+  color: var(--text-primary);
 }
 
 /* Focus ring ─────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid #c89b3c;
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 /* Skeleton shimmer util ──────────────────────────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, #161a23 25%, #1e2433 50%, #161a23 75%);
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
