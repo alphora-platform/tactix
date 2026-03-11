@@ -7,9 +7,7 @@ export function SkeletonCard({ rows = 4, showHeader = true }: SkeletonCardProps)
   return (
     <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
       <div className="animate-pulse space-y-3">
-        {showHeader ? (
-          <div className="h-4 w-1/3 rounded-md bg-[var(--bg-elevated)]" />
-        ) : null}
+        {showHeader ? <div className="h-4 w-1/3 rounded-md bg-[var(--bg-elevated)]" /> : null}
         {Array.from({ length: rows }).map((_, index) => (
           <div
             key={index}

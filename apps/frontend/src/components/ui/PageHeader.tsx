@@ -17,7 +17,9 @@ export function PageHeader({ title, subtitle, actions, className }: PageHeaderPr
       )}
     >
       <div>
-        <h1 className="font-['Rajdhani'] text-2xl font-bold tracking-tight text-slate-50">{title}</h1>
+        <h1 className="font-['Rajdhani'] text-2xl font-bold tracking-tight text-slate-50">
+          {title}
+        </h1>
         {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
       </div>
       {actions ? <div className="self-start sm:self-auto">{actions}</div> : null}

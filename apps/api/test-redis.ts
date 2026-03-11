@@ -5,7 +5,7 @@ async function run() {
     host: 'localhost',
     port: 6379,
   });
-  
+
   const keys = await redis.keys('*tier-list*');
   if (keys.length > 0) {
     await redis.del(...keys);
@@ -13,7 +13,7 @@ async function run() {
   } else {
     console.log('No keys to delete');
   }
-  
+
   await redis.quit();
 }
 

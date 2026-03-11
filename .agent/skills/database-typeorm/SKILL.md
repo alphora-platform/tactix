@@ -51,8 +51,7 @@ TypeOrmModule.forRootAsync({
     entities: [__dirname + '/../../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
     synchronize: false, // NEVER true in production
-    logging:
-      config.get('NODE_ENV') === 'development' ? ['query', 'error'] : ['error'],
+    logging: config.get('NODE_ENV') === 'development' ? ['query', 'error'] : ['error'],
     extra: { max: 20, idleTimeoutMillis: 30000 },
   }),
 });
@@ -140,9 +139,7 @@ For materialized views, create empty migration and write SQL manually:
 export class CreateCompStatsView implements MigrationInterface {
   async up(qr: QueryRunner) {
     await qr.query(`CREATE MATERIALIZED VIEW mv_comp_stats AS ...`);
-    await qr.query(
-      `CREATE UNIQUE INDEX idx_mv_comp_stats ON mv_comp_stats (...)`
-    );
+    await qr.query(`CREATE UNIQUE INDEX idx_mv_comp_stats ON mv_comp_stats (...)`);
   }
   async down(qr: QueryRunner) {
     await qr.query(`DROP MATERIALIZED VIEW IF EXISTS mv_comp_stats`);

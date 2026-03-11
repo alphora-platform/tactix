@@ -105,10 +105,7 @@ function RegionsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader
-        title="Region Comparison"
-        subtitle="How the meta differs across global servers"
-      />
+      <PageHeader title="Region Comparison" subtitle="How the meta differs across global servers" />
 
       <Tabs
         activeKey={tab}

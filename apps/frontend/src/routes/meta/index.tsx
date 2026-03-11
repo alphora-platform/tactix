@@ -69,9 +69,15 @@ function toTier(tier?: string): 'S' | 'A' | 'B' | 'C' {
   return 'C';
 }
 
-function deriveTraitChips(comp: RichCompStatDto, traits?: ReturnType<typeof useTraits>['data']): TraitChip[] {
+function deriveTraitChips(
+  comp: RichCompStatDto,
+  traits?: ReturnType<typeof useTraits>['data']
+): TraitChip[] {
   const source = comp.comp_label || comp.label || comp.comp_id;
-  const rawTokens = source.split(/[\s,/]+/).map((token) => token.trim()).filter(Boolean);
+  const rawTokens = source
+    .split(/[\s,/]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
 
   const chips: TraitChip[] = [];
 
@@ -308,7 +314,9 @@ function MetaOverviewPage() {
         )}
       </div>
 
-      {comps.error && <ErrorCard message="Failed to load meta data" retry={() => comps.refetch()} />}
+      {comps.error && (
+        <ErrorCard message="Failed to load meta data" retry={() => comps.refetch()} />
+      )}
       {meta.error && <ErrorCard message="Failed to load tier list" retry={() => meta.refetch()} />}
 
       <section className="space-y-1.5">
@@ -324,7 +332,10 @@ function MetaOverviewPage() {
               >
                 <div className="h-12 border-b border-[var(--border-subtle)] bg-[var(--bg-overlay)]/40" />
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="border-b border-[var(--border-subtle)] px-4 py-3 last:border-0">
+                  <div
+                    key={i}
+                    className="border-b border-[var(--border-subtle)] px-4 py-3 last:border-0"
+                  >
                     <div className="mb-2 h-3 w-3/5 rounded-full bg-[var(--bg-overlay)]/70" />
                     <div className="h-2.5 w-1/2 rounded-full bg-[var(--bg-overlay)]/60" />
                   </div>
@@ -356,7 +367,11 @@ function MetaOverviewPage() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 20, left: 16, bottom: 8 }}>
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 4, right: 20, left: 16, bottom: 8 }}
+            >
               <XAxis
                 type="number"
                 domain={[0, 100]}
@@ -391,7 +406,9 @@ function MetaOverviewPage() {
 
       <section className="space-y-1.5">
         <h2 className="text-lg font-semibold text-slate-100">Top Comps</h2>
-        <p className="text-sm text-slate-400">Most effective compositions for this patch snapshot</p>
+        <p className="text-sm text-slate-400">
+          Most effective compositions for this patch snapshot
+        </p>
 
         {comps.isLoading ? (
           <CompCardSkeletonGrid />
@@ -467,7 +484,10 @@ function TierSection({
                 {formatWinRate(comp.win_rate)}
               </span>
               <span
-                className={cn('text-xs tabular-nums', getPlacementColor(Math.round(comp.avg_placement)))}
+                className={cn(
+                  'text-xs tabular-nums',
+                  getPlacementColor(Math.round(comp.avg_placement))
+                )}
               >
                 {comp.avg_placement.toFixed(2)}
               </span>
@@ -557,7 +577,9 @@ function CompCard({
       </div>
 
       <div className="mt-3 flex justify-end">
-        <span className="text-[11px] tabular-nums text-text-secondary">{comp.sample_size.toLocaleString()} games</span>
+        <span className="text-[11px] tabular-nums text-text-secondary">
+          {comp.sample_size.toLocaleString()} games
+        </span>
       </div>
     </Link>
   );

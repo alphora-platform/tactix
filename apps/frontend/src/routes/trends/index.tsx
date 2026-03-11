@@ -102,10 +102,16 @@ function TrendTooltip({
           </span>
         </p>
         <p>
-          Top 4: <span className="font-medium tabular-nums text-emerald-300">{row.top4_rate_pct.toFixed(1)}%</span>
+          Top 4:{' '}
+          <span className="font-medium tabular-nums text-emerald-300">
+            {row.top4_rate_pct.toFixed(1)}%
+          </span>
         </p>
         <p>
-          Avg Place: <span className="font-medium tabular-nums text-slate-200">{row.avg_placement.toFixed(2)}</span>
+          Avg Place:{' '}
+          <span className="font-medium tabular-nums text-slate-200">
+            {row.avg_placement.toFixed(2)}
+          </span>
         </p>
       </div>
     </div>
@@ -265,7 +271,9 @@ function TrendsPage() {
         width: 110,
         align: 'right',
         sorter: (a, b) => a.sample_size - b.sample_size,
-        render: (value: number) => <span className="tabular-nums text-slate-400">{value.toLocaleString()}</span>,
+        render: (value: number) => (
+          <span className="tabular-nums text-slate-400">{value.toLocaleString()}</span>
+        ),
       },
     ],
     [traits]
@@ -321,7 +329,11 @@ function TrendsPage() {
         ) : (
           <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ top: 6, right: 34, left: 8, bottom: 4 }}>
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 6, right: 34, left: 8, bottom: 4 }}
+              >
                 <defs>
                   <linearGradient id="blueGradient" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="#3b82f6" />
@@ -347,7 +359,12 @@ function TrendsPage() {
                   tickLine={false}
                 />
                 <Tooltip content={<TrendTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-                <Bar dataKey="win_rate_pct" fill="url(#blueGradient)" radius={[0, 6, 6, 0]} barSize={20}>
+                <Bar
+                  dataKey="win_rate_pct"
+                  fill="url(#blueGradient)"
+                  radius={[0, 6, 6, 0]}
+                  barSize={20}
+                >
                   {chartData.map((row) => (
                     <Cell key={row.comp_id} fill="url(#blueGradient)" />
                   ))}
@@ -369,7 +386,9 @@ function TrendsPage() {
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-100">All Comps</h2>
-            <p className="mt-1 text-sm text-slate-400">Full composition breakdown with trend data</p>
+            <p className="mt-1 text-sm text-slate-400">
+              Full composition breakdown with trend data
+            </p>
           </div>
           <Input.Search
             value={tableSearch}
@@ -432,7 +451,9 @@ function MomentumCard({
       )}
     >
       <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-5 py-3.5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bg-elevated)]">{icon}</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bg-elevated)]">
+          {icon}
+        </span>
         <div>
           <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
           <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
@@ -460,9 +481,12 @@ function MomentumCard({
               delta != null
                 ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}%`
                 : direction === 'RISING'
-                  ? '+'
-                  : '-';
-            const badgeClass = direction === 'RISING' ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-300 bg-rose-500/10 border-rose-500/30';
+                ? '+'
+                : '-';
+            const badgeClass =
+              direction === 'RISING'
+                ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                : 'text-rose-300 bg-rose-500/10 border-rose-500/30';
 
             return (
               <li key={comp.comp_id}>
@@ -474,7 +498,12 @@ function MomentumCard({
                   <span className="truncate text-sm font-medium text-slate-100">
                     {resolveCompName(comp.comp_id, comp.comp_label || comp.label, traits)}
                   </span>
-                  <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums', badgeClass)}>
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums',
+                      badgeClass
+                    )}
+                  >
                     {badgeText}
                   </span>
                 </Link>

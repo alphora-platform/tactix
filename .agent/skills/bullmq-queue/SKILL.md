@@ -103,9 +103,7 @@ export const JOB_NAMES = {
 ```typescript
 @Injectable()
 export class DataCollectorService {
-  constructor(
-    @InjectQueue('match-collection') private readonly matchQueue: Queue
-  ) {}
+  constructor(@InjectQueue('match-collection') private readonly matchQueue: Queue) {}
 
   async enqueueRegionCollection(region: string) {
     await this.matchQueue.add(
@@ -218,11 +216,7 @@ export class SchedulerService {
 
   @Cron('0 0 * * * *') // Every hour
   async scheduleAlertCheck() {
-    await this.alertQueue.add(
-      'check-meta-shift',
-      { threshold: 0.03 },
-      { priority: 1 }
-    );
+    await this.alertQueue.add('check-meta-shift', { threshold: 0.03 }, { priority: 1 });
   }
 }
 ```

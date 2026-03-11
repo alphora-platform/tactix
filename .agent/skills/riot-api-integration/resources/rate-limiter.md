@@ -47,9 +47,7 @@ export class RateLimiterService {
     for (const [key, bucket] of this.buckets) {
       this.refill(bucket);
       if (bucket.tokens < 1) {
-        const wait = Math.ceil(
-          ((1 - bucket.tokens) / bucket.refillRate) * 1000
-        );
+        const wait = Math.ceil(((1 - bucket.tokens) / bucket.refillRate) * 1000);
         this.logger.debug(`Waiting ${wait}ms for bucket ${key}`);
         await this.sleep(wait);
         this.refill(bucket);

@@ -224,7 +224,9 @@ function StatsDashboard() {
         width: 110,
         align: 'right',
         sorter: (a, b) => a.games_played - b.games_played,
-        render: (value: number) => <span className="tabular-nums text-text-secondary">{value}</span>,
+        render: (value: number) => (
+          <span className="tabular-nums text-text-secondary">{value}</span>
+        ),
       },
       {
         title: 'AVG PLACE',
@@ -253,7 +255,11 @@ function StatsDashboard() {
                 better ? 'text-emerald-400' : 'text-rose-400'
               )}
             >
-              {better ? <ArrowDown size={11} strokeWidth={3} /> : <ArrowUp size={11} strokeWidth={3} />}
+              {better ? (
+                <ArrowDown size={11} strokeWidth={3} />
+              ) : (
+                <ArrowUp size={11} strokeWidth={3} />
+              )}
               {better ? '' : '+'}
               {value.toFixed(2)}
             </span>
@@ -311,8 +317,8 @@ function StatsDashboard() {
               placement === 1
                 ? 'text-amber-400'
                 : placement <= 4
-                  ? 'text-emerald-400'
-                  : 'text-rose-400'
+                ? 'text-emerald-400'
+                : 'text-rose-400'
             )}
           >
             #{placement}
@@ -353,7 +359,9 @@ function StatsDashboard() {
             <StatCard
               title="Avg Placement"
               value={
-                placements.data?.avg_placement != null ? placements.data.avg_placement.toFixed(2) : '-'
+                placements.data?.avg_placement != null
+                  ? placements.data.avg_placement.toFixed(2)
+                  : '-'
               }
               subtitle="lower is better"
               icon={Target}
@@ -365,7 +373,9 @@ function StatsDashboard() {
             <StatCard
               title="Top 4 Rate"
               value={
-                placements.data?.top4_rate != null ? `${(placements.data.top4_rate * 100).toFixed(1)}%` : '-'
+                placements.data?.top4_rate != null
+                  ? `${(placements.data.top4_rate * 100).toFixed(1)}%`
+                  : '-'
               }
               subtitle="podium finishes"
               icon={Award}
@@ -377,7 +387,9 @@ function StatsDashboard() {
             <StatCard
               title="Win Rate"
               value={
-                placements.data?.win_rate != null ? `${(placements.data.win_rate * 100).toFixed(1)}%` : '-'
+                placements.data?.win_rate != null
+                  ? `${(placements.data.win_rate * 100).toFixed(1)}%`
+                  : '-'
               }
               subtitle="1st place finishes"
               icon={Trophy}
@@ -406,7 +418,11 @@ function StatsDashboard() {
 
       {!placements.isLoading && placements.data?.total_games === 0 && (
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 text-center shadow-card">
-          <Gamepad2 size={48} className="mx-auto mb-4 text-text-secondary opacity-20" strokeWidth={1.5} />
+          <Gamepad2
+            size={48}
+            className="mx-auto mb-4 text-text-secondary opacity-20"
+            strokeWidth={1.5}
+          />
           <p className="mb-2 text-base font-bold text-text-primary">No games recorded yet</p>
           <p className="mx-auto max-w-xs text-sm text-text-secondary">
             Play some TFT games and come back - your stats will appear here once data has been
@@ -422,7 +438,9 @@ function StatsDashboard() {
           <div className="h-2 w-full rounded-full bg-[var(--bg-overlay)]/70" />
         </div>
       )}
-      {tilt.error && <ErrorCard message="Failed to load tilt status" retry={() => tilt.refetch()} />}
+      {tilt.error && (
+        <ErrorCard message="Failed to load tilt status" retry={() => tilt.refetch()} />
+      )}
       {tilt.data && (
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -491,7 +509,11 @@ function StatsDashboard() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={placementData} barSize={30} margin={{ top: 6, right: 12, left: -8, bottom: 0 }}>
+            <BarChart
+              data={placementData}
+              barSize={30}
+              margin={{ top: 6, right: 12, left: -8, bottom: 0 }}
+            >
               <XAxis
                 dataKey="name"
                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
@@ -525,8 +547,8 @@ function StatsDashboard() {
                       d.placement === 1
                         ? 'var(--accent-primary)'
                         : d.placement <= 4
-                          ? 'var(--text-secondary)'
-                          : 'var(--text-muted)'
+                        ? 'var(--text-secondary)'
+                        : 'var(--text-muted)'
                     }
                     fillOpacity={d.placement <= 4 ? 0.9 : 0.75}
                   />
@@ -537,7 +559,9 @@ function StatsDashboard() {
         )}
       </ChartCard>
 
-      {prof.error && <ErrorCard message="Failed to load proficiency data" retry={() => prof.refetch()} />}
+      {prof.error && (
+        <ErrorCard message="Failed to load proficiency data" retry={() => prof.refetch()} />
+      )}
       <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
         <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -580,7 +604,9 @@ function StatsDashboard() {
       {weekly.data && weekly.data.weaknesses.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-slate-100">Weekly Report - Areas to Improve</h2>
+            <h2 className="text-lg font-semibold text-slate-100">
+              Weekly Report - Areas to Improve
+            </h2>
             <p className="mt-1 text-sm text-slate-400">
               Based on your last <span className="tabular-nums">{weekly.data.total_games}</span>{' '}
               games this patch
@@ -602,14 +628,18 @@ function StatsDashboard() {
                 </span>
                 <div className="min-w-0">
                   <span className="text-sm font-semibold text-text-primary">{w.area}</span>
-                  <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">{w.description}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">
+                    {w.description}
+                  </p>
                 </div>
               </li>
             ))}
           </ul>
           {weekly.data.improvement_tips.length > 0 && (
             <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-5 py-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">Tips</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                Tips
+              </p>
               <ul className="space-y-1">
                 {weekly.data.improvement_tips.map((tip, i) => (
                   <li key={i} className="flex items-start gap-1.5 text-xs text-text-secondary">

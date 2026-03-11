@@ -28,7 +28,8 @@ const SEARCH_TYPE_OPTIONS: { label: string; value: SearchType }[] = [
 function isPayloadEmpty(payload: unknown): boolean {
   if (payload == null) return true;
   if (Array.isArray(payload)) return payload.length === 0;
-  if (typeof payload === 'object') return Object.keys(payload as Record<string, unknown>).length === 0;
+  if (typeof payload === 'object')
+    return Object.keys(payload as Record<string, unknown>).length === 0;
   return false;
 }
 
@@ -111,8 +112,8 @@ function PlayerRawPage() {
     searchType === 'name'
       ? 'Enter summoner name...'
       : searchType === 'puuid'
-        ? 'Enter PUUID...'
-        : 'Enter Riot ID...';
+      ? 'Enter PUUID...'
+      : 'Enter Riot ID...';
 
   return (
     <div className="space-y-6">

@@ -156,14 +156,7 @@ export class AppConfigModule {}
 Always validate incoming data:
 
 ```typescript
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsInt,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Min, Max } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateEntityDto {
@@ -195,10 +188,7 @@ describe('NameService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        NameService,
-        { provide: getRepositoryToken(Entity), useValue: mockRepository },
-      ],
+      providers: [NameService, { provide: getRepositoryToken(Entity), useValue: mockRepository }],
     }).compile();
 
     service = module.get(NameService);

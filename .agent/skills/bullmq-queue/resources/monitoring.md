@@ -17,9 +17,7 @@ export class HealthController {
       this.checkQueue('etl-pipeline', this.etlQueue),
     ]);
     return {
-      status: queues.every((q) => q.status === 'healthy')
-        ? 'healthy'
-        : 'degraded',
+      status: queues.every((q) => q.status === 'healthy') ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       queues,
     };
@@ -34,8 +32,7 @@ export class HealthController {
     ]);
     return {
       name,
-      status:
-        failed > 100 ? 'unhealthy' : waiting > 10000 ? 'backlogged' : 'healthy',
+      status: failed > 100 ? 'unhealthy' : waiting > 10000 ? 'backlogged' : 'healthy',
       counts: { waiting, active, failed, delayed },
     };
   }
