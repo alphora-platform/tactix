@@ -88,16 +88,9 @@ export class AnalyticsService {
     }));
   }
 
-  private classifyTier(
-    winrate: number,
-    playRate: number,
-    sampleSize: number
-  ): string {
+  private classifyTier(winrate: number, playRate: number, sampleSize: number): string {
     if (sampleSize < TIER_THRESHOLDS.MIN_SAMPLE_SIZE) return 'UNRANKED';
-    const score =
-      winrate * 0.6 +
-      (1 - playRate) * 0.2 +
-      Math.min(sampleSize / 1000, 1) * 0.2;
+    const score = winrate * 0.6 + (1 - playRate) * 0.2 + Math.min(sampleSize / 1000, 1) * 0.2;
     if (score >= TIER_THRESHOLDS.S) return 'S';
     if (score >= TIER_THRESHOLDS.A) return 'A';
     if (score >= TIER_THRESHOLDS.B) return 'B';

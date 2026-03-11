@@ -250,9 +250,7 @@ export class MetaStatsService {
       where: { isCurrent: true },
       select: ['firstSeenAt'],
     });
-    return row?.firstSeenAt
-      ? Math.floor(row.firstSeenAt.getTime() / 1_000)
-      : undefined;
+    return row?.firstSeenAt ? Math.floor(row.firstSeenAt.getTime() / 1_000) : undefined;
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

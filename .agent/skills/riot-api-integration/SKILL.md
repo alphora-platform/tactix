@@ -132,11 +132,10 @@ export class RiotApiService {
     startTime?: number
   ): Promise<string[]> {
     const baseUrl = getRegionalUrl(region);
-    return this.client.get(
-      baseUrl,
-      `/tft/match/v1/matches/by-puuid/${puuid}/ids`,
-      { count, startTime }
-    );
+    return this.client.get(baseUrl, `/tft/match/v1/matches/by-puuid/${puuid}/ids`, {
+      count,
+      startTime,
+    });
   }
 
   async getMatchDetail(region: Region, matchId: string): Promise<MatchDetail> {
@@ -159,11 +158,7 @@ export class RiotApiClientService {
     this.apiKey = this.configService.get('riotApi.apiKey');
   }
 
-  async get<T>(
-    baseUrl: string,
-    path: string,
-    params?: Record<string, any>
-  ): Promise<T> {
+  async get<T>(baseUrl: string, path: string, params?: Record<string, any>): Promise<T> {
     await this.rateLimiter.acquire();
 
     try {
@@ -197,10 +192,7 @@ export class RiotApiClientService {
       case 503:
         throw new RiotApiServiceUnavailableException();
       default:
-        throw new HttpException(
-          `Riot API error: ${error.message}`,
-          status || 500
-        );
+        throw new HttpException(`Riot API error: ${error.message}`, status || 500);
     }
   }
 }

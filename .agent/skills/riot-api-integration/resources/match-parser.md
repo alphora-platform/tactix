@@ -131,22 +131,10 @@ async collectPlayerMatches(puuid: string, region: Region) {
 
 ```typescript
 function validateParticipant(p) {
-  return (
-    !!p.puuid &&
-    p.placement >= 1 &&
-    p.placement <= 8 &&
-    p.level >= 1 &&
-    p.level <= 11
-  );
+  return !!p.puuid && p.placement >= 1 && p.placement <= 8 && p.level >= 1 && p.level <= 11;
 }
 
 function validateUnit(u) {
-  return (
-    !!u.characterId &&
-    u.tier >= 1 &&
-    u.tier <= 3 &&
-    u.rarity >= 0 &&
-    u.rarity <= 4
-  );
+  return !!u.characterId && u.tier >= 1 && u.tier <= 3 && u.rarity >= 0 && u.rarity <= 4;
 }
 ```
