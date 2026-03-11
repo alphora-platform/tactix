@@ -241,6 +241,20 @@ export class MetaStatsService {
     return `${match[1]}.${match[2]}`;
   }
 
+  /**
+   * Returns the Unix epoch seconds of when the current patch first appeared in match data.
+   * Returns undefined if no current patch is tracked yet (e.g. on first boot before any ETL).
+   */
+  async getCurrentPatchStartSeconds(): Promise<number | undefined> {
+    const row = await this.patchVersionRepo.findOne({
+      where: { isCurrent: true },
+      select: ['firstSeenAt'],
+    });
+    return row?.firstSeenAt
+      ? Math.floor(row.firstSeenAt.getTime() / 1_000)
+      : undefined;
+  }
+
   // ── Private helpers ───────────────────────────────────────────────────────
 
   /**

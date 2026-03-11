@@ -105,6 +105,8 @@ export const MATERIALIZED_VIEW_DEFINITIONS: MaterializedViewDefinition[] = [
       FROM participant_augments pag
       JOIN participants  pa ON pag.match_id = pa.match_id AND pag.puuid = pa.puuid
       JOIN matches       m  ON pag.match_id = m.match_id
+      WHERE m.queue_id  = 1100
+        AND m.patch     IS NOT NULL
       GROUP BY pag.augment_name, m.patch
       WITH DATA
     `,
@@ -220,7 +222,7 @@ export const MATERIALIZED_VIEW_DEFINITIONS: MaterializedViewDefinition[] = [
         pu.character_id,
         (SELECT array_agg(i ORDER BY i) FROM unnest(pu.items) AS i),
         m.patch
-      HAVING COUNT(DISTINCT pu.match_id) >= 20
+      HAVING COUNT(DISTINCT pu.match_id) >= 5
       WITH DATA
     `,
     uniqueIndex: {
@@ -265,7 +267,7 @@ export const MATERIALIZED_VIEW_DEFINITIONS: MaterializedViewDefinition[] = [
         ON cpg.match_id = pa.match_id
        AND cpg.puuid    = pa.puuid
       GROUP BY pa.augment_name, pa.augment_index, cpg.comp_id, cpg.patch
-      HAVING COUNT(*) >= 15
+      HAVING COUNT(*) >= 5
       WITH DATA
     `,
     uniqueIndex: {
@@ -305,7 +307,7 @@ export const MATERIALIZED_VIEW_DEFINITIONS: MaterializedViewDefinition[] = [
         comp_id,
         patch,
         region,
-        (array_agg(trait_combo ORDER BY placement))[1]          AS trait_combo,
+        trait_combo,
         COUNT(*)                                                  AS sample_size,
         AVG(placement)                                            AS avg_placement,
         COUNT(*) FILTER (WHERE placement <= 4)::float
@@ -313,7 +315,7 @@ export const MATERIALIZED_VIEW_DEFINITIONS: MaterializedViewDefinition[] = [
         COUNT(*) FILTER (WHERE placement  = 1)::float
           / NULLIF(COUNT(*), 0)                                  AS win_rate
       FROM comp_games
-      GROUP BY comp_id, patch, region
+      GROUP BY comp_id, patch, region, trait_combo
       HAVING COUNT(*) >= 10
       WITH DATA
     `,
