@@ -13,6 +13,7 @@ import {
 import { DataCollectorService } from './data-collector.service';
 import { JOB_NAMES, QUEUE_NAMES } from './constants/queue.constants';
 import { EtlProcessMatchJobData } from './etl.processor';
+import { MetaStatsService } from '../analytics/meta-stats.service';
 
 // ─── Job payload types ──────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ export class DataCollectorProcessor extends WorkerHost {
   constructor(
     private readonly dataCollectorService: DataCollectorService,
     private readonly riotApi: RiotApiService,
+    private readonly metaStatsService: MetaStatsService,
     @InjectRepository(Player)
     private readonly playerRepo: Repository<Player>,
     @InjectQueue(QUEUE_NAMES.MATCH_COLLECTION)
@@ -102,9 +104,17 @@ export class DataCollectorProcessor extends WorkerHost {
       where: { region },
       order: { lastFetchAt: 'DESC' },
     });
-    const startTime = latestPlayer?.lastFetchAt
+    const lastFetchSeconds = latestPlayer?.lastFetchAt
       ? Math.floor(latestPlayer.lastFetchAt.getTime() / 1_000) + 1
       : undefined;
+
+    // Ensure we only collect matches from the current patch — skip old-patch matches
+    // by using the later of lastFetchAt and patchFirstSeenAt as startTime.
+    const patchStartSeconds = await this.metaStatsService.getCurrentPatchStartSeconds();
+    const startTime =
+      lastFetchSeconds !== undefined || patchStartSeconds !== undefined
+        ? Math.max(lastFetchSeconds ?? 0, patchStartSeconds ?? 0) || undefined
+        : undefined;
 
     // Load players ordered by least-recently-fetched first (nulls first = never fetched).
     const players = await this.playerRepo.find({

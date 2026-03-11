@@ -7,6 +7,7 @@ export enum Region {
   JP = 'JP',
   OCE = 'OCE',
   TR = 'TR',
+  VN = 'VN',
 }
 
 /**
@@ -22,6 +23,7 @@ export const PLATFORM_ROUTES: Record<Region, string> = {
   [Region.JP]: 'jp1',
   [Region.OCE]: 'oc1',
   [Region.TR]: 'tr1',
+  [Region.VN]: 'vn2',
 };
 
 /**
@@ -32,6 +34,7 @@ export const REGIONAL_ROUTES: Record<Region, string> = {
   [Region.NA]: 'americas',
   [Region.BR]: 'americas',
   [Region.OCE]: 'sea',
+  [Region.VN]: 'sea',
   [Region.KR]: 'asia',
   [Region.JP]: 'asia',
   [Region.EUW]: 'europe',
@@ -47,7 +50,7 @@ export function getRegionalUrl(region: Region): string {
   return `https://${REGIONAL_ROUTES[region]}.api.riotgames.com`;
 }
 
-/** All 8 supported regions for data collection. */
+/** All 9 supported regions for data collection. */
 export const ALL_REGIONS: Region[] = [
   Region.NA,
   Region.EUW,
@@ -57,6 +60,7 @@ export const ALL_REGIONS: Region[] = [
   Region.JP,
   Region.OCE,
   Region.TR,
+  Region.VN,
 ];
 
 /** Legacy default — kept for backward compat with existing code. */

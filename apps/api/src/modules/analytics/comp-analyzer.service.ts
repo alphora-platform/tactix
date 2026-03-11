@@ -57,13 +57,6 @@ const TOP_COMBOS_PER_UNIT = 5;
 /** Top-N augments to return per stage. */
 const TOP_AUGMENTS_PER_STAGE = 3;
 
-/**
- * Rarity threshold for "carry" units — units with rarity ≥ 3 (4-cost, 5-cost)
- * OR star-level (tier) ≥ 3 are considered carries worth itemising.
- * In practice we approximate this via avg_tier or appearance rate.
- */
-const CARRY_AVG_TIER_THRESHOLD = 2.0;
-
 /** Appearance rate in top-4 games above which a unit is "core". */
 const CORE_THRESHOLD = 0.8;
 /** Appearance rate in top-4 games above which a unit is "flex". */
@@ -132,9 +125,9 @@ export class CompAnalyzerService {
   async getBestItems(compId: string, patch: string): Promise<BestItemsDto[]> {
     this.logger.debug(`getBestItems compId=${compId} patch=${patch}`);
 
-    // Step 1: Get units in this comp (top4 games only to filter to comp carries).
-    //         We get ALL units that appeared in top-4 games; the item lookup below
-    //         acts as a second filter (only units with ≥20 combo appearances survive).
+    // Step 1: Get all units in this comp from top-4 games.
+    //         mv_item_combo_stats acts as the natural filter downstream —
+    //         only units with enough item combo data (≥5 games) will appear.
     const unitRows = await this.dataSource.query<UnitRow[]>(
       `
       WITH comp_games AS (
@@ -155,7 +148,7 @@ export class CompAnalyzerService {
       SELECT
         pu.character_id,
         AVG(pu.tier)::text    AS avg_tier,
-        AVG(1)::text          AS avg_copies,  -- placeholder; full count in getUnitPriority
+        AVG(1)::text          AS avg_copies,
         (COUNT(DISTINCT pu.match_id)::float / NULLIF(COUNT(DISTINCT cg.match_id), 0))::text
           AS top4_appearance_rate
       FROM comp_games cg
@@ -163,9 +156,8 @@ export class CompAnalyzerService {
         ON pu.match_id = cg.match_id
        AND pu.puuid    = cg.puuid
       GROUP BY pu.character_id
-      HAVING AVG(pu.tier) >= $3
       `,
-      [patch, compId, CARRY_AVG_TIER_THRESHOLD]
+      [patch, compId]
     );
 
     if (unitRows.length === 0) return [];
@@ -334,13 +326,13 @@ export class CompAnalyzerService {
 
     return {
       avg_final_level: Math.round(parseFloat(row.avg_final_level) * 100) / 100,
-      typical_level_8_pct: Math.round(parseFloat(row.pct_level8_plus) * 10_000) / 100, // as %
+      typical_level_8_pct: Math.round(parseFloat(row.pct_level8_plus) * 10_000) / 10_000, // raw decimal 0-1
       avg_gold_left: Math.round(parseFloat(row.avg_gold_left) * 100) / 100,
       top_players_level_dist: {
-        l6: Math.round(parseFloat(row.pct_l6) * 10_000) / 100,
-        l7: Math.round(parseFloat(row.pct_l7) * 10_000) / 100,
-        l8: Math.round(parseFloat(row.pct_l8) * 10_000) / 100,
-        l9: Math.round(parseFloat(row.pct_l9) * 10_000) / 100,
+        l6: Math.round(parseFloat(row.pct_l6) * 10_000) / 10_000, // raw decimal 0-1
+        l7: Math.round(parseFloat(row.pct_l7) * 10_000) / 10_000,
+        l8: Math.round(parseFloat(row.pct_l8) * 10_000) / 10_000,
+        l9: Math.round(parseFloat(row.pct_l9) * 10_000) / 10_000,
       },
     };
   }
@@ -420,7 +412,7 @@ export class CompAnalyzerService {
         character_id: r.character_id,
         avg_tier: Math.round(avgTier * 100) / 100,
         avg_copies: Math.round(parseFloat(r.avg_copies) * 100) / 100,
-        top4_appearance_rate: Math.round(appearance * 10_000) / 100, // as %
+        top4_appearance_rate: Math.round(appearance * 10_000) / 10_000, // raw decimal 0-1; frontend multiplies by 100
         role,
         priority_score: Math.round(avgTier * appearance * 10_000) / 10_000,
       };
