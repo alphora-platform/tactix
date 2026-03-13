@@ -12,4 +12,14 @@ export const configValidationSchema = Joi.object({
   // Redis (BullMQ + Rate Limiter)
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
+
+  // Riot OAuth (RSO)
+  RIOT_CLIENT_ID: Joi.string().optional(),
+  RIOT_CLIENT_SECRET: Joi.string().optional(),
+  RIOT_REDIRECT_URI: Joi.string().optional(),
+  FRONTEND_URL: Joi.string().optional(),
+
+  // JWT
+  JWT_SECRET: Joi.string().required(),
+  JWT_EXPIRES_IN: Joi.string().default('7d'),
 });

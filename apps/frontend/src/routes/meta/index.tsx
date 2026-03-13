@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Input, Select } from 'antd';
-import { Layers, Star, TrendingUp, Flame, Search } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Layers, Star, TrendingUp, Flame, Search, TrendingDown, Minus } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { useMetaQuery, useTierListQuery } from '@/hooks/useAnalytics';
 import { StatCard } from '@/components/ui/StatCard';
 import { ChartCard } from '@/components/ui/ChartCard';
@@ -43,21 +43,48 @@ interface TraitChip {
   icon?: string;
 }
 
+const TIER_HEADER_STYLES: Record<'S' | 'A' | 'B' | 'C', { gradient: string; border: string; glow: string }> = {
+  S: {
+    gradient: 'from-amber-500/15 to-transparent',
+    border: 'border-l-amber-500',
+    glow: '0 0 28px rgba(245,158,11,0.18), 0 2px 8px rgba(0,0,0,0.5)',
+  },
+  A: {
+    gradient: 'from-violet-500/15 to-transparent',
+    border: 'border-l-violet-500',
+    glow: '0 0 28px rgba(139,92,246,0.18), 0 2px 8px rgba(0,0,0,0.5)',
+  },
+  B: {
+    gradient: 'from-emerald-500/12 to-transparent',
+    border: 'border-l-emerald-500',
+    glow: '0 0 24px rgba(16,185,129,0.14), 0 2px 8px rgba(0,0,0,0.5)',
+  },
+  C: {
+    gradient: 'from-slate-500/8 to-transparent',
+    border: 'border-l-slate-500',
+    glow: '0 2px 8px rgba(0,0,0,0.4)',
+  },
+};
+
+const TIER_TOP_BAR: Record<'S' | 'A' | 'B' | 'C', string> = {
+  S: 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 60%, #f59e0b 100%)',
+  A: 'linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #06b6d4 100%)',
+  B: 'linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%)',
+  C: 'linear-gradient(90deg, #4b5563, #6b7280)',
+};
+
 function truncateLabel(label: string, max = 20): string {
   return label.length > max ? `${label.slice(0, max - 1)}…` : label;
 }
 
-function interpolateBlueToGreen(value: number, min: number, max: number): string {
-  if (max <= min) return 'rgb(59,130,246)';
+function interpolateWinRate(value: number, min: number, max: number): string {
+  if (max <= min) return '#8b5cf6';
   const t = Math.min(1, Math.max(0, (value - min) / (max - min)));
-
-  const from = { r: 59, g: 130, b: 246 };
-  const to = { r: 34, g: 197, b: 94 };
-
+  const from = { r: 139, g: 92, b: 246 };
+  const to = { r: 16, g: 185, b: 129 };
   const r = Math.round(from.r + (to.r - from.r) * t);
   const g = Math.round(from.g + (to.g - from.g) * t);
   const b = Math.round(from.b + (to.b - from.b) * t);
-
   return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -83,26 +110,17 @@ function deriveTraitChips(
 
   for (let i = 0; i < rawTokens.length; i += 1) {
     const token = rawTokens[i]!;
-
     if (/^(TFT\d*|Set\d+)$/i.test(token)) continue;
-
     if (/^\d+$/.test(token) && chips.length > 0) {
       const prev = chips[chips.length - 1]!;
       if (prev.count == null) prev.count = Number(token);
       continue;
     }
-
     const attachedCount = token.match(/^(.+?)(\d+)$/);
     const traitToken = attachedCount ? attachedCount[1] : token;
     const count = attachedCount ? Number(attachedCount[2]) : null;
-
     const name = resolveCompName(traitToken, undefined, traits);
-
-    chips.push({
-      key: `${traitToken}-${i}`,
-      name,
-      count,
-    });
+    chips.push({ key: `${traitToken}-${i}`, name, count });
   }
 
   if (chips.length === 0) {
@@ -110,12 +128,7 @@ function deriveTraitChips(
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 3)
-      .map((name, index) => ({
-        key: `${name}-${index}`,
-        name,
-        count: null,
-      }));
-
+      .map((name, index) => ({ key: `${name}-${index}`, name, count: null }));
     chips.push(...fallback);
   }
 
@@ -133,14 +146,14 @@ function WinRateTooltip({
   label?: string;
 }) {
   if (!active || !payload || payload.length === 0) return null;
-
   const value = payload[0]?.value;
-
   return (
-    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 shadow-lg">
+    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2 shadow-lg">
       <p className="text-xs font-medium text-slate-200">{label}</p>
       <p className="mt-1 text-xs text-slate-400">Win Rate</p>
-      <p className="text-sm font-semibold tabular-nums text-blue-300">{value?.toFixed(1)}%</p>
+      <p className="text-sm font-semibold tabular-nums text-[var(--accent-primary)]">
+        {value?.toFixed(1)}%
+      </p>
     </div>
   );
 }
@@ -155,7 +168,6 @@ function MetaOverviewPage() {
 
   const uniqueComps = useMemo<RichCompStatDto[]>(() => {
     if (!comps.data) return [];
-
     const map = new Map<string, RichCompStatDto>();
     for (const comp of comps.data as RichCompStatDto[]) {
       const existing = map.get(comp.comp_id);
@@ -163,9 +175,7 @@ function MetaOverviewPage() {
         map.set(comp.comp_id, comp);
       }
     }
-
     let rows = Array.from(map.values());
-
     if (search.trim()) {
       const query = search.toLowerCase();
       rows = rows.filter((comp) => {
@@ -173,36 +183,27 @@ function MetaOverviewPage() {
         return name.toLowerCase().includes(query);
       });
     }
-
     rows.sort((a, b) => {
       switch (sortOption) {
-        case 'winRate':
-          return b.win_rate - a.win_rate;
-        case 'top4Rate':
-          return b.top4_rate - a.top4_rate;
-        case 'avgPlacement':
-          return a.avg_placement - b.avg_placement;
-        case 'games':
-          return b.sample_size - a.sample_size;
-        default:
-          return 0;
+        case 'winRate': return b.win_rate - a.win_rate;
+        case 'top4Rate': return b.top4_rate - a.top4_rate;
+        case 'avgPlacement': return a.avg_placement - b.avg_placement;
+        case 'games': return b.sample_size - a.sample_size;
+        default: return 0;
       }
     });
-
     return rows;
   }, [comps.data, search, sortOption, traits]);
 
   const allComps = useMemo<RichCompStatDto[]>(() => {
     if (!comps.data) return [];
     const map = new Map<string, RichCompStatDto>();
-
     for (const comp of comps.data as RichCompStatDto[]) {
       const existing = map.get(comp.comp_id);
       if (!existing || existing.sample_size < comp.sample_size) {
         map.set(comp.comp_id, comp);
       }
     }
-
     return Array.from(map.values());
   }, [comps.data]);
 
@@ -237,8 +238,8 @@ function MetaOverviewPage() {
         subtitle="Best compositions across all regions"
         actions={
           meta.data?.patch ? (
-            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold tabular-nums text-blue-300 sm:self-auto">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400" />
+            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 px-3 py-1.5 text-xs font-semibold tabular-nums text-[var(--accent-primary)] sm:self-auto">
+              <span className="h-1.5 w-1.5 animate-live-blink rounded-full bg-[var(--accent-primary)]" />
               Patch {meta.data.patch}
             </span>
           ) : null
@@ -253,7 +254,7 @@ function MetaOverviewPage() {
           icon={Layers}
           iconColor="text-slate-300"
           iconBg="bg-slate-500/10"
-          accentColor="border-l-slate-500"
+          accentGradient="from-slate-400 to-slate-600"
           loading={comps.isLoading}
         />
         <StatCard
@@ -263,7 +264,7 @@ function MetaOverviewPage() {
           icon={Star}
           iconColor="text-amber-300"
           iconBg="bg-amber-500/10"
-          accentColor="border-l-amber-500"
+          accentGradient="from-amber-400 to-yellow-500"
           loading={meta.isLoading}
         />
         <StatCard
@@ -273,7 +274,7 @@ function MetaOverviewPage() {
           icon={TrendingUp}
           iconColor="text-emerald-400"
           iconBg="bg-emerald-500/10"
-          accentColor="border-l-emerald-500"
+          accentGradient="from-emerald-400 to-green-500"
           loading={comps.isLoading}
         />
         <StatCard
@@ -283,7 +284,7 @@ function MetaOverviewPage() {
           icon={Flame}
           iconColor="text-orange-400"
           iconBg="bg-orange-500/10"
-          accentColor="border-l-orange-500"
+          accentGradient="from-orange-400 to-red-500"
           loading={comps.isLoading}
         />
       </div>
@@ -298,7 +299,6 @@ function MetaOverviewPage() {
           size="large"
           className="w-full sm:flex-1 [&.ant-input-affix-wrapper]:!rounded-lg [&.ant-input-affix-wrapper]:!border-[var(--border-default)] [&.ant-input-affix-wrapper]:!bg-[var(--bg-surface)] [&_.ant-input]:!text-slate-100 [&_.ant-input::placeholder]:!text-slate-400"
         />
-
         <Select
           value={sortOption}
           options={SORT_OPTIONS.map((option) => ({ label: option.label, value: option.value }))}
@@ -306,7 +306,6 @@ function MetaOverviewPage() {
           size="large"
           className="w-full sm:w-[220px] [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-[var(--border-default)] [&_.ant-select-selector]:!bg-[var(--bg-surface)] [&_.ant-select-selection-item]:!text-slate-100"
         />
-
         {!comps.isLoading && (
           <span className="text-xs text-text-secondary sm:ml-auto sm:shrink-0">
             {uniqueComps.length} comps
@@ -314,14 +313,15 @@ function MetaOverviewPage() {
         )}
       </div>
 
-      {comps.error && (
-        <ErrorCard message="Failed to load meta data" retry={() => comps.refetch()} />
-      )}
+      {comps.error && <ErrorCard message="Failed to load meta data" retry={() => comps.refetch()} />}
       {meta.error && <ErrorCard message="Failed to load tier list" retry={() => meta.refetch()} />}
 
-      <section className="space-y-1.5">
-        <h2 className="text-lg font-semibold text-slate-100">Tier List</h2>
-        <p className="text-sm text-slate-400">Current composition tiers and their key metrics</p>
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="h-4 w-[3px] rounded-full bg-[var(--accent-primary)]" style={{ boxShadow: '0 0 8px rgba(139,92,246,0.7)' }} />
+          <h2 className="font-russo text-xl font-normal text-[var(--text-primary)]">Tier List</h2>
+          <p className="text-sm text-[var(--text-secondary)]">— current patch</p>
+        </div>
 
         {meta.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -332,10 +332,7 @@ function MetaOverviewPage() {
               >
                 <div className="h-12 border-b border-[var(--border-subtle)] bg-[var(--bg-overlay)]/40" />
                 {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="border-b border-[var(--border-subtle)] px-4 py-3 last:border-0"
-                  >
+                  <div key={i} className="border-b border-[var(--border-subtle)] px-4 py-3 last:border-0">
                     <div className="mb-2 h-3 w-3/5 rounded-full bg-[var(--bg-overlay)]/70" />
                     <div className="h-2.5 w-1/2 rounded-full bg-[var(--bg-overlay)]/60" />
                   </div>
@@ -360,18 +357,17 @@ function MetaOverviewPage() {
       >
         {!comps.isLoading && chartData.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <EmptyState
-              title="No comps available"
-              description="Try adjusting the patch or region filter."
-            />
+            <EmptyState title="No comps available" description="Try adjusting the patch or region filter." />
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 4, right: 20, left: 16, bottom: 8 }}
-            >
+            <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 20, left: 16, bottom: 8 }}>
+              <defs>
+                <linearGradient id="cosmosGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.9} />
+                </linearGradient>
+              </defs>
               <XAxis
                 type="number"
                 domain={[0, 100]}
@@ -390,11 +386,12 @@ function MetaOverviewPage() {
                 tickLine={false}
               />
               <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} content={<WinRateTooltip />} />
+              <ReferenceLine x={50} stroke="rgba(99,160,255,0.2)" strokeDasharray="4 4" />
               <Bar dataKey="winRate" radius={[0, 6, 6, 0]} maxBarSize={22}>
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`${entry.name}-${index}`}
-                    fill={interpolateBlueToGreen(entry.winRate, minWinRate, maxWinRate)}
+                    fill={interpolateWinRate(entry.winRate, minWinRate, maxWinRate)}
                     fillOpacity={0.95}
                   />
                 ))}
@@ -404,11 +401,12 @@ function MetaOverviewPage() {
         )}
       </ChartCard>
 
-      <section className="space-y-1.5">
-        <h2 className="text-lg font-semibold text-slate-100">Top Comps</h2>
-        <p className="text-sm text-slate-400">
-          Most effective compositions for this patch snapshot
-        </p>
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="h-4 w-[3px] rounded-full bg-[var(--accent-cyan)]" style={{ boxShadow: '0 0 8px rgba(6,182,212,0.6)' }} />
+          <h2 className="font-russo text-xl font-normal text-[var(--text-primary)]">Top Comps</h2>
+          <p className="text-sm text-[var(--text-secondary)]">— most effective this patch</p>
+        </div>
 
         {comps.isLoading ? (
           <CompCardSkeletonGrid />
@@ -417,7 +415,6 @@ function MetaOverviewPage() {
             {uniqueComps.map((comp) => (
               <CompCard key={comp.comp_id} comp={comp} traits={traits} />
             ))}
-
             {uniqueComps.length === 0 && !comps.isLoading && (
               <div className="col-span-full py-8">
                 <EmptyState
@@ -446,22 +443,26 @@ function TierSection({
   comps: TierCompEntry[];
   traits?: ReturnType<typeof useTraits>['data'];
 }) {
-  const cardBg = 'bg-[var(--bg-surface)]';
   const tierConfig = getTierConfig(tier);
+  const styles = TIER_HEADER_STYLES[tier as 'S' | 'A' | 'B' | 'C'];
+  const topBar = TIER_TOP_BAR[tier as 'S' | 'A' | 'B' | 'C'];
 
   return (
-    <div className={cn('overflow-hidden rounded-xl border border-[var(--border-default)]', cardBg)}>
-      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
-        <span
-          className={cn(
-            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
-            tierConfig.bgColor,
-            tierConfig.color
-          )}
-        >
-          {tierConfig.label} Tier
-        </span>
-        <span className="text-xs tabular-nums text-text-secondary">
+    <div
+      className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)]"
+      style={{ boxShadow: styles.glow }}
+    >
+      {/* Colored top bar */}
+      <div className="h-[3px]" style={{ background: topBar }} />
+
+      <div
+        className={cn(
+          'flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3 bg-gradient-to-r',
+          styles.gradient
+        )}
+      >
+        <TierBadge tier={tier as 'S' | 'A' | 'B' | 'C'} size="md" />
+        <span className="font-chakra text-[11px] tabular-nums text-[var(--text-muted)]">
           {comps.length} comp{comps.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -478,17 +479,10 @@ function TierSection({
               <span className="truncate font-medium text-slate-100">
                 {resolveCompName(comp.comp_id, comp.label, traits)}
               </span>
-              <span
-                className={cn('text-xs font-semibold tabular-nums', getWinRateColor(comp.win_rate))}
-              >
+              <span className={cn('text-xs font-semibold tabular-nums', getWinRateColor(comp.win_rate))}>
                 {formatWinRate(comp.win_rate)}
               </span>
-              <span
-                className={cn(
-                  'text-xs tabular-nums',
-                  getPlacementColor(Math.round(comp.avg_placement))
-                )}
-              >
+              <span className={cn('text-xs tabular-nums', getPlacementColor(Math.round(comp.avg_placement)))}>
                 {comp.avg_placement.toFixed(2)}
               </span>
             </Link>
@@ -512,74 +506,97 @@ function CompCard({
   const traitChips = useMemo(() => deriveTraitChips(comp, traits), [comp, traits]);
   const tier = toTier(comp.tier);
   const top4Rate = comp.top4_rate;
+  const topBar = TIER_TOP_BAR[tier];
+
+  const TrendIcon =
+    comp.trend_direction === 'RISING'
+      ? TrendingUp
+      : comp.trend_direction === 'FALLING'
+      ? TrendingDown
+      : Minus;
+
+  const trendColor =
+    comp.trend_direction === 'RISING'
+      ? 'text-emerald-400'
+      : comp.trend_direction === 'FALLING'
+      ? 'text-rose-400'
+      : 'text-slate-500';
 
   return (
     <Link
       to="/meta/$compId"
       params={{ compId: comp.comp_id }}
-      className="group block rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-500/70"
+      className="group relative block overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-primary)]/40"
+      style={{
+        boxShadow: 'none',
+      }}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <TierBadge tier={tier} size="sm" />
-        <h3 className="truncate font-semibold text-slate-100">{displayName}</h3>
+      {/* Tier-colored top stripe */}
+      <div className="h-[3px]" style={{ background: topBar }} />
+
+      {/* Trend arrow: top-right */}
+      <div className={cn('absolute right-3 top-3', trendColor)}>
+        <TrendIcon size={14} strokeWidth={2.5} />
       </div>
 
-      <div className="mb-4 space-y-2">
-        {traitChips.map((trait) => (
-          <div
-            key={trait.key}
-            className="flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1.5"
-          >
-            {trait.icon ? (
-              <img
-                src={trait.icon}
-                alt={trait.name}
-                className="h-5 w-5 rounded object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            ) : (
-              <span className="h-5 w-5 rounded bg-blue-500/20" />
-            )}
-            <span className="flex-1 truncate text-xs text-slate-200">{trait.name}</span>
-            <span className="text-xs font-semibold tabular-nums text-slate-400">
-              {trait.count ?? '-'}
-            </span>
+      <div className="p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <TierBadge tier={tier} size="sm" />
+          <h3 className="truncate font-semibold text-slate-100 pr-5">{displayName}</h3>
+        </div>
+
+        <div className="mb-4 space-y-1.5">
+          {traitChips.map((trait) => (
+            <div
+              key={trait.key}
+              className="flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-2 py-1.5 backdrop-blur-sm"
+            >
+              {trait.icon ? (
+                <img
+                  src={trait.icon}
+                  alt={trait.name}
+                  className="h-5 w-5 rounded object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <span className="h-5 w-5 rounded bg-[var(--accent-primary)]/20" />
+              )}
+              <span className="flex-1 truncate text-xs text-slate-200">{trait.name}</span>
+              <span className="text-xs font-semibold tabular-nums text-slate-400">
+                {trait.count ?? '-'}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 border-t border-[var(--border-subtle)] pt-3">
+          <div className="rounded-lg bg-[var(--bg-elevated)]/60 px-2 py-2">
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">WIN %</p>
+            <p className={cn('font-chakra text-sm font-bold tabular-nums mt-0.5', getWinRateColor(comp.win_rate))}>
+              {formatWinRate(comp.win_rate)}
+            </p>
           </div>
-        ))}
-      </div>
+          <div className="rounded-lg bg-[var(--bg-elevated)]/60 px-2 py-2">
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">TOP 4</p>
+            <p className={cn('font-chakra text-sm font-bold tabular-nums mt-0.5', getWinRateColor(top4Rate))}>
+              {formatWinRate(top4Rate)}
+            </p>
+          </div>
+          <div className="rounded-lg bg-[var(--bg-elevated)]/60 px-2 py-2">
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">AVG</p>
+            <p className={cn('font-chakra text-sm font-bold tabular-nums mt-0.5', getPlacementColor(Math.round(comp.avg_placement)))}>
+              {comp.avg_placement.toFixed(2)}
+            </p>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-3 gap-2 border-t border-[var(--border-subtle)] pt-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-text-secondary">WIN %</p>
-          <p className={cn('text-sm font-bold tabular-nums', getWinRateColor(comp.win_rate))}>
-            {formatWinRate(comp.win_rate)}
-          </p>
+        <div className="mt-2.5 flex justify-end">
+          <span className="font-chakra text-[10px] tabular-nums text-[var(--text-muted)]">
+            {comp.sample_size.toLocaleString()} games
+          </span>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-text-secondary">TOP 4 %</p>
-          <p className={cn('text-sm font-bold tabular-nums', getWinRateColor(top4Rate))}>
-            {formatWinRate(top4Rate)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-text-secondary">AVG</p>
-          <p
-            className={cn(
-              'text-sm font-bold tabular-nums',
-              getPlacementColor(Math.round(comp.avg_placement))
-            )}
-          >
-            {comp.avg_placement.toFixed(2)}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3 flex justify-end">
-        <span className="text-[11px] tabular-nums text-text-secondary">
-          {comp.sample_size.toLocaleString()} games
-        </span>
       </div>
     </Link>
   );

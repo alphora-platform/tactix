@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
-import { Tabs, Checkbox, Input, Table } from 'antd';
+import { Checkbox, Input, Table } from 'antd';
 import type { TableProps } from 'antd';
 import { Globe, ArrowRightLeft, BarChart3, TrendingUp, Star, ChevronDown } from 'lucide-react';
 import {
@@ -47,7 +47,7 @@ export const Route = createFileRoute('/regions/')({
 });
 
 const REGION_COLORS: Record<string, string> = {
-  KR: '#3B82F6',
+  KR: '#8b5cf6',
   EUW: '#22c55e',
   NA: '#f59e0b',
   EUNE: '#ef4444',
@@ -57,11 +57,28 @@ const REGION_COLORS: Record<string, string> = {
   TR: '#ec4899',
 };
 
+const REGION_FLAGS: Record<string, string> = {
+  KR: '🇰🇷',
+  EUW: '🇪🇺',
+  NA: '🇺🇸',
+  EUNE: '🇪🇺',
+  JP: '🇯🇵',
+  OCE: '🇦🇺',
+  BR: '🇧🇷',
+  TR: '🇹🇷',
+};
+
 const ALL_REGIONS = ['KR', 'EUW', 'NA', 'EUNE', 'JP', 'OCE', 'BR', 'TR'];
 type TabKey = 'divergence' | 'exclusive' | 'compare';
 
+const TAB_ITEMS: { key: TabKey; label: string }[] = [
+  { key: 'divergence', label: 'Regional Divergence' },
+  { key: 'exclusive', label: 'Region Exclusives' },
+  { key: 'compare', label: 'Head-to-Head' },
+];
+
 const TABLE_CLASS =
-  '[&_.ant-table]:!bg-transparent [&_.ant-table-container]:!border-[var(--border-default)] [&_.ant-table-thead>tr>th]:!border-[var(--border-subtle)] [&_.ant-table-thead>tr>th]:!bg-[var(--bg-surface)] [&_.ant-table-thead>tr>th]:!text-slate-300 [&_.ant-table-tbody>tr>td]:!border-[var(--border-subtle)] [&_.ant-table-tbody>tr>td]:!bg-transparent [&_.ant-table-placeholder]:!bg-transparent [&_.ant-pagination-item]:!border-[var(--border-default)] [&_.ant-pagination-item>a]:!text-slate-300 [&_.ant-pagination-item-active]:!border-blue-500 [&_.ant-pagination-item-active>a]:!text-blue-400';
+  '[&_.ant-table]:!bg-transparent [&_.ant-table-container]:!border-[var(--border-default)] [&_.ant-table-thead>tr>th]:!border-[var(--border-subtle)] [&_.ant-table-thead>tr>th]:!bg-[var(--bg-surface)] [&_.ant-table-thead>tr>th]:!text-slate-300 [&_.ant-table-tbody>tr>td]:!border-[var(--border-subtle)] [&_.ant-table-tbody>tr>td]:!bg-transparent [&_.ant-table-placeholder]:!bg-transparent [&_.ant-pagination-item]:!border-[var(--border-default)] [&_.ant-pagination-item>a]:!text-slate-300 [&_.ant-pagination-item-active]:!border-[var(--accent-primary)] [&_.ant-pagination-item-active>a]:!text-[var(--accent-primary)]';
 
 function normalizeRate(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -78,43 +95,52 @@ function RegionsPage() {
   const [regionA, setRegionA] = useState('KR');
   const [regionB, setRegionB] = useState('EUW');
 
-  const tabItems = [
-    {
-      key: 'divergence',
-      label: 'Regional Divergence',
-      children: <DivergenceTab />,
-    },
-    {
-      key: 'exclusive',
-      label: 'Region Exclusives',
-      children: <ExclusiveTab />,
-    },
-    {
-      key: 'compare',
-      label: 'Head-to-Head',
-      children: (
-        <CompareTab
-          regionA={regionA}
-          regionB={regionB}
-          onRegionAChange={setRegionA}
-          onRegionBChange={setRegionB}
-        />
-      ),
-    },
-  ];
-
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader title="Region Comparison" subtitle="How the meta differs across global servers" />
 
-      <Tabs
-        activeKey={tab}
-        onChange={(key) => setTab(key as TabKey)}
-        items={tabItems}
-        type="line"
-        size="middle"
-        className="[&_.ant-tabs-tab]:!text-slate-400 [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:!text-blue-400 [&_.ant-tabs-ink-bar]:!bg-blue-500"
-      />
+      {/* Custom pill tabs */}
+      <div className="flex gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)]/50 p-1">
+        {TAB_ITEMS.map(({ key, label }) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150',
+                active
+                  ? 'bg-[var(--accent-primary)] text-white shadow-glow-blue'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+              )}
+              style={
+                active
+                  ? {
+                      background:
+                        'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-cyan) 100%)',
+                      boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+                    }
+                  : undefined
+              }
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div>
+        {tab === 'divergence' && <DivergenceTab />}
+        {tab === 'exclusive' && <ExclusiveTab />}
+        {tab === 'compare' && (
+          <CompareTab
+            regionA={regionA}
+            regionB={regionB}
+            onRegionAChange={setRegionA}
+            onRegionBChange={setRegionB}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -141,7 +167,6 @@ function DivergenceTab() {
 
   const filteredRows = useMemo(() => {
     if (!heatmapSearch.trim()) return allRows;
-
     const query = heatmapSearch.trim().toLowerCase();
     return allRows.filter((row) => row.display_name.toLowerCase().includes(query));
   }, [allRows, heatmapSearch]);
@@ -160,22 +185,23 @@ function DivergenceTab() {
       .sort((a, b) => b.normalized_global_wr - a.normalized_global_wr)
       .slice(0, 8)
       .map((row) => {
-        const entry: Record<string, string | number> = {
-          name: row.display_name,
-        };
-
+        const entry: Record<string, string | number> = { name: row.display_name };
         for (const region of selectedRegions.slice(0, 5)) {
           const wr = normalizeRate(row.by_region[region]?.win_rate ?? 0);
           entry[region] = Number((wr * 100).toFixed(1));
         }
-
         return entry;
       });
   }, [allRows, selectedRegions]);
 
   const heatmapColumns = useMemo<TableProps<HeatmapTableRow>['columns']>(() => {
     const regionCols = selectedRegions.slice(0, 6).map((region) => ({
-      title: region,
+      title: (
+        <span className="flex items-center justify-center gap-1">
+          <span>{REGION_FLAGS[region] ?? '🌐'}</span>
+          <span style={{ color: REGION_COLORS[region] ?? '#94a3b8' }}>{region}</span>
+        </span>
+      ),
       key: region,
       dataIndex: region,
       width: 100,
@@ -183,7 +209,6 @@ function DivergenceTab() {
       render: (_: unknown, rec: HeatmapTableRow) => {
         const stats = rec.by_region[region];
         if (!stats) return <span className="text-xs text-text-secondary/40">-</span>;
-
         const wr = normalizeRate(stats.win_rate);
         return (
           <span className={cn('text-xs font-semibold tabular-nums', getWinRateColor(wr))}>
@@ -194,20 +219,14 @@ function DivergenceTab() {
       onCell: (rec: HeatmapTableRow) => {
         const stats = rec.by_region[region];
         if (!stats) return {};
-
         const wr = normalizeRate(stats.win_rate);
         const delta = wr - rec.normalized_global_wr;
-
-        if (!['KR', 'EUW', 'NA'].includes(region)) {
-          return {};
-        }
-
-        const isAbove = delta >= 0;
-
+        if (!['KR', 'EUW', 'NA'].includes(region)) return {};
         return {
           style: {
-            backgroundColor: isAbove ? 'rgba(34,197,94,0.13)' : 'rgba(239,68,68,0.13)',
-            color: isAbove ? '#4ade80' : '#fb7185',
+            background: delta >= 0
+              ? `linear-gradient(180deg, rgba(16,185,129,0.1) 0%, transparent 100%)`
+              : `linear-gradient(180deg, rgba(239,68,68,0.1) 0%, transparent 100%)`,
           },
         };
       },
@@ -243,10 +262,7 @@ function DivergenceTab() {
         sorter: (a, b) => a.diff_pct - b.diff_pct,
         render: (value: number) => (
           <span
-            className={cn(
-              'font-semibold tabular-nums',
-              value >= 0 ? 'text-emerald-400' : 'text-rose-400'
-            )}
+            className={cn('font-semibold tabular-nums', value >= 0 ? 'text-emerald-400' : 'text-rose-400')}
           >
             {value >= 0 ? '+' : ''}
             {value.toFixed(1)}%
@@ -257,8 +273,6 @@ function DivergenceTab() {
   }, [selectedRegions]);
 
   const isLoading = regional.isLoading || exclusive.isLoading;
-
-  const checkboxValue = selectedRegions;
 
   return (
     <div className="space-y-5">
@@ -272,9 +286,9 @@ function DivergenceTab() {
           value={regional.data?.regions.length ?? '-'}
           subtitle="active servers"
           icon={Globe}
-          iconColor="text-blue-400"
-          iconBg="bg-blue-500/10"
-          accentColor="border-l-blue-500"
+          iconColor="text-[var(--accent-primary)]"
+          iconBg="bg-[var(--accent-primary)]/10"
+          accentGradient="from-[var(--accent-primary)] to-[var(--accent-cyan)]"
           loading={regional.isLoading}
         />
         <StatCard
@@ -284,7 +298,7 @@ function DivergenceTab() {
           icon={BarChart3}
           iconColor="text-slate-300"
           iconBg="bg-slate-500/10"
-          accentColor="border-l-slate-500"
+          accentGradient="from-slate-400 to-slate-600"
           loading={regional.isLoading}
         />
         <StatCard
@@ -294,7 +308,7 @@ function DivergenceTab() {
           icon={TrendingUp}
           iconColor="text-orange-400"
           iconBg="bg-orange-500/10"
-          accentColor="border-l-orange-500"
+          accentGradient="from-orange-400 to-red-500"
           loading={regional.isLoading}
         />
         <StatCard
@@ -304,7 +318,7 @@ function DivergenceTab() {
           icon={Star}
           iconColor="text-violet-400"
           iconBg="bg-violet-500/10"
-          accentColor="border-l-violet-500"
+          accentGradient="from-violet-400 to-purple-500"
           loading={exclusive.isLoading}
         />
       </div>
@@ -313,40 +327,39 @@ function DivergenceTab() {
         <div className="space-y-2">
           <p className="text-xs font-medium text-text-secondary">Regions</p>
           <Checkbox.Group
-            value={checkboxValue}
+            value={selectedRegions}
             onChange={(values) => {
               const next = values as string[];
-              if (next.length === availableRegions.length) {
-                setActiveRegions([]);
-              } else {
-                setActiveRegions(next);
-              }
+              setActiveRegions(next.length === availableRegions.length ? [] : next);
             }}
           >
             <div className="flex flex-wrap gap-2">
               {availableRegions.map((region) => {
-                const checked = checkboxValue.includes(region);
+                const checked = selectedRegions.includes(region);
                 const color = REGION_COLORS[region] ?? '#64748b';
+                const flag = REGION_FLAGS[region] ?? '';
 
                 return (
                   <label key={region} className="cursor-pointer">
                     <Checkbox value={region} className="!hidden" />
                     <span
-                      className="inline-flex rounded-full border px-3 py-1 text-xs font-semibold transition-colors"
+                      className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-150"
                       style={
                         checked
                           ? {
                               borderColor: color,
-                              backgroundColor: color,
-                              color: '#020617',
+                              background: `${color}22`,
+                              color,
+                              boxShadow: `0 0 8px ${color}40`,
                             }
                           : {
-                              borderColor: `${color}99`,
-                              color,
+                              borderColor: `${color}50`,
+                              color: `${color}cc`,
                               backgroundColor: 'transparent',
                             }
                       }
                     >
+                      <span>{flag}</span>
                       {region}
                     </span>
                   </label>
@@ -372,7 +385,7 @@ function DivergenceTab() {
             barGap={3}
             barCategoryGap="22%"
           >
-            <CartesianGrid stroke="rgba(148,163,184,0.12)" strokeDasharray="3 3" />
+            <CartesianGrid stroke="rgba(99,160,255,0.06)" strokeDasharray="3 3" />
             <XAxis
               dataKey="name"
               tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
@@ -389,14 +402,13 @@ function DivergenceTab() {
             />
             <Tooltip formatter={(v: number | undefined) => [formatWinRate(v ?? 0), '']} />
             <Legend verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 11 }} />
-
             {selectedRegions.slice(0, 5).map((region) => (
               <Bar
                 key={region}
                 dataKey={region}
-                name={region}
+                name={`${REGION_FLAGS[region] ?? ''} ${region}`}
                 fill={REGION_COLORS[region] ?? '#94a3b8'}
-                fillOpacity={0.9}
+                fillOpacity={0.85}
                 radius={[3, 3, 0, 0]}
                 maxBarSize={20}
               />
@@ -408,9 +420,9 @@ function DivergenceTab() {
       <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-100">Regional Heatmap</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Win rate per region - color coded against global average
+            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">Regional Heatmap</h2>
+            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+              Win rate per region — color coded against global average
             </p>
           </div>
           <Input.Search
@@ -459,7 +471,7 @@ function ExclusiveTab() {
       {error && <ErrorCard message="Failed to load region exclusives" retry={() => refetch()} />}
 
       <p className="text-xs text-text-secondary">
-        Comps with &gt;=50% win rate in one region but outperform other regions by at least 10pp -
+        Comps with &gt;=50% win rate in one region but outperform other regions by at least 10pp —
         high-value region-specific picks.
       </p>
 
@@ -514,7 +526,7 @@ function ExclusiveCard({
   return (
     <div
       className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-card"
-      style={{ borderColor: `${regionColor}40` }}
+      style={{ borderColor: `${regionColor}30` }}
     >
       <div className="h-0.5" style={{ background: regionColor }} />
 
@@ -527,11 +539,11 @@ function ExclusiveCard({
             className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold"
             style={{
               color: regionColor,
-              background: `${regionColor}20`,
-              border: `1px solid ${regionColor}40`,
+              background: `${regionColor}18`,
+              border: `1px solid ${regionColor}35`,
             }}
           >
-            {comp.strong_region}
+            {REGION_FLAGS[comp.strong_region] ?? ''} {comp.strong_region}
           </span>
         </div>
 
@@ -556,7 +568,7 @@ function ExclusiveCard({
             <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-text-secondary">
               Edge
             </p>
-            <p className="text-base font-bold tabular-nums text-accent-green">
+            <p className="text-base font-bold tabular-nums text-emerald-400">
               +{advantage.toFixed(1)}%
             </p>
           </div>
@@ -590,7 +602,7 @@ function CompareTab({
   const colorB = REGION_COLORS[regionB] ?? '#9e9e9e';
 
   const selectClass =
-    'appearance-none cursor-pointer rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] py-2 pl-3 pr-8 text-sm font-semibold text-text-primary transition-colors focus:border-accent-gold/60 focus:outline-none';
+    'appearance-none cursor-pointer rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] py-2 pl-3 pr-8 text-sm font-semibold text-text-primary transition-colors focus:border-[var(--accent-primary)]/60 focus:outline-none';
 
   const compareColumns = useMemo<TableProps<CompareRow>['columns']>(
     () => [
@@ -641,11 +653,7 @@ function CompareTab({
           <span
             className={cn(
               'text-sm font-bold tabular-nums',
-              value > 0
-                ? 'text-accent-green'
-                : value < 0
-                ? 'text-accent-red'
-                : 'text-text-secondary'
+              value > 0 ? 'text-emerald-400' : value < 0 ? 'text-rose-400' : 'text-text-secondary'
             )}
           >
             {value > 0 ? '+' : ''}
@@ -670,7 +678,7 @@ function CompareTab({
                 background: `${REGION_COLORS[winner] ?? '#9e9e9e'}20`,
               }}
             >
-              {winner}
+              {REGION_FLAGS[winner] ?? ''} {winner}
             </span>
           ),
       },
@@ -690,7 +698,7 @@ function CompareTab({
           >
             {COMPARE_REGIONS.filter((r) => r !== regionB).map((region) => (
               <option key={region} value={region} style={{ color: '#e0e0e0' }}>
-                {region}
+                {REGION_FLAGS[region]} {region}
               </option>
             ))}
           </select>
@@ -713,7 +721,7 @@ function CompareTab({
           >
             {COMPARE_REGIONS.filter((r) => r !== regionA).map((region) => (
               <option key={region} value={region} style={{ color: '#e0e0e0' }}>
-                {region}
+                {REGION_FLAGS[region]} {region}
               </option>
             ))}
           </select>
@@ -730,11 +738,11 @@ function CompareTab({
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-blue/30 bg-accent-blue/10">
-                <Globe size={20} className="text-accent-blue" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10">
+                <Globe size={20} className="text-[var(--accent-primary)]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+                <p className="font-chakra text-[10px] font-medium uppercase tracking-widest text-[var(--text-muted)]">
                   Meta Similarity
                 </p>
                 {isLoading ? (
@@ -752,24 +760,24 @@ function CompareTab({
                   ? 'These regions share a very similar meta.'
                   : data.meta_similarity > 0.65
                   ? 'Moderate meta divergence between regions.'
-                  : 'Significantly different metas - check exclusives!'}
+                  : 'Significantly different metas — check exclusives!'}
               </p>
             )}
           </div>
 
           {!isLoading && data && (
             <div className="mt-4">
-              <div className="h-2 overflow-hidden rounded-full border border-border/50 bg-bg-elevated">
+              <div className="h-2 overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${(data.meta_similarity * 100).toFixed(1)}%`,
                     background:
                       data.meta_similarity > 0.75
-                        ? '#66bb6a'
+                        ? 'linear-gradient(90deg, #10b981, #34d399)'
                         : data.meta_similarity > 0.55
-                        ? '#c89b3c'
-                        : '#ef5350',
+                        ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                        : 'linear-gradient(90deg, #ef5350, #f87171)',
                   }}
                 />
               </div>

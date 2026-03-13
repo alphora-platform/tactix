@@ -12,6 +12,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { PatchAnalyzerModule } from './modules/patch-analyzer/patch-analyzer.module';
 import { MetadataModule } from './modules/metadata/metadata.module';
 import { RawDataModule } from './modules/raw-data/raw-data.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 // Determine mode
 const appMode = process.env.APP_MODE || 'api'; // default 'api'
@@ -36,6 +37,7 @@ const baseModules: any[] = [
   DatabaseModule,
   RiotApiModule,
   MetadataModule,
+  AuthModule,
 ];
 
 const featureModules = [];
