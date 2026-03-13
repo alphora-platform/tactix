@@ -90,11 +90,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex h-full flex-col overflow-hidden bg-[var(--bg-base)] sm:flex-row">
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-r border-[var(--border-default)] bg-[var(--bg-surface)] sm:flex',
+          'hidden shrink-0 flex-col border-r border-[var(--border-default)] sm:flex',
           'overflow-hidden transition-all duration-300 ease-in-out',
           sidebarOpen ? 'w-60' : 'w-16'
         )}
+        style={{
+          background: 'linear-gradient(180deg, var(--bg-surface) 0%, #040a1a 100%)',
+        }}
       >
+        {/* Brand header */}
         <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-[var(--border-default)] px-3">
           <div
             className={cn(
@@ -102,20 +106,40 @@ export function AppLayout({ children }: { children: ReactNode }) {
               sidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'
             )}
           >
-            <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]" />
+            {/* Logo orb */}
+            <div className="relative shrink-0">
+              <span
+                className="block h-7 w-7 rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-cyan)]"
+                style={{
+                  boxShadow: '0 0 0 2px rgba(139,92,246,0.2), 0 0 16px rgba(139,92,246,0.5)',
+                  animation: 'cosmos-pulse 2.5s ease-in-out infinite',
+                }}
+              >
+                <span
+                  className="flex h-full w-full items-center justify-center font-russo text-xs font-normal text-white"
+                >
+                  T
+                </span>
+              </span>
+            </div>
             <div className="min-w-0">
-              <p className="font-['Rajdhani'] text-xl font-bold leading-none tracking-[0.18em] text-slate-100">
+              <p className="font-russo text-lg font-normal leading-none tracking-[0.14em] text-slate-100">
                 TACTIX
               </p>
-              <p className="mt-1 text-[10px] font-semibold tracking-[0.2em] text-blue-400">
-                TFT META
-              </p>
+              <span className="mt-0.5 inline-flex items-center rounded-sm bg-[var(--accent-primary)]/10 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.18em] text-[var(--accent-primary)] uppercase">
+                SET 17: COSMOS
+              </span>
             </div>
           </div>
 
           {!sidebarOpen && (
             <div className="flex w-full items-center justify-center">
-              <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" />
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-cyan)] font-russo text-xs text-white"
+                style={{ boxShadow: '0 0 10px rgba(139,92,246,0.5)' }}
+              >
+                T
+              </span>
             </div>
           )}
 
@@ -123,17 +147,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onClick={toggleSidebar}
             aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             className={cn(
-              'flex shrink-0 items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors duration-150',
+              'flex shrink-0 items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors duration-150',
               'hover:bg-white/5 hover:text-slate-200',
               !sidebarOpen && 'absolute left-3'
             )}
           >
-            {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            {sidebarOpen ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
           </button>
         </div>
 
+        {/* Nav */}
         <nav className="flex-1 overflow-x-hidden overflow-y-auto px-2 py-4">
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
               const active = location.startsWith(to);
               return (
@@ -142,14 +167,34 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   to={to}
                   title={!sidebarOpen ? label : undefined}
                   className={cn(
-                    'group relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium outline-none transition-colors duration-150',
-                    sidebarOpen ? 'justify-start rounded-r-lg' : 'justify-center rounded-lg',
+                    'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium outline-none transition-all duration-150',
+                    sidebarOpen ? 'justify-start' : 'justify-center',
                     active
-                      ? 'bg-blue-500/10 text-blue-400 border-l-2 border-blue-500'
-                      : 'border-l-2 border-transparent text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                      ? 'text-white'
+                      : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
                   )}
+                  style={
+                    active
+                      ? {
+                          background:
+                            'linear-gradient(90deg, rgba(139,92,246,0.22) 0%, rgba(6,182,212,0.06) 100%)',
+                          boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.2)',
+                        }
+                      : undefined
+                  }
                 >
-                  <Icon size={19} className="shrink-0" />
+                  {/* Active left accent */}
+                  {active && (
+                    <span
+                      className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--accent-primary)]"
+                      style={{ boxShadow: '0 0 8px rgba(139,92,246,0.7)' }}
+                    />
+                  )}
+
+                  <Icon
+                    size={18}
+                    className={cn('shrink-0', active ? 'text-[var(--accent-primary)]' : '')}
+                  />
                   <span
                     className={cn(
                       'overflow-hidden whitespace-nowrap transition-all duration-300',
@@ -160,7 +205,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   </span>
 
                   {!sidebarOpen && (
-                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-slate-200 opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100">
+                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs font-medium text-slate-200 opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100">
                       {label}
                     </div>
                   )}
@@ -170,25 +215,53 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </nav>
 
+        {/* Live badge */}
+        <div className="mx-2 mb-2">
+          <div
+            className={cn(
+              'rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3',
+              sidebarOpen ? 'py-2.5' : 'flex items-center justify-center py-3'
+            )}
+          >
+            {sidebarOpen ? (
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-emerald-400"
+                  style={{ animation: 'live-blink 1.5s ease-in-out infinite' }}
+                />
+                <span className="font-chakra text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                  Live Data
+                </span>
+              </div>
+            ) : (
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-emerald-400"
+                style={{ animation: 'live-blink 1.5s ease-in-out infinite' }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Disclaimer */}
         <div
           className={cn(
-            'mx-2 mb-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-3',
+            'mx-2 mb-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-3',
             sidebarOpen ? 'py-2' : 'flex items-center justify-center py-3'
           )}
         >
           {sidebarOpen ? (
             <>
-              <p className="text-[11px] font-semibold text-slate-300">Tactix</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tactix</p>
               <p className="text-[10px] text-[var(--text-muted)]">Not affiliated with Riot</p>
             </>
           ) : (
-            <span className="text-[11px] font-semibold text-slate-400">Tx</span>
+            <span className="font-russo text-[10px] text-slate-500">Tx</span>
           )}
         </div>
       </aside>
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-default)] bg-[var(--bg-surface)] px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-default)] bg-[var(--bg-surface)]/80 px-6 backdrop-blur-md">
           <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={toggleSidebar}
@@ -198,13 +271,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Menu size={18} />
             </button>
 
-            <span className="font-['Rajdhani'] text-lg font-bold tracking-[0.15em] text-slate-100 sm:hidden">
+            <span className="font-russo text-base font-normal tracking-[0.14em] text-slate-100 sm:hidden">
               TACTIX
             </span>
 
-            <div className="hidden min-w-0 items-center gap-2 sm:flex">
-              <span className="select-none text-xs text-slate-500">/</span>
-              <span className="truncate text-sm font-semibold text-slate-100">{breadcrumb}</span>
+            <div className="hidden min-w-0 items-center gap-1.5 sm:flex">
+              <span className="select-none text-xs text-slate-600">/</span>
+              <ChevronRight size={12} className="text-slate-600" />
+              <span className="font-chakra truncate text-sm font-medium tracking-wide text-slate-200">{breadcrumb}</span>
             </div>
           </div>
 
@@ -213,13 +287,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <RegionFilter />
             <ThemeToggle />
 
-            <Badge dot color="#3B82F6" offset={[-2, 3]}>
+            <Badge dot color="var(--accent-primary)" offset={[-2, 3]}>
               <Button
                 aria-label="Notifications"
                 ghost
                 shape="circle"
                 icon={<Bell size={16} />}
-                className="!border-[var(--border-default)] !text-slate-300 hover:!border-blue-500/60 hover:!bg-white/5 hover:!text-slate-100"
+                className="!border-[var(--border-default)] !text-slate-300 hover:!border-[var(--accent-primary)]/60 hover:!bg-white/5 hover:!text-slate-100"
               />
             </Badge>
           </div>
@@ -235,11 +309,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="animate-fade-in flex-1 overflow-y-auto bg-[var(--bg-base)] px-6 py-8 pb-24 sm:pb-8">
+        <main className="animate-fade-in flex-1 overflow-y-auto bg-[var(--bg-base)] px-5 py-7 pb-24 sm:px-6 sm:py-8 sm:pb-8">
           {children}
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[60px] items-center justify-around border-t border-[var(--border-default)] bg-[var(--bg-surface)] px-2 sm:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[60px] items-center justify-around border-t border-[var(--border-default)] bg-[var(--bg-surface)]/90 px-2 backdrop-blur-md sm:hidden">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
             const active = location.startsWith(to);
             return (
@@ -247,15 +321,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 key={to}
                 to={to}
                 className={cn(
-                  'flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-2',
-                  active ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
+                  'relative flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors duration-150',
+                  active ? 'text-[var(--accent-primary)]' : 'text-slate-500 hover:text-slate-300'
                 )}
               >
-                <Icon
-                  size={22}
-                  className={active ? 'scale-110 transition-transform duration-150' : ''}
-                />
-                <span className="text-[10px] font-medium leading-none">{label}</span>
+                {active && (
+                  <span
+                    className="absolute top-1 h-0.5 w-5 rounded-full bg-[var(--accent-primary)]"
+                    style={{ boxShadow: '0 0 6px rgba(139,92,246,0.8)' }}
+                  />
+                )}
+                <Icon size={20} strokeWidth={active ? 2 : 1.75} />
+                <span className={cn('text-[9px] font-semibold uppercase tracking-wide leading-none', active ? 'opacity-100' : 'opacity-70')}>
+                  {label}
+                </span>
               </Link>
             );
           })}

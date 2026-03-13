@@ -3,9 +3,19 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { corsConfig } from './common/config/cors.config';
 import { ConfigService } from '@nestjs/config';
+import AppDataSource from './modules/database/data-source';
 
 async function bootstrap() {
   const appMode = process.env.APP_MODE || 'api';
+
+  if (appMode === 'migrate') {
+    await AppDataSource.initialize();
+    const migrations = await AppDataSource.runMigrations();
+    Logger.log(`Ran ${migrations.length} migration(s) successfully`);
+    await AppDataSource.destroy();
+    process.exit(0);
+  }
+
   const app = await NestFactory.create(AppModule);
 
   if (appMode === 'worker') {

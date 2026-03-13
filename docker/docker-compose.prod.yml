@@ -1,0 +1,125 @@
+name: tactix-prod
+
+services:
+  # ─── Database ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: tactix-postgres
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tactix}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - tactix-internal
+
+  # ─── Cache / Queue ─────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tactix-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - tactix-internal
+
+  # ─── NestJS API ────────────────────────────────────────────────────────────
+  api:
+    image: ghcr.io/${GITHUB_OWNER}/${GITHUB_REPO}/api:${IMAGE_TAG:-latest}
+    container_name: tactix-api
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      APP_MODE: api
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:5500/api/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - tactix-internal
+
+  # ─── BullMQ Worker ─────────────────────────────────────────────────────────
+  worker:
+    image: ghcr.io/${GITHUB_OWNER}/${GITHUB_REPO}/api:${IMAGE_TAG:-latest}
+    container_name: tactix-worker
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      APP_MODE: worker
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tactix-internal
+
+  # ─── React Frontend (nginx SPA) ────────────────────────────────────────────
+  frontend:
+    image: ghcr.io/${GITHUB_OWNER}/${GITHUB_REPO}/frontend:${IMAGE_TAG:-latest}
+    container_name: tactix-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:80/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - tactix-internal
+
+  # ─── Nginx reverse proxy (SSL termination) ─────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: tactix-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - tactix-internal
+
+networks:
+  tactix-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

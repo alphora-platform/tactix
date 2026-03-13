@@ -22,3 +22,27 @@ dev-restart:
 
 dev-logs:
 	docker compose -f docker-compose.yml logs -f
+
+###################
+# PRODUCTION
+###################
+prod-up:
+	docker compose -f docker/docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose -f docker/docker-compose.prod.yml down
+
+prod-pull:
+	docker compose -f docker/docker-compose.prod.yml pull
+
+prod-logs:
+	docker compose -f docker/docker-compose.prod.yml logs -f
+
+prod-status:
+	docker compose -f docker/docker-compose.prod.yml ps
+
+prod-restart-api:
+	docker compose -f docker/docker-compose.prod.yml restart api worker
+
+prod-restart-frontend:
+	docker compose -f docker/docker-compose.prod.yml restart frontend nginx

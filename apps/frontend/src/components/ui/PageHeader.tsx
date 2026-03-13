@@ -12,15 +12,17 @@ export function PageHeader({ title, subtitle, actions, className }: PageHeaderPr
   return (
     <div
       className={cn(
-        'mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
+        'mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
         className
       )}
     >
       <div>
-        <h1 className="font-['Rajdhani'] text-2xl font-bold tracking-tight text-slate-50">
+        <h1 className="font-russo text-3xl font-normal tracking-wide text-[var(--text-primary)]">
           {title}
         </h1>
-        {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="mt-1.5 text-sm text-[var(--text-secondary)]">{subtitle}</p>
+        ) : null}
       </div>
       {actions ? <div className="self-start sm:self-auto">{actions}</div> : null}
     </div>

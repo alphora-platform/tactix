@@ -1,17 +1,54 @@
 :root {
-  --bg-base: #020617; /* slate-950 */
-  --bg-surface: #0f172a; /* slate-900 */
-  --bg-elevated: #1e293b; /* slate-800 */
-  --bg-overlay: #334155; /* slate-700 */
-  --border-default: rgba(148, 163, 184, 0.12);
-  --border-subtle: rgba(148, 163, 184, 0.06);
-  --text-primary: #f8fafc;
+  --bg-base: #030714;
+  --bg-surface: #060d22;
+  --bg-elevated: #0b1530;
+  --bg-overlay: #142040;
+  --border-default: rgba(99, 160, 255, 0.12);
+  --border-subtle: rgba(99, 160, 255, 0.06);
+  --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #475569;
-  --accent-primary: #3b82f6;
-  --accent-glow: rgba(59, 130, 246, 0.15);
+  --accent-primary: #8b5cf6;
+  --accent-cyan: #06b6d4;
+  --accent-gold: #f59e0b;
+  --accent-rose: #f43f5e;
+  --accent-glow: rgba(139, 92, 246, 0.25);
 }
 
+@keyframes cosmos-pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(139, 92, 246, 0.4), 0 0 14px rgba(139, 92, 246, 0.2);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 0 36px rgba(139, 92, 246, 0.35);
+    opacity: 0.85;
+  }
+}
+
+@keyframes live-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Skeleton shimmer base */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-overlay) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-overlay) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Ant Design table overrides */
 .ant-table-wrapper .ant-table {
   background: transparent;
 }
@@ -21,12 +58,32 @@
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
+}
+
+.ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background: rgba(255, 255, 255, 0.03) !important;
 }
 
 .ant-select-selector,
 .ant-input {
   background: var(--bg-elevated) !important;
   border-color: var(--border-default) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 160, 255, 0.18);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 160, 255, 0.32);
 }

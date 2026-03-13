@@ -1,3 +1,4 @@
+import path from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 import {
@@ -42,7 +43,10 @@ export const datasourceOption: DataSourceOptions = {
     PatchPrediction,
     PatchVersion,
   ],
-  migrations: [__dirname + '/../../database/migrations/*.{ts,js}'],
+  migrations:
+    process.env.NODE_ENV === 'production'
+      ? [path.join(__dirname, 'migrations', '*.js')]
+      : [path.join(__dirname, '..', '..', 'database', 'migrations', '*.{ts,js}')],
   synchronize: envBool(process.env.POSTGRES_SYNCHRONIZE) ?? false,
   dropSchema: envBool(process.env.POSTGRES_DROP_SCHEMA) ?? false,
   migrationsTableName: 'migrations',

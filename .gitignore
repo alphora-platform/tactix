@@ -56,3 +56,7 @@ test-output
 package-log.json
 pnpm-lock.yaml
 yarn.lock
+
+.claude/
+.agents/
+
