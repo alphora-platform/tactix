@@ -41,4 +41,13 @@ export class AlertsService {
       { priority: 1, attempts: 1, jobId: `patch-drop-manual-${Date.now()}` }
     );
   }
+
+  /** Enqueue an immediate hotfix/micro-patch check at highest priority. */
+  async triggerHotfixCheck(): Promise<void> {
+    await this.alertQueue.add(
+      ALERT_JOB_NAMES.CHECK_HOTFIX,
+      {},
+      { priority: 1, attempts: 1, jobId: `hotfix-manual-${Date.now()}` }
+    );
+  }
 }

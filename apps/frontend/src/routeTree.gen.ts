@@ -14,6 +14,8 @@ import { Route as TrendsIndexRouteImport } from './routes/trends/index'
 import { Route as StatsIndexRouteImport } from './routes/stats/index'
 import { Route as RegionsIndexRouteImport } from './routes/regions/index'
 import { Route as PlayerIndexRouteImport } from './routes/player/index'
+import { Route as PlaybookIndexRouteImport } from './routes/playbook/index'
+import { Route as PbeIndexRouteImport } from './routes/pbe/index'
 import { Route as MetaIndexRouteImport } from './routes/meta/index'
 import { Route as MatchIndexRouteImport } from './routes/match/index'
 import { Route as MetaCompIdRouteImport } from './routes/meta/$compId'
@@ -44,6 +46,16 @@ const PlayerIndexRoute = PlayerIndexRouteImport.update({
   path: '/player/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlaybookIndexRoute = PlaybookIndexRouteImport.update({
+  id: '/playbook/',
+  path: '/playbook/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PbeIndexRoute = PbeIndexRouteImport.update({
+  id: '/pbe/',
+  path: '/pbe/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MetaIndexRoute = MetaIndexRouteImport.update({
   id: '/meta/',
   path: '/meta/',
@@ -71,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/meta/$compId': typeof MetaCompIdRoute
   '/match/': typeof MatchIndexRoute
   '/meta/': typeof MetaIndexRoute
+  '/pbe/': typeof PbeIndexRoute
+  '/playbook/': typeof PlaybookIndexRoute
   '/player/': typeof PlayerIndexRoute
   '/regions/': typeof RegionsIndexRoute
   '/stats/': typeof StatsIndexRoute
@@ -82,6 +96,8 @@ export interface FileRoutesByTo {
   '/meta/$compId': typeof MetaCompIdRoute
   '/match': typeof MatchIndexRoute
   '/meta': typeof MetaIndexRoute
+  '/pbe': typeof PbeIndexRoute
+  '/playbook': typeof PlaybookIndexRoute
   '/player': typeof PlayerIndexRoute
   '/regions': typeof RegionsIndexRoute
   '/stats': typeof StatsIndexRoute
@@ -94,6 +110,8 @@ export interface FileRoutesById {
   '/meta/$compId': typeof MetaCompIdRoute
   '/match/': typeof MatchIndexRoute
   '/meta/': typeof MetaIndexRoute
+  '/pbe/': typeof PbeIndexRoute
+  '/playbook/': typeof PlaybookIndexRoute
   '/player/': typeof PlayerIndexRoute
   '/regions/': typeof RegionsIndexRoute
   '/stats/': typeof StatsIndexRoute
@@ -107,6 +125,8 @@ export interface FileRouteTypes {
     | '/meta/$compId'
     | '/match/'
     | '/meta/'
+    | '/pbe/'
+    | '/playbook/'
     | '/player/'
     | '/regions/'
     | '/stats/'
@@ -118,6 +138,8 @@ export interface FileRouteTypes {
     | '/meta/$compId'
     | '/match'
     | '/meta'
+    | '/pbe'
+    | '/playbook'
     | '/player'
     | '/regions'
     | '/stats'
@@ -129,6 +151,8 @@ export interface FileRouteTypes {
     | '/meta/$compId'
     | '/match/'
     | '/meta/'
+    | '/pbe/'
+    | '/playbook/'
     | '/player/'
     | '/regions/'
     | '/stats/'
@@ -141,6 +165,8 @@ export interface RootRouteChildren {
   MetaCompIdRoute: typeof MetaCompIdRoute
   MatchIndexRoute: typeof MatchIndexRoute
   MetaIndexRoute: typeof MetaIndexRoute
+  PbeIndexRoute: typeof PbeIndexRoute
+  PlaybookIndexRoute: typeof PlaybookIndexRoute
   PlayerIndexRoute: typeof PlayerIndexRoute
   RegionsIndexRoute: typeof RegionsIndexRoute
   StatsIndexRoute: typeof StatsIndexRoute
@@ -184,6 +210,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayerIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/playbook/': {
+      id: '/playbook/'
+      path: '/playbook'
+      fullPath: '/playbook/'
+      preLoaderRoute: typeof PlaybookIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pbe/': {
+      id: '/pbe/'
+      path: '/pbe'
+      fullPath: '/pbe/'
+      preLoaderRoute: typeof PbeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meta/': {
       id: '/meta/'
       path: '/meta'
@@ -221,6 +261,8 @@ const rootRouteChildren: RootRouteChildren = {
   MetaCompIdRoute: MetaCompIdRoute,
   MatchIndexRoute: MatchIndexRoute,
   MetaIndexRoute: MetaIndexRoute,
+  PbeIndexRoute: PbeIndexRoute,
+  PlaybookIndexRoute: PlaybookIndexRoute,
   PlayerIndexRoute: PlayerIndexRoute,
   RegionsIndexRoute: RegionsIndexRoute,
   StatsIndexRoute: StatsIndexRoute,

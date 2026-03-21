@@ -205,7 +205,7 @@ function CompDetailPage() {
       </div>
 
       {/* ── 2. Stat Cards ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <StatCard
           title="Win Rate"
           value={stat ? `${(stat.win_rate * 100).toFixed(1)}%` : '—'}
@@ -358,7 +358,7 @@ function CompDetailPage() {
               Optimal Augments
             </h2>
             <div className="rounded-xl border border-border bg-bg-card shadow-card overflow-hidden">
-              <div className="grid grid-cols-3 divide-x divide-border/50 overflow-x-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/50 overflow-x-auto">
                 {[
                   { key: 'stage_2_1' as const, label: 'Stage 2-1', color: 'text-accent-blue' },
                   { key: 'stage_3_2' as const, label: 'Stage 3-2', color: 'text-accent-gold' },

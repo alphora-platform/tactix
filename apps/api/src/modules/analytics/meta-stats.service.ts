@@ -60,29 +60,16 @@ export class MetaStatsService {
     if (region) {
       sql = `
         SELECT
-          cs.comp_id,
-          cs.trait_combo,
-          cs.win_rate,
-          cs.top4_rate,
-          cs.avg_placement,
-          cs.sample_size
-        FROM mv_comp_stats cs
-        JOIN (
-          SELECT DISTINCT
-            md5(array_to_string(
-              array_agg(pt.trait_name ORDER BY pt.trait_name) FILTER (WHERE pt.style > 0),
-              ','
-            ))::varchar(16) AS comp_id
-          FROM participants p
-          JOIN matches m ON m.match_id = p.match_id
-          JOIN participant_traits pt ON pt.match_id = p.match_id AND pt.puuid = p.puuid
-          WHERE m.game_version = $1
-            AND m.region = $2
-            AND pt.style > 0
-          GROUP BY p.match_id, p.puuid
-        ) regional ON regional.comp_id = cs.comp_id
-        WHERE cs.patch = $1
-        ORDER BY (cs.win_rate * 0.4 + cs.top4_rate * 0.3 + (1.0 / NULLIF(cs.avg_placement, 0)) * 0.3) DESC
+          comp_id,
+          trait_combo,
+          win_rate,
+          top4_rate,
+          avg_placement,
+          sample_size
+        FROM mv_comp_stats_by_region
+        WHERE patch = $1
+          AND region = $2
+        ORDER BY (win_rate * 0.4 + top4_rate * 0.3 + (1.0 / NULLIF(avg_placement, 0)) * 0.3) DESC
         LIMIT $3
       `;
       params = [patch, region, limit];
@@ -179,6 +166,9 @@ export class MetaStatsService {
       cnt: string;
     }
 
+    // Exclude PBE matches — PBE runs a newer patch ahead of live, so including
+    // it would incorrectly mark the upcoming PBE patch as is_current and break
+    // all live analytics queries.
     const rows = await this.dataSource.query<PatchAgg[]>(`
       SELECT
         patch,
@@ -187,6 +177,7 @@ export class MetaStatsService {
         COUNT(*)::text     AS cnt
       FROM matches
       WHERE patch IS NOT NULL AND patch != 'unknown'
+        AND (region IS NULL OR region != 'PBE')
       GROUP BY patch
     `);
 
@@ -219,11 +210,28 @@ export class MetaStatsService {
     this.logger.debug(`[PatchSync] Synced ${rows.length} patches — current: ${newestPatch}`);
   }
 
+  /**
+   * Returns the current patch string for PBE matches.
+   * PBE runs ahead of live — this is separate from the live `getCurrentPatch()`.
+   */
+  async getCurrentPbePatch(): Promise<string> {
+    const rows = await this.dataSource.query<{ patch: string }[]>(
+      `SELECT patch FROM matches
+       WHERE region = 'PBE' AND patch IS NOT NULL AND patch != 'unknown'
+       ORDER BY game_datetime DESC LIMIT 1`
+    );
+    return rows[0]?.patch ?? '';
+  }
+
   // ── getCurrentPatch (kept for backwards-compat with existing controllers) ──
 
   async getCurrentPatch(): Promise<string> {
+    // Only look at live (non-PBE) matches so the PBE ahead-of-patch data
+    // doesn't pollute the live current-patch detection.
     const rows = await this.dataSource.query<PatchRow[]>(
-      `SELECT DISTINCT game_version FROM matches ORDER BY game_version DESC LIMIT 1`
+      `SELECT DISTINCT game_version FROM matches
+       WHERE region IS NULL OR region != 'PBE'
+       ORDER BY game_version DESC LIMIT 1`
     );
 
     if (rows.length === 0) {

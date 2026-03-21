@@ -13,8 +13,20 @@ import { MetaStatsService } from '../analytics/meta-stats.service';
 
 // ─── Validation constants ───────────────────────────────────────────────────
 
-/** Only TFT Ranked queue. */
+/** Only TFT Ranked queue (live servers). */
 const RANKED_QUEUE_ID = 1100;
+
+/**
+ * Queue IDs accepted when region = PBE.
+ * PBE has no ranked queue — all game modes are valid for data collection:
+ *  1090 — TFT Normal
+ *  1091 — TFT Draft
+ *  1092 — TFT Coop vs AI
+ *  1100 — TFT Ranked (included for completeness; may appear on PBE occasionally)
+ *  1111 — TFT Fates Beta / set-testing queue
+ *  1130 — TFT Hyperroll (PBE)
+ */
+const PBE_ALLOWED_QUEUE_IDS = new Set([1090, 1091, 1092, 1100, 1111, 1130]);
 
 /** Every standard TFT game has exactly 8 participants. */
 const EXPECTED_PARTICIPANT_COUNT = 8;
@@ -93,10 +105,18 @@ export class EtlService {
 
     const matchId = metadata.match_id;
 
-    // ── Gate 2: ranked only ───────────────────────────────────────────
-    if (info.queue_id !== RANKED_QUEUE_ID) {
+    // ── Gate 2: queue filter ──────────────────────────────────────────
+    // PBE has no ranked queue — accept any known TFT queue ID.
+    // Live servers only accept ranked (1100) to keep stats clean.
+    const isPbe = region === 'PBE';
+    const queueAllowed = isPbe
+      ? PBE_ALLOWED_QUEUE_IDS.has(info.queue_id)
+      : info.queue_id === RANKED_QUEUE_ID;
+
+    if (!queueAllowed) {
       this.logger.debug(
-        `[ETL] Skipping ${matchId}: non-ranked queue_id=${info.queue_id} (want ${RANKED_QUEUE_ID})`
+        `[ETL] Skipping ${matchId}: queue_id=${info.queue_id} not allowed ` +
+          `(region=${region ?? 'unknown'}, isPbe=${isPbe})`
       );
       return { skipped: true, reason: 'non_ranked', matchId };
     }

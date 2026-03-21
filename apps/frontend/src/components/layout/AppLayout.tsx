@@ -14,6 +14,8 @@ import {
   Bell,
   Search,
   Users,
+  Trophy,
+  FlaskConical,
 } from 'lucide-react';
 import { PatchSelector } from './PatchSelector';
 import { RegionFilter } from './RegionFilter';
@@ -23,18 +25,27 @@ import { useChampions, useTraits, useItems, useAugments } from '../../lib/hooks/
 
 const NAV_ITEMS = [
   { to: '/meta', label: 'Meta', icon: Home },
+  { to: '/playbook', label: 'Playbook', icon: Trophy },
   { to: '/trends', label: 'Trends', icon: TrendingUp },
   { to: '/regions', label: 'Regions', icon: Globe },
   { to: '/stats', label: 'My Stats', icon: User },
+  { to: '/pbe', label: 'PBE', icon: FlaskConical },
   { to: '/player', label: 'Player', icon: Users },
   { to: '/match', label: 'Match', icon: Search },
 ] as const;
 
+/** Subset shown in the mobile bottom nav bar (max 5 for comfortable tap targets) */
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter(({ to }) =>
+  ['/meta', '/playbook', '/trends', '/stats', '/regions'].includes(to)
+);
+
 const BREADCRUMB_MAP: Record<string, string> = {
   '/meta': 'Meta Overview',
+  '/playbook': 'Day-1 Playbook',
   '/trends': 'Trends',
   '/regions': 'Regional Analysis',
   '/stats': 'My Stats',
+  '/pbe': 'PBE Preview',
 };
 
 function getBreadcrumb(pathname: string): string {
@@ -87,10 +98,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, [location]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[var(--bg-base)] sm:flex-row">
+    <div className="flex h-full flex-col overflow-hidden bg-(--bg-base) sm:flex-row">
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-r border-[var(--border-default)] sm:flex',
+          'hidden shrink-0 flex-col border-r border-(--border-default) sm:flex',
           'overflow-hidden transition-all duration-300 ease-in-out',
           sidebarOpen ? 'w-60' : 'w-16'
         )}
@@ -99,7 +110,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         }}
       >
         {/* Brand header */}
-        <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-[var(--border-default)] px-3">
+        <div className="flex h-16 shrink-0 items-center gap-2 border-b border-(--border-default) px-3">
           <div
             className={cn(
               'flex min-w-0 flex-1 items-center gap-3 overflow-hidden transition-all duration-300',
@@ -109,7 +120,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             {/* Logo orb */}
             <div className="relative shrink-0">
               <span
-                className="block h-7 w-7 rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-cyan)]"
+                className="block h-7 w-7 rounded-lg bg-linear-to-br from-(--accent-primary) to-(--accent-cyan)"
                 style={{
                   boxShadow: '0 0 0 2px rgba(139,92,246,0.2), 0 0 16px rgba(139,92,246,0.5)',
                   animation: 'cosmos-pulse 2.5s ease-in-out infinite',
@@ -126,7 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <p className="font-russo text-lg font-normal leading-none tracking-[0.14em] text-slate-100">
                 TACTIX
               </p>
-              <span className="mt-0.5 inline-flex items-center rounded-sm bg-[var(--accent-primary)]/10 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.18em] text-[var(--accent-primary)] uppercase">
+              <span className="mt-0.5 inline-flex items-center rounded-sm bg-(--accent-primary)/10 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.18em] text-(--accent-primary) uppercase">
                 SET 17: COSMOS
               </span>
             </div>
@@ -135,7 +146,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {!sidebarOpen && (
             <div className="flex w-full items-center justify-center">
               <span
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-cyan)] font-russo text-xs text-white"
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-(--accent-primary) to-(--accent-cyan) font-russo text-xs text-white"
                 style={{ boxShadow: '0 0 10px rgba(139,92,246,0.5)' }}
               >
                 T
@@ -171,7 +182,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     sidebarOpen ? 'justify-start' : 'justify-center',
                     active
                       ? 'text-white'
-                      : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
+                      : 'text-slate-500 hover:bg-white/4 hover:text-slate-300'
                   )}
                   style={
                     active
@@ -186,14 +197,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   {/* Active left accent */}
                   {active && (
                     <span
-                      className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--accent-primary)]"
+                      className="absolute left-0 top-1/2 h-5 w-0.75 -translate-y-1/2 rounded-r-full bg-(--accent-primary)"
                       style={{ boxShadow: '0 0 8px rgba(139,92,246,0.7)' }}
                     />
                   )}
 
                   <Icon
                     size={18}
-                    className={cn('shrink-0', active ? 'text-[var(--accent-primary)]' : '')}
+                    className={cn('shrink-0', active ? 'text-(--accent-primary)' : '')}
                   />
                   <span
                     className={cn(
@@ -205,7 +216,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   </span>
 
                   {!sidebarOpen && (
-                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs font-medium text-slate-200 opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100">
+                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-lg border border-(--border-default) bg-(--bg-elevated) px-3 py-1.5 text-xs font-medium text-slate-200 opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100">
                       {label}
                     </div>
                   )}
@@ -245,14 +256,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {/* Disclaimer */}
         <div
           className={cn(
-            'mx-2 mb-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-3',
+            'mx-2 mb-3 rounded-lg border border-(--border-subtle) bg-(--bg-elevated)/30 px-3',
             sidebarOpen ? 'py-2' : 'flex items-center justify-center py-3'
           )}
         >
           {sidebarOpen ? (
             <>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tactix</p>
-              <p className="text-[10px] text-[var(--text-muted)]">Not affiliated with Riot</p>
+              <p className="text-[10px] text-(--text-muted)">Not affiliated with Riot</p>
             </>
           ) : (
             <span className="font-russo text-[10px] text-slate-500">Tx</span>
@@ -261,7 +272,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-default)] bg-[var(--bg-surface)]/80 px-6 backdrop-blur-md">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-(--border-default) bg-(--bg-surface)/80 px-6 backdrop-blur-md">
           <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={toggleSidebar}
@@ -293,7 +304,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 ghost
                 shape="circle"
                 icon={<Bell size={16} />}
-                className="!border-[var(--border-default)] !text-slate-300 hover:!border-[var(--accent-primary)]/60 hover:!bg-white/5 hover:!text-slate-100"
+                className="border-(--border-default)! text-slate-300! hover:border-(--accent-primary)/60! hover:bg-white/5! hover:text-slate-100!"
               />
             </Badge>
           </div>
@@ -301,7 +312,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="sm:hidden">
             <button
               onClick={() => setFiltersOpen(true)}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-[var(--bg-elevated)] p-3 text-slate-400 transition-colors hover:text-slate-200"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-(--bg-elevated) p-3 text-slate-400 transition-colors hover:text-slate-200"
               aria-label="Open filters"
             >
               <Filter size={18} />
@@ -309,25 +320,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="animate-fade-in flex-1 overflow-y-auto bg-[var(--bg-base)] px-5 py-7 pb-24 sm:px-6 sm:py-8 sm:pb-8">
+        <main className="animate-fade-in flex-1 overflow-y-auto bg-(--bg-base) px-5 py-7 pb-24 sm:px-6 sm:py-8 sm:pb-8">
           {children}
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[60px] items-center justify-around border-t border-[var(--border-default)] bg-[var(--bg-surface)]/90 px-2 backdrop-blur-md sm:hidden">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+        <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-15 items-center justify-around border-t border-(--border-default) bg-(--bg-surface)/90 px-2 backdrop-blur-md sm:hidden">
+          {MOBILE_NAV_ITEMS.map(({ to, label, icon: Icon }) => {
             const active = location.startsWith(to);
             return (
               <Link
                 key={to}
                 to={to}
                 className={cn(
-                  'relative flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors duration-150',
-                  active ? 'text-[var(--accent-primary)]' : 'text-slate-500 hover:text-slate-300'
+                  'relative flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors duration-150',
+                  active ? 'text-(--accent-primary)' : 'text-slate-500 hover:text-slate-300'
                 )}
               >
                 {active && (
                   <span
-                    className="absolute top-1 h-0.5 w-5 rounded-full bg-[var(--accent-primary)]"
+                    className="absolute top-1 h-0.5 w-5 rounded-full bg-(--accent-primary)"
                     style={{ boxShadow: '0 0 6px rgba(139,92,246,0.8)' }}
                   />
                 )}
@@ -348,12 +359,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
             onClick={() => setFiltersOpen(false)}
           />
 
-          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-[var(--border-default)] bg-[var(--bg-surface)] p-5 animate-slide-up sm:hidden">
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-(--border-default) bg-(--bg-surface) p-5 animate-slide-up sm:hidden">
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-100">Filters & Settings</h3>
               <button
                 onClick={() => setFiltersOpen(false)}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-md p-2.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200"
                 aria-label="Close"
               >
                 <X size={20} />

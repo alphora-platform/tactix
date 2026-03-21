@@ -43,6 +43,16 @@ export class MetadataCacheService {
     }
   }
 
+  async invalidate(): Promise<void> {
+    this.memoryCache = null;
+    try {
+      await this.redis.del(METADATA_CACHE_KEY);
+      this.logger.log('Metadata cache invalidated');
+    } catch (err) {
+      this.logger.warn(`Redis DEL failed for metadata: ${(err as Error).message}`);
+    }
+  }
+
   async getOrLoad(): Promise<TftGameData> {
     let data = await this.get();
     if (!data) {

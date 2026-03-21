@@ -83,6 +83,8 @@ export class DataCollectorProcessor extends WorkerHost {
         return this.handleCollectRegion(job as Job<CollectRegionJobData>);
       case JOB_NAMES.COLLECT_PLAYER:
         return this.handleCollectPlayer(job as Job<CollectPlayerJobData>);
+      case JOB_NAMES.REFRESH_PLAYER_LIST:
+        return this.handleRefreshPlayerList(job as Job<CollectRegionJobData>);
       default:
         throw new Error(`[DataCollectorProcessor] Unknown job name: ${job.name}`);
     }
@@ -242,6 +244,23 @@ export class DataCollectorProcessor extends WorkerHost {
       // Re-throw for BullMQ exponential backoff retry.
       throw error;
     }
+  }
+
+  // ── refresh-player-list ─────────────────────────────────────────────
+
+  /**
+   * Fetches the top-50 players by LP (Challenger → Grandmaster → Master fallback)
+   * for the given region from the Riot API and upserts them into the `players` table.
+   */
+  private async handleRefreshPlayerList(job: Job<CollectRegionJobData>): Promise<unknown> {
+    const { region } = job.data;
+    this.logger.log(`[${region}] Processing refresh-player-list job ${job.id ?? ''}`);
+
+    const result = await this.dataCollectorService.collectRegionPlayers(region);
+
+    await job.updateProgress(100);
+    this.logger.log(`[${region}] Player list refreshed — ${result.total} players upserted`);
+    return result;
   }
 
   // ── Worker lifecycle events ─────────────────────────────────────────

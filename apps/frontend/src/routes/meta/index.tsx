@@ -379,8 +379,8 @@ function MetaOverviewPage() {
               <YAxis
                 type="category"
                 dataKey="name"
-                width={170}
-                tickFormatter={(value: string) => truncateLabel(value, 20)}
+                width={120}
+                tickFormatter={(value: string) => truncateLabel(value, 14)}
                 tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
                 axisLine={{ stroke: 'var(--border-default)' }}
                 tickLine={false}

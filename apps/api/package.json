@@ -128,6 +128,14 @@
           "command": "npm run migration:show",
           "cwd": "apps/api"
         }
+      },
+      "load-test": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "npx ts-node --project tsconfig.app.json test/load/collector-load.test.ts",
+          "cwd": "apps/api"
+        }
       }
     }
   },

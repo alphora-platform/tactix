@@ -7,8 +7,10 @@ import {
   fetchRegionalMeta,
   fetchRegionalExclusive,
   fetchRegionComparison,
+  fetchPlaybook,
+  fetchPatches,
 } from '@/lib/api/analytics.api';
-import type { CompareParams } from '@/lib/api/analytics.api';
+import type { CompareParams, PlaybookParams } from '@/lib/api/analytics.api';
 import { useSettingsStore } from '@/lib/store/settings.store';
 
 // ── Meta Overview ──────────────────────────────────────────────────────────
@@ -81,6 +83,31 @@ export function useRegionalExclusiveQuery(regions?: string) {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// ── Playbook ──────────────────────────────────────────────────────────
+
+export function usePlaybookQuery(params?: PlaybookParams) {
+  const { selectedPatch } = useSettingsStore();
+  const patch = (params?.patch ?? selectedPatch) || undefined;
+  const region = params?.region;
+  return useQuery({
+    queryKey: ['playbook', patch, region],
+    queryFn: () => fetchPlaybook({ patch, region }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ── Patches ──────────────────────────────────────────────────────────
+
+export function usePatchesQuery() {
+  return useQuery({
+    queryKey: ['patches'],
+    queryFn: () => fetchPatches(),
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+// ── Region Compare ────────────────────────────────────────────────────
 
 export function useRegionCompareQuery(params: Omit<CompareParams, 'patch'>) {
   const { selectedPatch } = useSettingsStore();

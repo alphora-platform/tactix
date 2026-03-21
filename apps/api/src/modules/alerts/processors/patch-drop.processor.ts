@@ -13,6 +13,18 @@ import {
   TIER_LIST_CACHE_PREFIX,
 } from '../constants/alerts.constants';
 
+/** Non-blocking alternative to KEYS: iterates via SCAN cursor. */
+async function scanKeys(redis: Redis, pattern: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor = '0';
+  do {
+    const [next, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    keys.push(...batch);
+    cursor = next;
+  } while (cursor !== '0');
+  return keys;
+}
+
 // ── DB row shapes ──────────────────────────────────────────────────────────
 
 interface VersionRow {
@@ -122,7 +134,7 @@ export class PatchDropProcessor extends WorkerHost {
 
     // ── Step 3b: Invalidate all tier-list cache keys ──────────────────────
     try {
-      const keys = await this.redis.keys(`${TIER_LIST_CACHE_PREFIX}:*`);
+      const keys = await scanKeys(this.redis, `${TIER_LIST_CACHE_PREFIX}:*`);
       if (keys.length > 0) {
         await this.redis.del(...keys);
         this.logger.log(`[PatchDrop] Invalidated ${keys.length} tier-list cache keys`);

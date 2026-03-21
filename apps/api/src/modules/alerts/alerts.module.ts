@@ -7,6 +7,7 @@ import { NotificationService } from './notification.service';
 import { MetaShiftProcessor } from './processors/meta-shift.processor';
 import { NewCompProcessor } from './processors/new-comp.processor';
 import { PatchDropProcessor } from './processors/patch-drop.processor';
+import { HotfixDetectionProcessor } from './processors/hotfix-detection.processor';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { ALERTS_REDIS_CLIENT } from './constants/alerts.constants';
 import { QUEUE_NAMES } from '../data-collector/constants/queue.constants';
@@ -17,7 +18,9 @@ import { QUEUE_NAMES } from '../data-collector/constants/queue.constants';
 // is unconditional, but the processor providers are guarded.
 const isWorker = process.env.APP_MODE === 'worker';
 
-const alertProcessors = isWorker ? [MetaShiftProcessor, NewCompProcessor, PatchDropProcessor] : [];
+const alertProcessors = isWorker
+  ? [MetaShiftProcessor, NewCompProcessor, PatchDropProcessor, HotfixDetectionProcessor]
+  : [];
 
 /**
  * AlertsModule — Worker Module (no controller).

@@ -8,6 +8,7 @@ export enum Region {
   OCE = 'OCE',
   TR = 'TR',
   VN = 'VN',
+  PBE = 'PBE',
 }
 
 /**
@@ -24,6 +25,7 @@ export const PLATFORM_ROUTES: Record<Region, string> = {
   [Region.OCE]: 'oc1',
   [Region.TR]: 'tr1',
   [Region.VN]: 'vn2',
+  [Region.PBE]: 'pbe1',
 };
 
 /**
@@ -40,6 +42,7 @@ export const REGIONAL_ROUTES: Record<Region, string> = {
   [Region.EUW]: 'europe',
   [Region.EUNE]: 'europe',
   [Region.TR]: 'europe',
+  [Region.PBE]: 'americas',
 };
 
 export function getPlatformUrl(region: Region): string {
@@ -50,8 +53,8 @@ export function getRegionalUrl(region: Region): string {
   return `https://${REGIONAL_ROUTES[region]}.api.riotgames.com`;
 }
 
-/** All 9 supported regions for data collection. */
-export const ALL_REGIONS: Region[] = [
+/** Live regions for data collection (excludes PBE). */
+export const LIVE_REGIONS: Region[] = [
   Region.NA,
   Region.EUW,
   Region.KR,
@@ -63,5 +66,14 @@ export const ALL_REGIONS: Region[] = [
   Region.VN,
 ];
 
+/** PBE-only region list for PBE mode. */
+export const PBE_REGIONS: Region[] = [Region.PBE];
+
+/** All regions including PBE. */
+export const ALL_REGIONS: Region[] = [...LIVE_REGIONS, Region.PBE];
+
 /** Legacy default — kept for backward compat with existing code. */
-export const DEFAULT_REGIONS: Region[] = ALL_REGIONS;
+export const DEFAULT_REGIONS: Region[] = LIVE_REGIONS;
+
+/** Valid platform routing values for API validation. */
+export const VALID_PLATFORM_IDS = Object.values(PLATFORM_ROUTES);

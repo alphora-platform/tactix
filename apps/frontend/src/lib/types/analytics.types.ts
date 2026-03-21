@@ -175,3 +175,63 @@ export interface RegionComparisonDto {
   meta_similarity: number;
   comps: CompHeadToHeadDto[];
 }
+
+// ── GET /analytics/playbook ──────────────────────────────────────────────
+
+export interface PlaybookItemDto {
+  item_id: string;
+  win_rate: number;
+  sample_size: number;
+}
+
+export interface PlaybookCarryDto {
+  character_id: string;
+  best_items: PlaybookItemDto[];
+}
+
+export interface PlaybookAugmentStageDto {
+  augment_name: string;
+  win_rate: number;
+  top4_rate: number;
+  sample_size: number;
+}
+
+export interface PlaybookAugmentPathDto {
+  stage_2_1: PlaybookAugmentStageDto[];
+  stage_3_2: PlaybookAugmentStageDto[];
+  stage_4_2: PlaybookAugmentStageDto[];
+}
+
+export interface PlaybookLevelTimingDto {
+  level: number;
+  typical_round: string;
+  gold_needed: number;
+}
+
+export interface PlaybookFlexRouteDto {
+  comp_id: string;
+  label: string;
+  win_rate: number;
+  shared_units: string[];
+}
+
+export interface PlaybookCompDto {
+  rank: number;
+  comp_id: string;
+  label: string;
+  tier: Tier;
+  win_rate: number;
+  avg_placement: number;
+  top4_rate: number;
+  sample_size: number;
+  carries: PlaybookCarryDto[];
+  augment_path: PlaybookAugmentPathDto;
+  level_timings: PlaybookLevelTimingDto[];
+  flex_routes: PlaybookFlexRouteDto[];
+}
+
+export interface PlaybookDto {
+  patch: string;
+  updated_at: string;
+  comps: PlaybookCompDto[];
+}

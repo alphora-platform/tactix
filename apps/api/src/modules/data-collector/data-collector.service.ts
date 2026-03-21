@@ -19,8 +19,6 @@ import { MatchParser, ParsedMatchData } from './match.parser';
 interface CollectionResult {
   region: string;
   challenger: number;
-  grandmaster: number;
-  master: number;
   total: number;
 }
 
@@ -86,16 +84,13 @@ export class DataCollectorService {
         const result = await this.collectRegionPlayers(region);
         results.push(result);
         this.logger.log(
-          `[${region}] Collected ${result.total} players ` +
-            `(C:${result.challenger} GM:${result.grandmaster} M:${result.master})`
+          `[${region}] Collected ${result.total} challenger players`
         );
       } catch (error) {
         this.logger.error(`[${region}] Failed to collect players: ${(error as Error).message}`);
         results.push({
           region,
           challenger: 0,
-          grandmaster: 0,
-          master: 0,
           total: 0,
         });
       }
@@ -114,46 +109,79 @@ export class DataCollectorService {
     return summary;
   }
 
-  private async collectRegionPlayers(region: Region): Promise<CollectionResult> {
-    const [challenger, grandmaster, master] = await Promise.all([
-      this.fetchAndUpsertLeague(region, 'CHALLENGER'),
-      this.fetchAndUpsertLeague(region, 'GRANDMASTER'),
-      this.fetchAndUpsertLeague(region, 'MASTER'),
-    ]);
+  async collectRegionPlayers(region: Region, topN = 50): Promise<CollectionResult> {
+    // PBE has no Challenger/GM/Master ladder — leaderboard endpoints will 404.
+    // Players must be seeded manually via POST /data-collector/seed-pbe-players.
+    if (region === Region.PBE) {
+      this.logger.warn(
+        '[PBE] collectRegionPlayers called for PBE — leaderboard not available. ' +
+          'Seed players manually via POST /data-collector/seed-pbe-players.'
+      );
+      return { region, challenger: 0, total: 0 };
+    }
+
+    const challenger = await this.riotApi.getChallengerLeague(region);
+
+    let pool = [...challenger];
+
+    if (pool.length < topN) {
+      const grandmaster = await this.riotApi.getGrandmasterLeague(region);
+      pool = [...pool, ...grandmaster];
+    }
+
+    if (pool.length < topN) {
+      const master = await this.riotApi.getMasterLeague(region);
+      pool = [...pool, ...master];
+    }
+
+    const top = pool
+      .sort((a, b) => b.leaguePoints - a.leaguePoints)
+      .slice(0, topN);
+
+    if (top.length > 0) {
+      await this.upsertPlayers(top, region, 'CHALLENGER');
+    }
 
     return {
       region,
-      challenger,
-      grandmaster,
-      master,
-      total: challenger + grandmaster + master,
+      challenger: top.length,
+      total: top.length,
     };
   }
 
-  private async fetchAndUpsertLeague(
-    region: Region,
-    tier: 'CHALLENGER' | 'GRANDMASTER' | 'MASTER'
-  ): Promise<number> {
-    let entries: RiotLeagueEntry[];
+  /**
+   * Seeds PBE players by PUUID directly — bypasses the leaderboard flow
+   * since PBE has no Challenger/GM/Master ladder.
+   *
+   * Each PUUID is upserted into the `players` table with region=PBE and
+   * tier=PBE_TESTER. These players are then picked up by the next
+   * `collect-region` job for the PBE region.
+   *
+   * Returns the number of players upserted.
+   */
+  async seedPbePlayers(puuids: string[]): Promise<{ seeded: number }> {
+    if (puuids.length === 0) return { seeded: 0 };
 
-    switch (tier) {
-      case 'CHALLENGER':
-        entries = await this.riotApi.getChallengerLeague(region);
-        break;
-      case 'GRANDMASTER':
-        entries = await this.riotApi.getGrandmasterLeague(region);
-        break;
-      case 'MASTER':
-        entries = await this.riotApi.getMasterLeague(region);
-        break;
-    }
+    const players = puuids.map((puuid) => ({
+      puuid,
+      region: Region.PBE,
+      summonerName: puuid, // PUUID used as placeholder until account lookup
+      tier: 'PBE_TESTER',
+      lp: 0,
+      wins: 0,
+      losses: 0,
+    }));
 
-    if (entries.length === 0) {
-      return 0;
-    }
+    await this.playerRepo
+      .createQueryBuilder()
+      .insert()
+      .into(Player)
+      .values(players)
+      .orIgnore() // Don't overwrite existing PBE players that have real stats
+      .execute();
 
-    await this.upsertPlayers(entries, region, tier);
-    return entries.length;
+    this.logger.log(`[PBE] Seeded ${puuids.length} PBE players`);
+    return { seeded: puuids.length };
   }
 
   private async upsertPlayers(
