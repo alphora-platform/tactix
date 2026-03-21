@@ -55,6 +55,7 @@ const REGION_COLORS: Record<string, string> = {
   OCE: '#06b6d4',
   BR: '#f97316',
   TR: '#ec4899',
+  VN: '#10b981',
 };
 
 const REGION_FLAGS: Record<string, string> = {
@@ -66,9 +67,10 @@ const REGION_FLAGS: Record<string, string> = {
   OCE: '🇦🇺',
   BR: '🇧🇷',
   TR: '🇹🇷',
+  VN: '🇻🇳',
 };
 
-const ALL_REGIONS = ['KR', 'EUW', 'NA', 'EUNE', 'JP', 'OCE', 'BR', 'TR'];
+const ALL_REGIONS = ['KR', 'EUW', 'NA', 'EUNE', 'JP', 'OCE', 'BR', 'TR', 'VN'];
 type TabKey = 'divergence' | 'exclusive' | 'compare';
 
 const TAB_ITEMS: { key: TabKey; label: string }[] = [
@@ -100,7 +102,7 @@ function RegionsPage() {
       <PageHeader title="Region Comparison" subtitle="How the meta differs across global servers" />
 
       {/* Custom pill tabs */}
-      <div className="flex gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)]/50 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)]/50 p-1">
         {TAB_ITEMS.map(({ key, label }) => {
           const active = tab === key;
           return (
@@ -108,7 +110,7 @@ function RegionsPage() {
               key={key}
               onClick={() => setTab(key)}
               className={cn(
-                'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150',
+                'flex-1 shrink-0 rounded-lg px-3 py-2 text-xs sm:text-sm sm:px-4 font-medium transition-all duration-150 whitespace-nowrap',
                 active
                   ? 'bg-[var(--accent-primary)] text-white shadow-glow-blue'
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'

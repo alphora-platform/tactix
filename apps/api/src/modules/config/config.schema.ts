@@ -13,11 +13,14 @@ export const configValidationSchema = Joi.object({
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
 
-  // Riot OAuth (RSO)
-  RIOT_CLIENT_ID: Joi.string().optional(),
-  RIOT_CLIENT_SECRET: Joi.string().optional(),
-  RIOT_REDIRECT_URI: Joi.string().optional(),
-  FRONTEND_URL: Joi.string().optional(),
+  // Data Collector
+  COLLECTOR_MODE: Joi.string().valid('pbe', 'live').default('live'),
+
+  // Community Dragon
+  COMMUNITY_DRAGON_ENV: Joi.string().valid('pbe', 'latest').default('latest'),
+
+  // Admin
+  ADMIN_API_KEY: Joi.string().required(),
 
   // JWT
   JWT_SECRET: Joi.string().required(),

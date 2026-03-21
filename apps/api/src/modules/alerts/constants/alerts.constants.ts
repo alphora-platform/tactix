@@ -11,6 +11,8 @@ export const ALERT_JOB_NAMES = {
   CHECK_NEW_COMP: 'check-new-comp',
   /** Detects game version changes (patch drops). Scheduled every 30 min. */
   CHECK_PATCH_DROP: 'check-patch-drop',
+  /** Polls for micro-patch / hotfix version changes. Scheduled every 15 min. */
+  CHECK_HOTFIX: 'check-hotfix',
 } as const;
 
 export type AlertJobName = (typeof ALERT_JOB_NAMES)[keyof typeof ALERT_JOB_NAMES];
@@ -22,6 +24,12 @@ export const META_SNAPSHOT_CACHE_KEY = 'alerts:meta-snapshot';
 
 /** Key storing the last-known game version string. */
 export const LAST_GAME_VERSION_KEY = 'alerts:last-game-version';
+
+/** Key storing the last-known full game version (build-level) for hotfix detection. */
+export const LAST_FULL_VERSION_KEY = 'alerts:last-full-version';
+
+/** Playbook cache prefix — invalidated on hotfix detection. */
+export const PLAYBOOK_CACHE_PREFIX = 'playbook';
 
 /** Key for the tier-list Redis cache — also invalidated on patch drop. */
 export const TIER_LIST_CACHE_PREFIX = 'tier-list';

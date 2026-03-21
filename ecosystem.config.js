@@ -1,12 +1,12 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, 'apps/api/.env.development') });
+require('dotenv').config({ path: path.join(__dirname, 'apps/api/.env') });
 
 module.exports = {
   apps: [
     {
       name: 'tactix-api',
       script: 'apps/api/dist/main.js',
-      watch: ['apps/api/dist'],
+      watch: false,
       env: {
         ...process.env,
         APP_MODE: 'api',
@@ -16,7 +16,7 @@ module.exports = {
     {
       name: 'tactix-worker',
       script: 'apps/api/dist/main.js',
-      watch: ['apps/api/dist'],
+      watch: false,
       env: {
         ...process.env,
         APP_MODE: 'worker',

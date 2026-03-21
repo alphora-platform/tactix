@@ -7,6 +7,7 @@ import type {
   RegionalMetaDto,
   RegionalExclusiveDto,
   RegionComparisonDto,
+  PlaybookDto,
 } from '../types/analytics.types';
 
 // ── Meta ───────────────────────────────────────────────────────────────────
@@ -80,6 +81,27 @@ export async function fetchRegionComparison(params: CompareParams): Promise<Regi
   const { data } = await apiClient.get<RegionComparisonDto>('/analytics/regions/compare', {
     params,
   });
+  return data;
+}
+
+// ── Playbook ──────────────────────────────────────────────────────────
+
+export interface PlaybookParams {
+  patch?: string;
+  region?: string;
+}
+
+export async function fetchPlaybook(params: PlaybookParams = {}): Promise<PlaybookDto> {
+  const { data } = await apiClient.get<PlaybookDto>('/analytics/playbook', {
+    params,
+  });
+  return data;
+}
+
+// ── Config ─────────────────────────────────────────────────────────────────
+
+export async function fetchCollectorConfig(): Promise<{ collector_mode: string }> {
+  const { data } = await apiClient.get('/analytics/config');
   return data;
 }
 

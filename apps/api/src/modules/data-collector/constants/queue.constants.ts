@@ -30,10 +30,14 @@ export const JOB_NAMES = {
   CHECK_NEW_COMP: 'check-new-comp',
   /** Detects game version / patch changes. */
   CHECK_PATCH_DROP: 'check-patch-drop',
+  /** Polls for micro-patch / hotfix version changes (every 15 min). */
+  CHECK_HOTFIX: 'check-hotfix',
   /** Sends a Discord alert. */
   SEND_DISCORD_ALERT: 'send-discord-alert',
   /** Refreshes all materialized views. */
   REFRESH_VIEWS: 'refresh-materialized-views',
+  /** Refreshes the top-50 player list for a single region from Riot API. */
+  REFRESH_PLAYER_LIST: 'refresh-player-list',
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];

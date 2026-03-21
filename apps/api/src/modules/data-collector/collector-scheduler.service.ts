@@ -1,13 +1,18 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { ALL_REGIONS, Region } from '../riot-api/constants/regions.constants';
+import { LIVE_REGIONS, PBE_REGIONS, Region } from '../riot-api/constants/regions.constants';
 import { QUEUE_NAMES, JOB_NAMES } from './constants/queue.constants';
 
 interface CollectRegionJobData {
   region: Region;
   tiers: Array<'CHALLENGER' | 'GRANDMASTER' | 'MASTER'>;
+}
+
+interface RefreshPlayerListJobData {
+  region: Region;
 }
 
 /** Shared alert job options — no retry, high priority. */
@@ -26,10 +31,14 @@ const ALERT_JOB_OPTS = {
  * (standard scheduled collection priority) with a unique jobId that includes
  * the current timestamp to prevent BullMQ deduplication from silently dropping runs.
  *
- * Also schedules three alert checks:
+ * Also schedules alert checks:
  *   - check-meta-shift  → hourly
  *   - check-new-comp    → every 6 hours
  *   - check-patch-drop  → every 30 minutes (same cadence as data collection)
+ *   - check-hotfix      → every 15 minutes (faster detection of micro-patches)
+ *
+ * Supports `COLLECTOR_MODE` env var ('live' | 'pbe') to switch between
+ * live regions and PBE. Can be toggled at runtime via `setMode()`.
  *
  * The scheduler itself is intentionally lightweight — it does zero heavy work.
  * All heavy lifting is done inside DataCollectorProcessor and the alert processors.
@@ -37,21 +46,43 @@ const ALERT_JOB_OPTS = {
 @Injectable()
 export class CollectorSchedulerService implements OnApplicationBootstrap {
   private readonly logger = new Logger(CollectorSchedulerService.name);
+  private collectorMode: 'pbe' | 'live';
 
   constructor(
+    private readonly config: ConfigService,
     @InjectQueue(QUEUE_NAMES.MATCH_COLLECTION)
     private readonly matchQueue: Queue<CollectRegionJobData>,
     @InjectQueue(QUEUE_NAMES.VIEW_REFRESH)
     private readonly viewRefreshQueue: Queue,
     @InjectQueue(QUEUE_NAMES.ALERTS)
-    private readonly alertQueue: Queue
-  ) {}
+    private readonly alertQueue: Queue,
+  ) {
+    this.collectorMode = this.config.get<'pbe' | 'live'>('COLLECTOR_MODE', 'live');
+  }
+
+  /** Returns the current collector mode. */
+  getMode(): 'pbe' | 'live' {
+    return this.collectorMode;
+  }
+
+  /** Switches collector mode at runtime without redeployment. */
+  setMode(mode: 'pbe' | 'live'): void {
+    this.logger.log(`[Scheduler] Collector mode switched: ${this.collectorMode} → ${mode}`);
+    this.collectorMode = mode;
+  }
+
+  /** Returns the regions to collect based on current mode. */
+  private getActiveRegions(): Region[] {
+    return this.collectorMode === 'pbe' ? PBE_REGIONS : LIVE_REGIONS;
+  }
 
   async onApplicationBootstrap() {
     this.logger.log(`[Scheduler] Application started — triggering initial jobs immediately...`);
     await this.scheduleRegionCollection();
     await this.schedulePatchDropCheck();
+    await this.scheduleHotfixCheck();
     await this.scheduleViewRefresh();
+    await this.schedulePlayerListRefresh();
   }
 
   /**
@@ -74,7 +105,8 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
       'MASTER',
     ];
 
-    const jobs = ALL_REGIONS.map((region) => ({
+    const regions = this.getActiveRegions();
+    const jobs = regions.map((region) => ({
       name: JOB_NAMES.COLLECT_REGION,
       data: { region, tiers } satisfies CollectRegionJobData,
       opts: {
@@ -91,8 +123,8 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
     await this.matchQueue.addBulk(jobs);
 
     this.logger.log(
-      `[Scheduler] Enqueued ${ALL_REGIONS.length} collect-region jobs ` +
-        `(batch ${batchId}): ${ALL_REGIONS.join(', ')}`
+      `[Scheduler] Enqueued ${regions.length} collect-region jobs ` +
+        `(batch ${batchId}, mode=${this.collectorMode}): ${regions.join(', ')}`
     );
   }
 
@@ -120,6 +152,43 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
     );
 
     this.logger.log(`[Scheduler] Enqueued view-refresh job (${jobId})`);
+  }
+
+  // ── Player list refresh ────────────────────────────────────────────────────
+
+  /**
+   * Refreshes the top-50 player list for every active region once per day at 02:00 UTC.
+   *
+   * Enqueues one `refresh-player-list` job per region into the match-collection queue.
+   * Each job fetches the Challenger/Grandmaster/Master leaderboard from Riot API and
+   * upserts the top 50 players (by LP) into the `players` table.
+   *
+   * Cron: `0 0 2 * * *` — second 0, minute 0, hour 2, every day.
+   */
+  @Cron('0 0 2 * * *')
+  async schedulePlayerListRefresh(): Promise<void> {
+    const batchId = Date.now();
+    const regions = this.getActiveRegions();
+
+    const jobs = regions.map((region) => ({
+      name: JOB_NAMES.REFRESH_PLAYER_LIST,
+      data: { region } satisfies RefreshPlayerListJobData,
+      opts: {
+        jobId: `refresh-player-list-${region}-${batchId}`,
+        priority: 4, // Above regular match collection (5), below alerts (1)
+        attempts: 3,
+        backoff: { type: 'exponential' as const, delay: 10_000 },
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 500 },
+      },
+    }));
+
+    await this.matchQueue.addBulk(jobs);
+
+    this.logger.log(
+      `[Scheduler] Enqueued ${regions.length} refresh-player-list jobs ` +
+        `(batch ${batchId}, mode=${this.collectorMode}): ${regions.join(', ')}`
+    );
   }
 
   // ── Alert schedules ────────────────────────────────────────────────────────
@@ -172,5 +241,13 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
     const jobId = `patch-drop-${Date.now()}`;
     await this.alertQueue.add(JOB_NAMES.CHECK_PATCH_DROP, {}, { ...ALERT_JOB_OPTS, jobId });
     this.logger.debug(`[Scheduler] Enqueued patch-drop check (${jobId})`);
+  }
+
+  /** Checks for hotfixes/micro-patches every 15 minutes. */
+  @Cron('0 */15 * * * *')
+  async scheduleHotfixCheck(): Promise<void> {
+    const jobId = `hotfix-check-${Date.now()}`;
+    await this.alertQueue.add(JOB_NAMES.CHECK_HOTFIX, {}, { ...ALERT_JOB_OPTS, jobId });
+    this.logger.debug(`[Scheduler] Enqueued hotfix check (${jobId})`);
   }
 }

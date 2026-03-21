@@ -1,11 +1,13 @@
 import { Controller, Get, Param, Query, BadRequestException, Logger } from '@nestjs/common';
 import { CompQueryDto } from './dto/comp-query.dto';
 import { TrendQueryDto } from './dto/trend-query.dto';
+import { PlaybookQueryDto } from './dto/playbook.dto';
 import { MetaStatsService } from './meta-stats.service';
 import { TrendAnalysisService } from './trend-analysis.service';
 import { TierClassificationService } from './tier-classification.service';
 import { CompAnalyzerService } from './comp-analyzer.service';
 import { RegionComparisonService } from './region-comparison.service';
+import { PlaybookService } from './playbook.service';
 import type { RegionQueryDto, RegionCompareQueryDto } from './dto/region-comparison.dto';
 
 @Controller('analytics')
@@ -17,7 +19,8 @@ export class AnalyticsController {
     private readonly trendAnalysis: TrendAnalysisService,
     private readonly tierClassification: TierClassificationService,
     private readonly compAnalyzer: CompAnalyzerService,
-    private readonly regionComparison: RegionComparisonService
+    private readonly regionComparison: RegionComparisonService,
+    private readonly playbook: PlaybookService,
   ) {}
 
   // ── Patches endpoint ───────────────────────────────────────────────────────
@@ -33,6 +36,53 @@ export class AnalyticsController {
   @Get('patches')
   async getPatches() {
     return this.metaStats.getRecentPatches();
+  }
+
+  // ── Config endpoint ──────────────────────────────────────────────────────
+
+  /**
+   * GET /analytics/config
+   * Returns runtime configuration readable by the frontend.
+   * collector_mode: 'live' | 'pbe' — read from COLLECTOR_MODE env var.
+   */
+  @Get('config')
+  getConfig() {
+    // NOTE: reflects the startup env var value (COLLECTOR_MODE).
+    // Runtime mode switches via /data-collector/switch-mode only affect the
+    // worker process in-memory state and are not reflected here until restart.
+    return {
+      collector_mode: process.env.COLLECTOR_MODE || 'live',
+    };
+  }
+
+  // ── Playbook endpoint ─────────────────────────────────────────────────────
+
+  /**
+   * GET /analytics/playbook
+   *
+   * Returns the Day-1 Playbook: top 5-7 data-backed comps with detailed
+   * build guides (items, augments, level timing, flex routes).
+   *
+   * Only includes comps with winrate > 50% and sample_size > 50.
+   * Results cached in Redis for 1 hour.
+   *
+   * Query params:
+   *   - patch  (optional) — defaults to current patch from DB
+   *   - region (optional) — filter by region, e.g. "na1", "euw1"
+   */
+  @Get('playbook')
+  async getPlaybook(@Query() query: PlaybookQueryDto) {
+    const patch = query.patch ?? (await this.metaStats.getCurrentPatch());
+
+    if (!patch) {
+      throw new BadRequestException(
+        'No patch found in database. Pass `patch` explicitly or wait for data collection.'
+      );
+    }
+
+    this.logger.log(`GET /analytics/playbook patch=${patch} region=${query.region ?? 'all'}`);
+
+    return this.playbook.getPlaybook(patch, query.region);
   }
 
   // ── Meta endpoint ──────────────────────────────────────────────────────────

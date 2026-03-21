@@ -28,7 +28,6 @@ import {
   useRecentGamesQuery,
 } from '@/hooks/useTracker';
 import { useSettingsStore } from '@/lib/store/settings.store';
-import { getRiotLoginUrl } from '@/lib/api/auth.api';
 import { StatCard } from '@/components/ui/StatCard';
 import { ChartCard } from '@/components/ui/ChartCard';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -70,22 +69,39 @@ function getTiltColor(score: number): string {
 }
 
 function MyStatsPage() {
-  const { token, puuid } = useSettingsStore();
+  const { puuid } = useSettingsStore();
 
-  // Backward compat: if store has old puuid but no token, treat as unauthenticated
-  if (!token || !puuid) {
-    return <RiotConnectPrompt />;
+  if (!puuid) {
+    return <PuuidPrompt />;
   }
 
   return <StatsDashboard />;
 }
 
-function RiotConnectPrompt() {
+function PuuidPrompt() {
+  const setPuuid = useSettingsStore((s) => s.setPuuid);
+  const [input, setInput] = useState('');
+  const [error, setError] = useState('');
+
+  function handleSubmit() {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      setError('Please enter your PUUID.');
+      return;
+    }
+    // Basic PUUID format check: 78-char hex with dashes
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+      setError('That doesn\'t look like a valid PUUID. It should be a UUID like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.');
+      return;
+    }
+    setPuuid(trimmed);
+  }
+
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div
-          className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-8 text-center"
+          className="relative overflow-hidden rounded-2xl border border-(--border-default) bg-(--bg-surface) p-8"
           style={{
             background: `
               radial-gradient(ellipse at 20% 20%, rgba(139,92,246,0.06) 0%, transparent 50%),
@@ -94,69 +110,54 @@ function RiotConnectPrompt() {
             `,
           }}
         >
-          {/* Decorative stars */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            {[
-              { top: '12%', left: '8%', size: 2 },
-              { top: '25%', left: '85%', size: 1.5 },
-              { top: '60%', left: '5%', size: 1 },
-              { top: '75%', left: '90%', size: 2 },
-              { top: '40%', left: '92%', size: 1 },
-              { top: '85%', left: '15%', size: 1.5 },
-              { top: '10%', left: '60%', size: 1 },
-            ].map((star, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  top: star.top,
-                  left: star.left,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  opacity: 0.3,
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="relative mb-6 flex justify-center">
-            <div className="relative">
-              <div
-                className="flex h-20 w-20 items-center justify-center rounded-2xl border border-[var(--accent-gold)]/30 bg-[var(--accent-gold)]/10"
-                style={{ boxShadow: '0 0 20px rgba(245,158,11,0.2)' }}
-              >
-                <Shield size={36} className="text-[var(--accent-gold)]" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/20">
-                <User size={14} className="text-[var(--accent-primary)]" />
-              </div>
+          <div className="mb-6 flex justify-center">
+            <div
+              className="flex h-20 w-20 items-center justify-center rounded-2xl border border-(--accent-gold)/30 bg-(--accent-gold)/10"
+              style={{ boxShadow: '0 0 20px rgba(245,158,11,0.2)' }}
+            >
+              <User size={36} className="text-(--accent-gold)" />
             </div>
           </div>
 
-          <h1 className="mb-2 font-russo text-2xl font-normal tracking-wide text-[var(--text-primary)]">
-            Track Your Performance
+          <h1 className="mb-2 text-center font-russo text-2xl font-normal tracking-wide text-slate-100">
+            Enter Your PUUID
           </h1>
-          <p className="mx-auto mb-6 max-w-sm text-sm leading-relaxed text-text-secondary">
-            Connect your Riot account to unlock personal stats, tilt detection, placement history,
-            and weekly improvement reports.
+          <p className="mb-6 text-center text-sm leading-relaxed text-slate-400">
+            Paste your Riot PUUID to load your personal stats, tilt detection, and placement history.
           </p>
 
-          <a
-            href={getRiotLoginUrl()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all duration-150"
-            style={{
-              background: 'linear-gradient(135deg, #d13639 0%, #e44d50 100%)',
-              color: '#fff',
-              boxShadow: '0 0 20px rgba(209,54,57,0.3)',
-            }}
-          >
-            <Shield size={16} />
-            Connect with Riot
-          </a>
+          <div className="space-y-3">
+            <Input
+              value={input}
+              onChange={(e) => { setInput(e.target.value); setError(''); }}
+              onPressEnter={handleSubmit}
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              size="large"
+              className="font-mono text-xs"
+            />
+            {error && (
+              <p className="flex items-center gap-1.5 text-xs text-rose-400">
+                <AlertTriangle size={12} />
+                {error}
+              </p>
+            )}
+            <Button
+              type="primary"
+              size="large"
+              block
+              onClick={handleSubmit}
+              icon={<Search size={15} />}
+            >
+              Load My Stats
+            </Button>
+          </div>
 
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-text-secondary">
-            <CheckCircle2 size={12} className="text-emerald-400" />
-            Your account is connected securely via Riot Sign On
+          <p className="mt-5 text-center text-xs text-slate-500">
+            Find your PUUID at{' '}
+            <span className="font-mono text-slate-400">
+              /lol-summoner/v1/current-summoner
+            </span>{' '}
+            in the LCU API, or from your match history via the Riot API.
           </p>
         </div>
       </div>
@@ -253,7 +254,11 @@ function StatsDashboard() {
                   : 'border-rose-500/30 bg-rose-500/10 text-rose-400'
               )}
             >
-              {better ? <ArrowDown size={11} strokeWidth={3} /> : <ArrowUp size={11} strokeWidth={3} />}
+              {better ? (
+                <ArrowDown size={11} strokeWidth={3} />
+              ) : (
+                <ArrowUp size={11} strokeWidth={3} />
+              )}
               {better ? '' : '+'}
               {value.toFixed(2)}
             </span>
@@ -323,11 +328,13 @@ function StatsDashboard() {
         title="My Stats"
         subtitle="Personal performance tracker"
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {gameName && tagLine && (
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-1.5 text-sm font-medium text-slate-200">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-200">
                 <User size={14} className="text-[var(--accent-primary)]" />
-                {gameName}#{tagLine}
+                <span className="truncate max-w-[120px] sm:max-w-none">
+                  {gameName}#{tagLine}
+                </span>
               </span>
             )}
             <Button
@@ -351,7 +358,11 @@ function StatsDashboard() {
           <>
             <StatCard
               title="Avg Placement"
-              value={placements.data?.avg_placement != null ? placements.data.avg_placement.toFixed(2) : '-'}
+              value={
+                placements.data?.avg_placement != null
+                  ? placements.data.avg_placement.toFixed(2)
+                  : '-'
+              }
               subtitle="lower is better"
               icon={Target}
               iconColor="text-[var(--accent-primary)]"
@@ -360,7 +371,11 @@ function StatsDashboard() {
             />
             <StatCard
               title="Top 4 Rate"
-              value={placements.data?.top4_rate != null ? `${(placements.data.top4_rate * 100).toFixed(1)}%` : '-'}
+              value={
+                placements.data?.top4_rate != null
+                  ? `${(placements.data.top4_rate * 100).toFixed(1)}%`
+                  : '-'
+              }
               subtitle="podium finishes"
               icon={Award}
               iconColor="text-emerald-400"
@@ -369,7 +384,11 @@ function StatsDashboard() {
             />
             <StatCard
               title="Win Rate"
-              value={placements.data?.win_rate != null ? `${(placements.data.win_rate * 100).toFixed(1)}%` : '-'}
+              value={
+                placements.data?.win_rate != null
+                  ? `${(placements.data.win_rate * 100).toFixed(1)}%`
+                  : '-'
+              }
               subtitle="1st place finishes"
               icon={Trophy}
               iconColor="text-amber-400"
@@ -395,10 +414,15 @@ function StatsDashboard() {
 
       {!placements.isLoading && placements.data?.total_games === 0 && (
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 text-center shadow-card">
-          <Gamepad2 size={48} className="mx-auto mb-4 text-text-secondary opacity-20" strokeWidth={1.5} />
+          <Gamepad2
+            size={48}
+            className="mx-auto mb-4 text-text-secondary opacity-20"
+            strokeWidth={1.5}
+          />
           <p className="mb-2 text-base font-bold text-text-primary">No games recorded yet</p>
           <p className="mx-auto max-w-xs text-sm text-text-secondary">
-            Play some TFT games and come back — your stats will appear here once data has been collected.
+            Play some TFT games and come back — your stats will appear here once data has been
+            collected.
           </p>
         </div>
       )}
@@ -410,7 +434,9 @@ function StatsDashboard() {
           <div className="h-2 w-full rounded-full bg-[var(--bg-overlay)]/70" />
         </div>
       )}
-      {tilt.error && <ErrorCard message="Failed to load tilt status" retry={() => tilt.refetch()} />}
+      {tilt.error && (
+        <ErrorCard message="Failed to load tilt status" retry={() => tilt.refetch()} />
+      )}
       {tilt.data && (
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -436,7 +462,9 @@ function StatsDashboard() {
                   <p className="mt-1 flex items-center gap-1 text-xs text-text-secondary">
                     <Zap
                       size={11}
-                      className={tilt.data.streak_type === 'WIN' ? 'text-emerald-400' : 'text-rose-400'}
+                      className={
+                        tilt.data.streak_type === 'WIN' ? 'text-emerald-400' : 'text-rose-400'
+                      }
                     />
                     {tilt.data.streak_length}-game {tilt.data.streak_type.toLowerCase()} streak
                   </p>
@@ -460,7 +488,9 @@ function StatsDashboard() {
                   className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${Math.max(0, Math.min(100, tilt.data.tilt_score))}%`,
-                    background: `linear-gradient(90deg, ${getTiltColor(0)}, ${getTiltColor(tilt.data.tilt_score)})`,
+                    background: `linear-gradient(90deg, ${getTiltColor(0)}, ${getTiltColor(
+                      tilt.data.tilt_score
+                    )})`,
                     boxShadow: `0 0 8px ${getTiltColor(tilt.data.tilt_score)}50`,
                   }}
                 />
@@ -485,7 +515,11 @@ function StatsDashboard() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={placementData} barSize={30} margin={{ top: 6, right: 12, left: -8, bottom: 0 }}>
+            <BarChart
+              data={placementData}
+              barSize={30}
+              margin={{ top: 6, right: 12, left: -8, bottom: 0 }}
+            >
               <XAxis
                 dataKey="name"
                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
@@ -513,11 +547,7 @@ function StatsDashboard() {
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {placementData.map((d, i) => (
-                  <Cell
-                    key={i}
-                    fill={getPlacementBarColor(d.placement)}
-                    fillOpacity={0.9}
-                  />
+                  <Cell key={i} fill={getPlacementBarColor(d.placement)} fillOpacity={0.9} />
                 ))}
               </Bar>
             </BarChart>
@@ -531,8 +561,12 @@ function StatsDashboard() {
       <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
         <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">Comp Proficiency</h2>
-            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">Your performance vs. the global meta</p>
+            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">
+              Comp Proficiency
+            </h2>
+            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+              Your performance vs. the global meta
+            </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Input
@@ -570,9 +604,12 @@ function StatsDashboard() {
       {weekly.data && weekly.data.weaknesses.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
           <div className="mb-4">
-            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">Weekly Report — Areas to Improve</h2>
+            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">
+              Weekly Report — Areas to Improve
+            </h2>
             <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
-              Based on your last <span className="tabular-nums">{weekly.data.total_games}</span> games this patch
+              Based on your last <span className="tabular-nums">{weekly.data.total_games}</span>{' '}
+              games this patch
             </p>
           </div>
           <ul className="divide-y divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)]">
@@ -591,14 +628,18 @@ function StatsDashboard() {
                 </span>
                 <div className="min-w-0">
                   <span className="text-sm font-semibold text-text-primary">{w.area}</span>
-                  <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">{w.description}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">
+                    {w.description}
+                  </p>
                 </div>
               </li>
             ))}
           </ul>
           {weekly.data.improvement_tips.length > 0 && (
             <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-5 py-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">Tips</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                Tips
+              </p>
               <ul className="space-y-1">
                 {weekly.data.improvement_tips.map((tip, i) => (
                   <li key={i} className="flex items-start gap-1.5 text-xs text-text-secondary">
@@ -617,10 +658,14 @@ function StatsDashboard() {
       )}
       <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
         <div className="mb-4">
-          <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">Recent Games</h2>
+          <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">
+            Recent Games
+          </h2>
           <p className="mt-1 text-sm text-slate-400">
             {recentRows.length ? (
-              <>Last <span className="tabular-nums">{recentRows.length}</span> games played</>
+              <>
+                Last <span className="tabular-nums">{recentRows.length}</span> games played
+              </>
             ) : (
               'Your latest matches'
             )}

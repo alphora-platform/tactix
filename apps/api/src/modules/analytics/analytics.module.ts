@@ -10,6 +10,7 @@ import { TrendAnalysisService } from './trend-analysis.service';
 import { TierClassificationService } from './tier-classification.service';
 import { CompAnalyzerService } from './comp-analyzer.service';
 import { RegionComparisonService } from './region-comparison.service';
+import { PlaybookService } from './playbook.service';
 import { ANALYTICS_REDIS_CLIENT } from './constants/analytics.constants';
 import { PatchVersion } from '../../database/entities';
 
@@ -46,6 +47,7 @@ import { PatchVersion } from '../../database/entities';
     TierClassificationService,
     CompAnalyzerService,
     RegionComparisonService,
+    PlaybookService,
 
     // Dedicated ioredis client for analytics caching (not shared with BullMQ).
     {
@@ -70,6 +72,7 @@ import { PatchVersion } from '../../database/entities';
     TierClassificationService,
     CompAnalyzerService,
     RegionComparisonService,
+    PlaybookService,
   ],
 })
 export class AnalyticsModule {}

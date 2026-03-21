@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { corsConfig } from './common/config/cors.config';
@@ -31,6 +31,9 @@ async function bootstrap() {
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   const port = process.env.PORT || 3000;
+
+  // Global validation — enforces all DTO decorators across every endpoint
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // Enable CORS
   const corsOptions = corsConfig.useFactory(configService);

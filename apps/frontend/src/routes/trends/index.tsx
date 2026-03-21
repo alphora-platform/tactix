@@ -325,7 +325,7 @@ function TrendsPage() {
               <BarChart
                 data={chartData}
                 layout="vertical"
-                margin={{ top: 6, right: 80, left: 8, bottom: 4 }}
+                margin={{ top: 6, right: 50, left: 8, bottom: 4 }}
                 barGap={3}
               >
                 <defs>
@@ -350,9 +350,9 @@ function TrendsPage() {
                 <YAxis
                   type="category"
                   dataKey="comp_name"
-                  width={180}
-                  tickFormatter={(value: string) => truncateLabel(value, 20)}
-                  tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                  width={120}
+                  tickFormatter={(value: string) => truncateLabel(value, 14)}
+                  tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
                   axisLine={{ stroke: 'var(--border-default)' }}
                   tickLine={false}
                 />
