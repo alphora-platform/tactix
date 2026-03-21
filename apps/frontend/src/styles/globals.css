@@ -16,7 +16,8 @@
 }
 
 @keyframes cosmos-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 6px rgba(139, 92, 246, 0.4), 0 0 14px rgba(139, 92, 246, 0.2);
     opacity: 1;
   }
@@ -27,13 +28,25 @@
 }
 
 @keyframes live-blink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 /* Skeleton shimmer base */

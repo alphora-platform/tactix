@@ -56,7 +56,7 @@ export class HotfixDetectionProcessor extends WorkerHost {
     private readonly dataSource: DataSource,
     private readonly notification: NotificationService,
     @Inject(ALERTS_REDIS_CLIENT) private readonly redis: Redis,
-    @InjectQueue('patch-analysis') private readonly patchAnalysisQueue: Queue,
+    @InjectQueue('patch-analysis') private readonly patchAnalysisQueue: Queue
   ) {
     super();
   }
@@ -71,7 +71,7 @@ export class HotfixDetectionProcessor extends WorkerHost {
       `SELECT game_version
        FROM matches
        ORDER BY game_datetime DESC
-       LIMIT 1`,
+       LIMIT 1`
     );
 
     const currentVersion = rows[0]?.game_version;
@@ -103,15 +103,13 @@ export class HotfixDetectionProcessor extends WorkerHost {
       // Still update our tracked version so we don't re-alert.
       await this.redis.set(LAST_FULL_VERSION_KEY, currentVersion);
       this.logger.debug(
-        `[HotfixDetect] Full patch change detected (${prevPatch} → ${newPatch}), deferring to PatchDropProcessor`,
+        `[HotfixDetect] Full patch change detected (${prevPatch} → ${newPatch}), deferring to PatchDropProcessor`
       );
       return { deferred_to_patch_drop: true, previous: lastVersion, current: currentVersion };
     }
 
     // It's a hotfix — same major.minor, different build number
-    this.logger.log(
-      `[HotfixDetect] 🔧 HOTFIX DETECTED: ${lastVersion} → ${currentVersion}`,
-    );
+    this.logger.log(`[HotfixDetect] 🔧 HOTFIX DETECTED: ${lastVersion} → ${currentVersion}`);
 
     const prevBuild = this.extractBuildNumber(lastVersion);
     const newBuild = this.extractBuildNumber(currentVersion);
@@ -154,18 +152,21 @@ export class HotfixDetectionProcessor extends WorkerHost {
         previous_version: lastVersion,
         new_version: currentVersion,
       },
-      { priority: 1 },
+      { priority: 1 }
     );
 
     // Also trigger an immediate meta-shift check to compare pre/post hotfix
-    await this.redis.publish('alerts:trigger', JSON.stringify({
-      type: 'meta-shift-check',
-      reason: 'hotfix-detected',
-      patch: newPatch,
-    }));
+    await this.redis.publish(
+      'alerts:trigger',
+      JSON.stringify({
+        type: 'meta-shift-check',
+        reason: 'hotfix-detected',
+        patch: newPatch,
+      })
+    );
 
     this.logger.log(
-      `[HotfixDetect] HOTFIX alert sent and meta comparison triggered — ${lastVersion} → ${currentVersion}`,
+      `[HotfixDetect] HOTFIX alert sent and meta comparison triggered — ${lastVersion} → ${currentVersion}`
     );
 
     return {
@@ -210,7 +211,7 @@ export class HotfixDetectionProcessor extends WorkerHost {
       if (allKeys.length > 0) {
         await this.redis.del(...allKeys);
         this.logger.log(
-          `[HotfixDetect] Invalidated ${tierKeys.length} tier-list + ${playbookKeys.length} playbook cache keys`,
+          `[HotfixDetect] Invalidated ${tierKeys.length} tier-list + ${playbookKeys.length} playbook cache keys`
         );
       }
     } catch (err) {

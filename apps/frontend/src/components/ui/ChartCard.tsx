@@ -99,7 +99,11 @@ export function ChartCard({
           </div>
         ) : empty ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <BarChart2 size={36} className="text-[var(--text-secondary)] opacity-20" strokeWidth={1.5} />
+            <BarChart2
+              size={36}
+              className="text-[var(--text-secondary)] opacity-20"
+              strokeWidth={1.5}
+            />
             <p className="text-sm text-[var(--text-secondary)]">{emptyText}</p>
           </div>
         ) : (

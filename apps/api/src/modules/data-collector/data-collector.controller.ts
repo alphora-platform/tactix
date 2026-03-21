@@ -1,4 +1,14 @@
-import { Controller, Logger, Post, Body, Get, UseGuards, BadRequestException, ServiceUnavailableException, Optional } from '@nestjs/common';
+import {
+  Controller,
+  Logger,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  BadRequestException,
+  ServiceUnavailableException,
+  Optional,
+} from '@nestjs/common';
 import {
   DataCollectorService,
   CollectionSummary,
@@ -13,7 +23,7 @@ export class DataCollectorController {
 
   constructor(
     private readonly dataCollectorService: DataCollectorService,
-    @Optional() private readonly scheduler: CollectorSchedulerService | null,
+    @Optional() private readonly scheduler: CollectorSchedulerService | null
   ) {}
 
   @Post('collect-players')

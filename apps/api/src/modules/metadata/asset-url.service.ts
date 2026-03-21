@@ -6,7 +6,7 @@ import { GameDataLoaderService } from './game-data-loader.service';
 export class AssetUrlService {
   constructor(
     private readonly cache: MetadataCacheService,
-    private readonly loader: GameDataLoaderService,
+    private readonly loader: GameDataLoaderService
   ) {}
 
   private get fallbackIcon(): string {

@@ -59,7 +59,7 @@ export class PlaybookService {
     private readonly compAnalyzer: CompAnalyzerService,
     private readonly tierClassification: TierClassificationService,
     private readonly friendlyNameService: FriendlyNameService,
-    @Inject(ANALYTICS_REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(ANALYTICS_REDIS_CLIENT) private readonly redis: Redis
   ) {}
 
   async getPlaybook(patch: string, region?: string): Promise<PlaybookDto> {
@@ -115,9 +115,7 @@ export class PlaybookService {
 
         const consistency = top4Rate;
         const sampleWeight =
-          maxSample > 1 && sampleSize > 0
-            ? Math.log10(sampleSize) / Math.log10(maxSample)
-            : 0;
+          maxSample > 1 && sampleSize > 0 ? Math.log10(sampleSize) / Math.log10(maxSample) : 0;
 
         const compositeScore = winRate * 0.4 + consistency * 0.35 + sampleWeight * 0.25;
 
@@ -136,7 +134,7 @@ export class PlaybookService {
 
     // Enrich each comp with deep-dive data in parallel
     const enrichedComps = await Promise.all(
-      scored.map((comp, index) => this.enrichComp(comp, index + 1, patch, allComps)),
+      scored.map((comp, index) => this.enrichComp(comp, index + 1, patch, allComps))
     );
 
     return {
@@ -146,10 +144,7 @@ export class PlaybookService {
     };
   }
 
-  private async fetchQualifiedComps(
-    patch: string,
-    region?: string,
-  ): Promise<CompStatsRow[]> {
+  private async fetchQualifiedComps(patch: string, region?: string): Promise<CompStatsRow[]> {
     let sql: string;
     let params: unknown[];
 
@@ -204,16 +199,15 @@ export class PlaybookService {
     },
     rank: number,
     patch: string,
-    allComps: CompStatsRow[],
+    allComps: CompStatsRow[]
   ): Promise<PlaybookCompDto> {
-    const [bestItems, augmentPath, levelTiming, compLabel, flexRoutes] =
-      await Promise.all([
-        this.compAnalyzer.getBestItems(comp.comp_id, patch),
-        this.compAnalyzer.getOptimalAugments(comp.comp_id, patch),
-        this.compAnalyzer.getLevelTiming(comp.comp_id, patch),
-        this.friendlyNameService.resolveCompLabel(comp.trait_combo),
-        this.findFlexRoutes(comp.comp_id, comp.trait_combo, allComps),
-      ]);
+    const [bestItems, augmentPath, levelTiming, compLabel, flexRoutes] = await Promise.all([
+      this.compAnalyzer.getBestItems(comp.comp_id, patch),
+      this.compAnalyzer.getOptimalAugments(comp.comp_id, patch),
+      this.compAnalyzer.getLevelTiming(comp.comp_id, patch),
+      this.friendlyNameService.resolveCompLabel(comp.trait_combo),
+      this.findFlexRoutes(comp.comp_id, comp.trait_combo, allComps),
+    ]);
 
     // Transform bestItems → carries (frontend shape)
     const carries: PlaybookCarryDto[] = bestItems.map((bi) => ({
@@ -223,7 +217,7 @@ export class PlaybookService {
           item_id: itemId,
           win_rate: combo.win_rate,
           sample_size: combo.sample_size,
-        })),
+        }))
       ),
     }));
 
@@ -288,7 +282,7 @@ export class PlaybookService {
   private async findFlexRoutes(
     compId: string,
     traitCombo: string[],
-    allComps: CompStatsRow[],
+    allComps: CompStatsRow[]
   ): Promise<PlaybookFlexRouteDto[]> {
     const traitSet = new Set(traitCombo);
 
@@ -311,7 +305,7 @@ export class PlaybookService {
           win_rate: parseFloat(c.win_rate),
           shared_units: c.shared_traits,
         };
-      }),
+      })
     );
   }
 }

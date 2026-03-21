@@ -126,9 +126,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   animation: 'cosmos-pulse 2.5s ease-in-out infinite',
                 }}
               >
-                <span
-                  className="flex h-full w-full items-center justify-center font-russo text-xs font-normal text-white"
-                >
+                <span className="flex h-full w-full items-center justify-center font-russo text-xs font-normal text-white">
                   T
                 </span>
               </span>
@@ -180,9 +178,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   className={cn(
                     'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium outline-none transition-all duration-150',
                     sidebarOpen ? 'justify-start' : 'justify-center',
-                    active
-                      ? 'text-white'
-                      : 'text-slate-500 hover:bg-white/4 hover:text-slate-300'
+                    active ? 'text-white' : 'text-slate-500 hover:bg-white/4 hover:text-slate-300'
                   )}
                   style={
                     active
@@ -262,7 +258,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         >
           {sidebarOpen ? (
             <>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tactix</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Tactix
+              </p>
               <p className="text-[10px] text-(--text-muted)">Not affiliated with Riot</p>
             </>
           ) : (
@@ -289,7 +287,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <div className="hidden min-w-0 items-center gap-1.5 sm:flex">
               <span className="select-none text-xs text-slate-600">/</span>
               <ChevronRight size={12} className="text-slate-600" />
-              <span className="font-chakra truncate text-sm font-medium tracking-wide text-slate-200">{breadcrumb}</span>
+              <span className="font-chakra truncate text-sm font-medium tracking-wide text-slate-200">
+                {breadcrumb}
+              </span>
             </div>
           </div>
 
@@ -343,7 +343,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   />
                 )}
                 <Icon size={20} strokeWidth={active ? 2 : 1.75} />
-                <span className={cn('text-[9px] font-semibold uppercase tracking-wide leading-none', active ? 'opacity-100' : 'opacity-70')}>
+                <span
+                  className={cn(
+                    'text-[9px] font-semibold uppercase tracking-wide leading-none',
+                    active ? 'opacity-100' : 'opacity-70'
+                  )}
+                >
                   {label}
                 </span>
               </Link>

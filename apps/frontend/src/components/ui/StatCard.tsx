@@ -31,11 +31,7 @@ export function StatCard({
   loading = false,
   className,
 }: StatCardProps) {
-  const isPositiveTrend = trend
-    ? trend.invertColor
-      ? trend.value < 0
-      : trend.value > 0
-    : false;
+  const isPositiveTrend = trend ? (trend.invertColor ? trend.value < 0 : trend.value > 0) : false;
 
   const trendColor = isPositiveTrend ? 'text-accent-green' : 'text-accent-red';
   const TrendIcon = trend && trend.value >= 0 ? TrendingUp : TrendingDown;
@@ -81,7 +77,9 @@ export function StatCard({
       {/* Hover glow overlay */}
       <div
         className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: 'radial-gradient(ellipse at top, rgba(139,92,246,0.06) 0%, transparent 65%)' }}
+        style={{
+          background: 'radial-gradient(ellipse at top, rgba(139,92,246,0.06) 0%, transparent 65%)',
+        }}
       />
 
       {/* Inner top highlight */}
@@ -106,7 +104,9 @@ export function StatCard({
                 {Math.abs(trend.value)}%
               </span>
               {trend.label && (
-                <span className="text-xs font-normal text-[var(--text-secondary)]">{trend.label}</span>
+                <span className="text-xs font-normal text-[var(--text-secondary)]">
+                  {trend.label}
+                </span>
               )}
             </div>
           )}

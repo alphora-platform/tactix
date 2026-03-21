@@ -4,9 +4,7 @@ const API_BASE = apiClient.defaults.baseURL ?? 'http://localhost:3001';
 
 /** Returns the Riot OAuth login URL that redirects to our callback page. */
 export function getRiotLoginUrl(): string {
-  const callbackUri = encodeURIComponent(
-    window.location.origin + '/auth/callback'
-  );
+  const callbackUri = encodeURIComponent(window.location.origin + '/auth/callback');
   return `${API_BASE}/auth/riot/login?redirect_uri=${callbackUri}`;
 }
 

@@ -2,15 +2,15 @@
 
 ## Test Configuration
 
-| Parameter | Value |
-|---|---|
-| Multiplier | 3x normal volume |
-| Normal rate | ~35 matches/min/region |
-| Target rate | ~105 matches/min/region |
-| Regions | 9 (NA, EUW, KR, EUNE, BR, JP, OCE, TR, VN) |
-| Total target throughput | ~945 jobs/min |
-| Duration | 300s (5 minutes) |
-| Total jobs enqueued | ~4,725 |
+| Parameter               | Value                                      |
+| ----------------------- | ------------------------------------------ |
+| Multiplier              | 3x normal volume                           |
+| Normal rate             | ~35 matches/min/region                     |
+| Target rate             | ~105 matches/min/region                    |
+| Regions                 | 9 (NA, EUW, KR, EUNE, BR, JP, OCE, TR, VN) |
+| Total target throughput | ~945 jobs/min                              |
+| Duration                | 300s (5 minutes)                           |
+| Total jobs enqueued     | ~4,725                                     |
 
 ## How to Run
 
@@ -30,11 +30,11 @@ LOAD_TEST_DURATION_SEC=600 LOAD_TEST_MULTIPLIER=5 nx run api:load-test
 
 ## Pass/Fail Criteria
 
-| Check | Threshold | Description |
-|---|---|---|
-| Queue depth | < 5,000 | Peak match-collection queue depth must stay below 5K |
-| Error rate | < 2% | Failed jobs must be under 2% of total |
-| P95 latency | < 30,000ms | 95th percentile job completion time |
+| Check       | Threshold  | Description                                          |
+| ----------- | ---------- | ---------------------------------------------------- |
+| Queue depth | < 5,000    | Peak match-collection queue depth must stay below 5K |
+| Error rate  | < 2%       | Failed jobs must be under 2% of total                |
+| P95 latency | < 30,000ms | 95th percentile job completion time                  |
 
 ## Metrics Collected
 

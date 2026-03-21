@@ -73,7 +73,9 @@ interface JobResult {
 async function main(): Promise<void> {
   console.log('='.repeat(70));
   console.log('  Tactix Collector Load Test');
-  console.log(`  Target: ${MULTIPLIER}x normal volume (${TARGET_RATE_PER_REGION} matches/min/region)`);
+  console.log(
+    `  Target: ${MULTIPLIER}x normal volume (${TARGET_RATE_PER_REGION} matches/min/region)`
+  );
   console.log(`  Duration: ${DURATION_SEC}s | Regions: ${REGIONS.length}`);
   console.log('='.repeat(70));
 
@@ -149,7 +151,9 @@ async function main(): Promise<void> {
   const intervalMsBetweenJobs = (60 * 1000) / TARGET_RATE_PER_REGION;
   const totalJobs = totalJobsPerRegion * REGIONS.length;
 
-  console.log(`\n[+] Enqueuing ${totalJobs} jobs (${totalJobsPerRegion}/region) over ${DURATION_SEC}s`);
+  console.log(
+    `\n[+] Enqueuing ${totalJobs} jobs (${totalJobsPerRegion}/region) over ${DURATION_SEC}s`
+  );
   console.log(`    Interval: ${intervalMsBetweenJobs.toFixed(0)}ms between jobs per region\n`);
 
   const startTime = Date.now();
@@ -233,9 +237,7 @@ async function main(): Promise<void> {
     .map((j) => j.completedAt - j.enqueuedAt)
     .sort((a, b) => a - b);
 
-  const p95Latency = latencies.length > 0
-    ? latencies[Math.floor(latencies.length * 0.95)]
-    : 0;
+  const p95Latency = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.95)] : 0;
 
   const peakQueueDepth = Math.max(...snapshots.map((s) => s.matchQueueDepth), 0);
   const peakRedisMemMb = Math.max(...snapshots.map((s) => s.redisMemoryBytes), 0) / 1024 / 1024;
@@ -257,9 +259,24 @@ async function main(): Promise<void> {
   // ── Verdict ─────────────────────────────────────────────────────────────
 
   const checks = [
-    { name: 'Queue depth', pass: peakQueueDepth < MAX_QUEUE_DEPTH, actual: peakQueueDepth, max: MAX_QUEUE_DEPTH },
-    { name: 'Error rate', pass: errorRate <= MAX_ERROR_RATE, actual: `${(errorRate * 100).toFixed(2)}%`, max: `${MAX_ERROR_RATE * 100}%` },
-    { name: 'P95 latency', pass: p95Latency <= MAX_P95_LATENCY_MS, actual: `${p95Latency}ms`, max: `${MAX_P95_LATENCY_MS}ms` },
+    {
+      name: 'Queue depth',
+      pass: peakQueueDepth < MAX_QUEUE_DEPTH,
+      actual: peakQueueDepth,
+      max: MAX_QUEUE_DEPTH,
+    },
+    {
+      name: 'Error rate',
+      pass: errorRate <= MAX_ERROR_RATE,
+      actual: `${(errorRate * 100).toFixed(2)}%`,
+      max: `${MAX_ERROR_RATE * 100}%`,
+    },
+    {
+      name: 'P95 latency',
+      pass: p95Latency <= MAX_P95_LATENCY_MS,
+      actual: `${p95Latency}ms`,
+      max: `${MAX_P95_LATENCY_MS}ms`,
+    },
   ];
 
   console.log('  CHECKS:');
@@ -270,7 +287,11 @@ async function main(): Promise<void> {
 
   const allPassed = checks.every((c) => c.pass);
   console.log('');
-  console.log(`  VERDICT: ${allPassed ? 'PASS' : 'FAIL'} — ${MULTIPLIER}x volume ${allPassed ? 'sustained' : 'NOT sustained'}`);
+  console.log(
+    `  VERDICT: ${allPassed ? 'PASS' : 'FAIL'} — ${MULTIPLIER}x volume ${
+      allPassed ? 'sustained' : 'NOT sustained'
+    }`
+  );
   console.log('='.repeat(70));
 
   // ── Queue depth over time (summary) ─────────────────────────────────────

@@ -226,9 +226,10 @@ function DivergenceTab() {
         if (!['KR', 'EUW', 'NA'].includes(region)) return {};
         return {
           style: {
-            background: delta >= 0
-              ? `linear-gradient(180deg, rgba(16,185,129,0.1) 0%, transparent 100%)`
-              : `linear-gradient(180deg, rgba(239,68,68,0.1) 0%, transparent 100%)`,
+            background:
+              delta >= 0
+                ? `linear-gradient(180deg, rgba(16,185,129,0.1) 0%, transparent 100%)`
+                : `linear-gradient(180deg, rgba(239,68,68,0.1) 0%, transparent 100%)`,
           },
         };
       },
@@ -264,7 +265,10 @@ function DivergenceTab() {
         sorter: (a, b) => a.diff_pct - b.diff_pct,
         render: (value: number) => (
           <span
-            className={cn('font-semibold tabular-nums', value >= 0 ? 'text-emerald-400' : 'text-rose-400')}
+            className={cn(
+              'font-semibold tabular-nums',
+              value >= 0 ? 'text-emerald-400' : 'text-rose-400'
+            )}
           >
             {value >= 0 ? '+' : ''}
             {value.toFixed(1)}%
@@ -422,7 +426,9 @@ function DivergenceTab() {
       <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">Regional Heatmap</h2>
+            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">
+              Regional Heatmap
+            </h2>
             <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
               Win rate per region — color coded against global average
             </p>

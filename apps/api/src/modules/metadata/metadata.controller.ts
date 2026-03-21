@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Query, HttpCode, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  HttpCode,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { MetadataCacheService } from './metadata-cache.service';
 import { GameDataLoaderService } from './game-data-loader.service';
 import { AdminApiKeyGuard } from '../../common/guards/admin-api-key.guard';
@@ -54,10 +62,7 @@ export class MetadataController {
   @Post('bootstrap')
   @HttpCode(200)
   @UseGuards(AdminApiKeyGuard)
-  async bootstrap(
-    @Query('set') setNumber?: string,
-    @Query('env') env?: string,
-  ) {
+  async bootstrap(@Query('set') setNumber?: string, @Query('env') env?: string) {
     const resolvedEnv = env === 'pbe' || env === 'latest' ? env : undefined;
 
     let data;
@@ -75,7 +80,9 @@ export class MetadataController {
 
     return {
       success: true,
-      message: `Bootstrapped metadata${setNumber ? ` for Set ${setNumber}` : ''} from Community Dragon (${resolvedEnv ?? this.loader.getCDragonEnv()})`,
+      message: `Bootstrapped metadata${
+        setNumber ? ` for Set ${setNumber}` : ''
+      } from Community Dragon (${resolvedEnv ?? this.loader.getCDragonEnv()})`,
       stats: {
         champions: Object.keys(data.champions).length,
         traits: Object.keys(data.traits).length,

@@ -83,9 +83,7 @@ export class DataCollectorService {
       try {
         const result = await this.collectRegionPlayers(region);
         results.push(result);
-        this.logger.log(
-          `[${region}] Collected ${result.total} challenger players`
-        );
+        this.logger.log(`[${region}] Collected ${result.total} challenger players`);
       } catch (error) {
         this.logger.error(`[${region}] Failed to collect players: ${(error as Error).message}`);
         results.push({
@@ -134,9 +132,7 @@ export class DataCollectorService {
       pool = [...pool, ...master];
     }
 
-    const top = pool
-      .sort((a, b) => b.leaguePoints - a.leaguePoints)
-      .slice(0, topN);
+    const top = pool.sort((a, b) => b.leaguePoints - a.leaguePoints).slice(0, topN);
 
     if (top.length > 0) {
       await this.upsertPlayers(top, region, 'CHALLENGER');

@@ -20,7 +20,7 @@ export class AnalyticsController {
     private readonly tierClassification: TierClassificationService,
     private readonly compAnalyzer: CompAnalyzerService,
     private readonly regionComparison: RegionComparisonService,
-    private readonly playbook: PlaybookService,
+    private readonly playbook: PlaybookService
   ) {}
 
   // ── Patches endpoint ───────────────────────────────────────────────────────
