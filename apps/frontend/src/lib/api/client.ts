@@ -4,6 +4,7 @@ export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3001',
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 // Unwrap nested data automatically

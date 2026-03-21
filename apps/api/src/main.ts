@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { corsConfig } from './common/config/cors.config';
 import { ConfigService } from '@nestjs/config';
 import AppDataSource from './modules/database/data-source';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const appMode = process.env.APP_MODE || 'api';
@@ -31,6 +32,9 @@ async function bootstrap() {
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   const port = process.env.PORT || 3000;
+
+  // Cookie parser — required for HttpOnly JWT cookie auth
+  app.use(cookieParser());
 
   // Global validation — enforces all DTO decorators across every endpoint
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
