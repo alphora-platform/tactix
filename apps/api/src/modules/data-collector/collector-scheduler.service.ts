@@ -8,7 +8,7 @@ import { QUEUE_NAMES, JOB_NAMES } from './constants/queue.constants';
 
 interface CollectRegionJobData {
   region: Region;
-  tiers: Array<'CHALLENGER' | 'GRANDMASTER' | 'MASTER'>;
+  tiers?: Array<'CHALLENGER' | 'GRANDMASTER' | 'MASTER'>;
 }
 
 interface RefreshPlayerListJobData {

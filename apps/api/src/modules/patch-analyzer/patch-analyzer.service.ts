@@ -1,12 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ImpactScoringService } from './impact-scoring.service';
 import { AccuracyTrackingService } from './accuracy-tracking.service';
 import { PatchNotesParserService } from './patch-notes-parser.service';
 
 @Injectable()
 export class PatchAnalyzerService {
-  private readonly logger = new Logger(PatchAnalyzerService.name);
-
   constructor(
     private readonly impactScoring: ImpactScoringService,
     private readonly accuracyTracking: AccuracyTrackingService,
