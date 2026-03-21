@@ -16,4 +16,5 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', 'test/load/'],
 };
