@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -13,6 +14,7 @@ import { PatchAnalyzerModule } from './modules/patch-analyzer/patch-analyzer.mod
 import { MetadataModule } from './modules/metadata/metadata.module';
 import { RawDataModule } from './modules/raw-data/raw-data.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 // Determine mode
 const appMode = process.env.APP_MODE || 'api'; // default 'api'
@@ -74,6 +76,6 @@ if (appMode === 'api') {
 @Module({
   imports: [...baseModules, ...featureModules],
   controllers: [],
-  providers: [],
+  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}

@@ -7,3 +7,4 @@ export { ParticipantAugment } from './participant-augment.entity';
 export { MetaSnapshot } from './meta-snapshot.entity';
 export { PatchPrediction } from './patch-prediction.entity';
 export { PatchVersion } from './patch-version.entity';
+export { User } from './user.entity';

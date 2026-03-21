@@ -16,12 +16,15 @@ import {
   Users,
   Trophy,
   FlaskConical,
+  LogOut,
 } from 'lucide-react';
 import { PatchSelector } from './PatchSelector';
 import { RegionFilter } from './RegionFilter';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { cn } from '../../lib/utils/cn';
 import { useChampions, useTraits, useItems, useAugments } from '../../lib/hooks/useMetadata';
+import { useAuthStore } from '../../lib/store/auth.store';
+import { useSignOut } from '../../hooks/useAuth';
 
 const NAV_ITEMS = [
   { to: '/meta', label: 'Meta', icon: Home },
@@ -79,6 +82,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   useTraits();
   useItems();
   useAugments();
+
+  const user = useAuthStore((s) => s.user);
+  const { mutate: signOut, isPending: signingOut } = useSignOut();
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sidebarOpen, _setSidebarOpen] = useState<boolean>(getSidebarOpen);
@@ -307,6 +313,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 className="border-(--border-default)! text-slate-300! hover:border-(--accent-primary)/60! hover:bg-white/5! hover:text-slate-100!"
               />
             </Badge>
+
+            {user && (
+              <div className="flex items-center gap-2 rounded-lg border border-(--border-default) bg-(--bg-elevated) px-3 py-1.5">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-br from-(--accent-primary) to-(--accent-cyan) text-[10px] font-bold text-white">
+                  {user.username[0].toUpperCase()}
+                </div>
+                <span className="font-chakra text-xs font-medium text-slate-300">
+                  {user.username}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  disabled={signingOut}
+                  aria-label="Sign out"
+                  className="ml-1 text-slate-500 transition-colors hover:text-rose-400 disabled:opacity-50"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="sm:hidden">

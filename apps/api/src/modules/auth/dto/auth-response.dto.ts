@@ -1,5 +1,5 @@
 export class AuthResponseDto {
-  puuid!: string;
-  gameName!: string;
-  tagLine!: string;
+  id!: string;
+  email!: string;
+  username!: string;
 }
