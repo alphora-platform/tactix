@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { CompDetectionService } from '../analytics/comp-detection.service';
 import { CompProficiencyService } from './comp-proficiency.service';
 import { ItemEfficiencyService } from './item-efficiency.service';
 import { TiltDetectionService } from './tilt-detection.service';
@@ -30,7 +29,6 @@ export class WeaknessReportService {
 
   constructor(
     private readonly dataSource: DataSource,
-    private readonly compDetection: CompDetectionService,
     private readonly compProficiency: CompProficiencyService,
     private readonly itemEfficiency: ItemEfficiencyService,
     private readonly tiltDetection: TiltDetectionService
