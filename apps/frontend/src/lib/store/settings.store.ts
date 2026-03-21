@@ -33,8 +33,7 @@ export const useSettingsStore = create<SettingsState>()(
       selectedRegion: '',
 
       setPuuid: (puuid) => set({ puuid }),
-      setAuthToken: (token, puuid, gameName, tagLine) =>
-        set({ token, puuid, gameName, tagLine }),
+      setAuthToken: (token, puuid, gameName, tagLine) => set({ token, puuid, gameName, tagLine }),
       clearAuth: () => set({ token: '', puuid: '', gameName: '', tagLine: '' }),
       setSelectedPatch: (selectedPatch) => set({ selectedPatch }),
       setSelectedRegion: (selectedRegion) => set({ selectedRegion }),

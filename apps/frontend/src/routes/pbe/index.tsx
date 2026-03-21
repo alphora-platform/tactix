@@ -7,11 +7,7 @@ import { ErrorCard } from '@/components/ui/ErrorCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import { cn } from '@/lib/utils/cn';
-import {
-  formatWinRate,
-  getWinRateColor,
-  getPlacementColor,
-} from '@/lib/utils/display.utils';
+import { formatWinRate, getWinRateColor, getPlacementColor } from '@/lib/utils/display.utils';
 import { fetchMeta } from '@/lib/api/analytics.api';
 import type { CompStatDto } from '@/lib/types/analytics.types';
 
@@ -50,7 +46,10 @@ function PbePage() {
 
       {/* Collector status card */}
       <div className="rounded-xl border border-(--border-default) bg-(--bg-surface) p-5">
-        <div className="h-[3px] -mx-5 -mt-5 mb-4 rounded-t-xl" style={{ background: 'linear-gradient(90deg, #06b6d4 0%, #0891b2 50%, #06b6d4 100%)' }} />
+        <div
+          className="h-[3px] -mx-5 -mt-5 mb-4 rounded-t-xl"
+          style={{ background: 'linear-gradient(90deg, #06b6d4 0%, #0891b2 50%, #06b6d4 100%)' }}
+        />
         <h3 className="font-russo text-sm tracking-wide text-slate-200 mb-3">Collector Status</h3>
         {configQuery.isLoading && (
           <div className="h-6 w-32 animate-pulse rounded bg-(--bg-overlay)/60" />
@@ -115,7 +114,10 @@ function PbePage() {
 function PbeCompCard({ comp }: { comp: CompStatDto }) {
   return (
     <div className="overflow-hidden rounded-xl border border-(--border-default) bg-(--bg-surface) transition-all hover:border-cyan-500/30">
-      <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #06b6d4 0%, #0891b2 50%, #06b6d4 100%)' }} />
+      <div
+        className="h-[3px]"
+        style={{ background: 'linear-gradient(90deg, #06b6d4 0%, #0891b2 50%, #06b6d4 100%)' }}
+      />
       <div className="p-4 space-y-3">
         <h4 className="truncate text-sm font-semibold text-slate-100">
           {comp.label || comp.comp_id}
@@ -123,19 +125,35 @@ function PbeCompCard({ comp }: { comp: CompStatDto }) {
 
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <p className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">Win Rate</p>
-            <p className={cn('font-chakra text-sm font-bold tabular-nums', getWinRateColor(comp.win_rate))}>
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">
+              Win Rate
+            </p>
+            <p
+              className={cn(
+                'font-chakra text-sm font-bold tabular-nums',
+                getWinRateColor(comp.win_rate)
+              )}
+            >
               {formatWinRate(comp.win_rate)}
             </p>
           </div>
           <div>
-            <p className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">Avg Place</p>
-            <p className={cn('font-chakra text-sm font-bold tabular-nums', getPlacementColor(Math.round(comp.avg_placement)))}>
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">
+              Avg Place
+            </p>
+            <p
+              className={cn(
+                'font-chakra text-sm font-bold tabular-nums',
+                getPlacementColor(Math.round(comp.avg_placement))
+              )}
+            >
               {comp.avg_placement.toFixed(2)}
             </p>
           </div>
           <div>
-            <p className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">Games</p>
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">
+              Games
+            </p>
             <p className="font-chakra text-sm font-bold tabular-nums text-slate-200">
               {comp.sample_size.toLocaleString()}
             </p>

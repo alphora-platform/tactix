@@ -55,7 +55,7 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
     @InjectQueue(QUEUE_NAMES.VIEW_REFRESH)
     private readonly viewRefreshQueue: Queue,
     @InjectQueue(QUEUE_NAMES.ALERTS)
-    private readonly alertQueue: Queue,
+    private readonly alertQueue: Queue
   ) {
     this.collectorMode = this.config.get<'pbe' | 'live'>('COLLECTOR_MODE', 'live');
   }

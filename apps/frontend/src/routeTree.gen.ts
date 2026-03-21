@@ -8,117 +8,117 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as TrendsIndexRouteImport } from './routes/trends/index'
-import { Route as StatsIndexRouteImport } from './routes/stats/index'
-import { Route as RegionsIndexRouteImport } from './routes/regions/index'
-import { Route as PlayerIndexRouteImport } from './routes/player/index'
-import { Route as PlaybookIndexRouteImport } from './routes/playbook/index'
-import { Route as PbeIndexRouteImport } from './routes/pbe/index'
-import { Route as MetaIndexRouteImport } from './routes/meta/index'
-import { Route as MatchIndexRouteImport } from './routes/match/index'
-import { Route as MetaCompIdRouteImport } from './routes/meta/$compId'
-import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as TrendsIndexRouteImport } from './routes/trends/index';
+import { Route as StatsIndexRouteImport } from './routes/stats/index';
+import { Route as RegionsIndexRouteImport } from './routes/regions/index';
+import { Route as PlayerIndexRouteImport } from './routes/player/index';
+import { Route as PlaybookIndexRouteImport } from './routes/playbook/index';
+import { Route as PbeIndexRouteImport } from './routes/pbe/index';
+import { Route as MetaIndexRouteImport } from './routes/meta/index';
+import { Route as MatchIndexRouteImport } from './routes/match/index';
+import { Route as MetaCompIdRouteImport } from './routes/meta/$compId';
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback';
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TrendsIndexRoute = TrendsIndexRouteImport.update({
   id: '/trends/',
   path: '/trends/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const StatsIndexRoute = StatsIndexRouteImport.update({
   id: '/stats/',
   path: '/stats/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RegionsIndexRoute = RegionsIndexRouteImport.update({
   id: '/regions/',
   path: '/regions/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const PlayerIndexRoute = PlayerIndexRouteImport.update({
   id: '/player/',
   path: '/player/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const PlaybookIndexRoute = PlaybookIndexRouteImport.update({
   id: '/playbook/',
   path: '/playbook/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const PbeIndexRoute = PbeIndexRouteImport.update({
   id: '/pbe/',
   path: '/pbe/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MetaIndexRoute = MetaIndexRouteImport.update({
   id: '/meta/',
   path: '/meta/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MatchIndexRoute = MatchIndexRouteImport.update({
   id: '/match/',
   path: '/match/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MetaCompIdRoute = MetaCompIdRouteImport.update({
   id: '/meta/$compId',
   path: '/meta/$compId',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/meta/$compId': typeof MetaCompIdRoute
-  '/match/': typeof MatchIndexRoute
-  '/meta/': typeof MetaIndexRoute
-  '/pbe/': typeof PbeIndexRoute
-  '/playbook/': typeof PlaybookIndexRoute
-  '/player/': typeof PlayerIndexRoute
-  '/regions/': typeof RegionsIndexRoute
-  '/stats/': typeof StatsIndexRoute
-  '/trends/': typeof TrendsIndexRoute
+  '/': typeof IndexRoute;
+  '/auth/callback': typeof AuthCallbackRoute;
+  '/meta/$compId': typeof MetaCompIdRoute;
+  '/match/': typeof MatchIndexRoute;
+  '/meta/': typeof MetaIndexRoute;
+  '/pbe/': typeof PbeIndexRoute;
+  '/playbook/': typeof PlaybookIndexRoute;
+  '/player/': typeof PlayerIndexRoute;
+  '/regions/': typeof RegionsIndexRoute;
+  '/stats/': typeof StatsIndexRoute;
+  '/trends/': typeof TrendsIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/meta/$compId': typeof MetaCompIdRoute
-  '/match': typeof MatchIndexRoute
-  '/meta': typeof MetaIndexRoute
-  '/pbe': typeof PbeIndexRoute
-  '/playbook': typeof PlaybookIndexRoute
-  '/player': typeof PlayerIndexRoute
-  '/regions': typeof RegionsIndexRoute
-  '/stats': typeof StatsIndexRoute
-  '/trends': typeof TrendsIndexRoute
+  '/': typeof IndexRoute;
+  '/auth/callback': typeof AuthCallbackRoute;
+  '/meta/$compId': typeof MetaCompIdRoute;
+  '/match': typeof MatchIndexRoute;
+  '/meta': typeof MetaIndexRoute;
+  '/pbe': typeof PbeIndexRoute;
+  '/playbook': typeof PlaybookIndexRoute;
+  '/player': typeof PlayerIndexRoute;
+  '/regions': typeof RegionsIndexRoute;
+  '/stats': typeof StatsIndexRoute;
+  '/trends': typeof TrendsIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/meta/$compId': typeof MetaCompIdRoute
-  '/match/': typeof MatchIndexRoute
-  '/meta/': typeof MetaIndexRoute
-  '/pbe/': typeof PbeIndexRoute
-  '/playbook/': typeof PlaybookIndexRoute
-  '/player/': typeof PlayerIndexRoute
-  '/regions/': typeof RegionsIndexRoute
-  '/stats/': typeof StatsIndexRoute
-  '/trends/': typeof TrendsIndexRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/auth/callback': typeof AuthCallbackRoute;
+  '/meta/$compId': typeof MetaCompIdRoute;
+  '/match/': typeof MatchIndexRoute;
+  '/meta/': typeof MetaIndexRoute;
+  '/pbe/': typeof PbeIndexRoute;
+  '/playbook/': typeof PlaybookIndexRoute;
+  '/player/': typeof PlayerIndexRoute;
+  '/regions/': typeof RegionsIndexRoute;
+  '/stats/': typeof StatsIndexRoute;
+  '/trends/': typeof TrendsIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/auth/callback'
@@ -130,8 +130,8 @@ export interface FileRouteTypes {
     | '/player/'
     | '/regions/'
     | '/stats/'
-    | '/trends/'
-  fileRoutesByTo: FileRoutesByTo
+    | '/trends/';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/auth/callback'
@@ -143,7 +143,7 @@ export interface FileRouteTypes {
     | '/player'
     | '/regions'
     | '/stats'
-    | '/trends'
+    | '/trends';
   id:
     | '__root__'
     | '/'
@@ -156,102 +156,102 @@ export interface FileRouteTypes {
     | '/player/'
     | '/regions/'
     | '/stats/'
-    | '/trends/'
-  fileRoutesById: FileRoutesById
+    | '/trends/';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  MetaCompIdRoute: typeof MetaCompIdRoute
-  MatchIndexRoute: typeof MatchIndexRoute
-  MetaIndexRoute: typeof MetaIndexRoute
-  PbeIndexRoute: typeof PbeIndexRoute
-  PlaybookIndexRoute: typeof PlaybookIndexRoute
-  PlayerIndexRoute: typeof PlayerIndexRoute
-  RegionsIndexRoute: typeof RegionsIndexRoute
-  StatsIndexRoute: typeof StatsIndexRoute
-  TrendsIndexRoute: typeof TrendsIndexRoute
+  IndexRoute: typeof IndexRoute;
+  AuthCallbackRoute: typeof AuthCallbackRoute;
+  MetaCompIdRoute: typeof MetaCompIdRoute;
+  MatchIndexRoute: typeof MatchIndexRoute;
+  MetaIndexRoute: typeof MetaIndexRoute;
+  PbeIndexRoute: typeof PbeIndexRoute;
+  PlaybookIndexRoute: typeof PlaybookIndexRoute;
+  PlayerIndexRoute: typeof PlayerIndexRoute;
+  RegionsIndexRoute: typeof RegionsIndexRoute;
+  StatsIndexRoute: typeof StatsIndexRoute;
+  TrendsIndexRoute: typeof TrendsIndexRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/trends/': {
-      id: '/trends/'
-      path: '/trends'
-      fullPath: '/trends/'
-      preLoaderRoute: typeof TrendsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/trends/';
+      path: '/trends';
+      fullPath: '/trends/';
+      preLoaderRoute: typeof TrendsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/stats/': {
-      id: '/stats/'
-      path: '/stats'
-      fullPath: '/stats/'
-      preLoaderRoute: typeof StatsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/stats/';
+      path: '/stats';
+      fullPath: '/stats/';
+      preLoaderRoute: typeof StatsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/regions/': {
-      id: '/regions/'
-      path: '/regions'
-      fullPath: '/regions/'
-      preLoaderRoute: typeof RegionsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/regions/';
+      path: '/regions';
+      fullPath: '/regions/';
+      preLoaderRoute: typeof RegionsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/player/': {
-      id: '/player/'
-      path: '/player'
-      fullPath: '/player/'
-      preLoaderRoute: typeof PlayerIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/player/';
+      path: '/player';
+      fullPath: '/player/';
+      preLoaderRoute: typeof PlayerIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/playbook/': {
-      id: '/playbook/'
-      path: '/playbook'
-      fullPath: '/playbook/'
-      preLoaderRoute: typeof PlaybookIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/playbook/';
+      path: '/playbook';
+      fullPath: '/playbook/';
+      preLoaderRoute: typeof PlaybookIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/pbe/': {
-      id: '/pbe/'
-      path: '/pbe'
-      fullPath: '/pbe/'
-      preLoaderRoute: typeof PbeIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/pbe/';
+      path: '/pbe';
+      fullPath: '/pbe/';
+      preLoaderRoute: typeof PbeIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/meta/': {
-      id: '/meta/'
-      path: '/meta'
-      fullPath: '/meta/'
-      preLoaderRoute: typeof MetaIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/meta/';
+      path: '/meta';
+      fullPath: '/meta/';
+      preLoaderRoute: typeof MetaIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/match/': {
-      id: '/match/'
-      path: '/match'
-      fullPath: '/match/'
-      preLoaderRoute: typeof MatchIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/match/';
+      path: '/match';
+      fullPath: '/match/';
+      preLoaderRoute: typeof MatchIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/meta/$compId': {
-      id: '/meta/$compId'
-      path: '/meta/$compId'
-      fullPath: '/meta/$compId'
-      preLoaderRoute: typeof MetaCompIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/meta/$compId';
+      path: '/meta/$compId';
+      fullPath: '/meta/$compId';
+      preLoaderRoute: typeof MetaCompIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/auth/callback';
+      path: '/auth/callback';
+      fullPath: '/auth/callback';
+      preLoaderRoute: typeof AuthCallbackRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -267,7 +267,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegionsIndexRoute: RegionsIndexRoute,
   StatsIndexRoute: StatsIndexRoute,
   TrendsIndexRoute: TrendsIndexRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

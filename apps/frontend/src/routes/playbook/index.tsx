@@ -17,11 +17,7 @@ import { ErrorCard } from '@/components/ui/ErrorCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TierBadge } from '@/components/ui/TierBadge';
 import { cn } from '@/lib/utils/cn';
-import {
-  formatWinRate,
-  getPlacementColor,
-  getWinRateColor,
-} from '@/lib/utils/display.utils';
+import { formatWinRate, getPlacementColor, getWinRateColor } from '@/lib/utils/display.utils';
 import {
   getItemName,
   getItemIconUrl,
@@ -99,8 +95,8 @@ function PlaybookPage() {
   const playbookParams = isPbe
     ? { region: 'pbe1' }
     : localPatch
-      ? { patch: localPatch }
-      : undefined;
+    ? { patch: localPatch }
+    : undefined;
 
   const playbook = usePlaybookQuery(playbookParams);
   const { data: patchesData } = usePatchesQuery();
@@ -110,7 +106,9 @@ function PlaybookPage() {
 
   const patchOptions = [
     { value: '', label: patchesData ? `${patchesData.current} (Latest)` : 'Latest' },
-    ...(patchesData?.patches.filter((p) => p !== patchesData.current).map((p) => ({ value: p, label: p })) ?? []),
+    ...(patchesData?.patches
+      .filter((p) => p !== patchesData.current)
+      .map((p) => ({ value: p, label: p })) ?? []),
   ];
 
   return (
@@ -132,7 +130,7 @@ function PlaybookPage() {
       <div className="flex items-center gap-3">
         <Select
           aria-label="Patch selector"
-          value={isPbe ? '' : (localPatch ?? '')}
+          value={isPbe ? '' : localPatch ?? ''}
           disabled={isPbe}
           options={patchOptions}
           onChange={(value) => setLocalPatch(value || null)}
@@ -168,10 +166,7 @@ function PlaybookPage() {
       </div>
 
       {playbook.error && (
-        <ErrorCard
-          message="Failed to load playbook data"
-          retry={() => playbook.refetch()}
-        />
+        <ErrorCard message="Failed to load playbook data" retry={() => playbook.refetch()} />
       )}
 
       {playbook.isLoading && <PlaybookSkeleton />}
@@ -267,17 +262,27 @@ function PlaybookCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <TierBadge tier={tier} size="sm" />
-            <h3 className="truncate text-base font-semibold text-slate-100">
-              {comp.label}
-            </h3>
+            <h3 className="truncate text-base font-semibold text-slate-100">{comp.label}</h3>
           </div>
         </div>
 
         {/* Stats row */}
         <div className="hidden items-center gap-5 sm:flex">
-          <StatPill label="WR" value={formatWinRate(comp.win_rate)} color={getWinRateColor(comp.win_rate)} />
-          <StatPill label="AVG" value={comp.avg_placement.toFixed(2)} color={getPlacementColor(Math.round(comp.avg_placement))} />
-          <StatPill label="TOP 4" value={formatWinRate(comp.top4_rate)} color={getWinRateColor(comp.top4_rate)} />
+          <StatPill
+            label="WR"
+            value={formatWinRate(comp.win_rate)}
+            color={getWinRateColor(comp.win_rate)}
+          />
+          <StatPill
+            label="AVG"
+            value={comp.avg_placement.toFixed(2)}
+            color={getPlacementColor(Math.round(comp.avg_placement))}
+          />
+          <StatPill
+            label="TOP 4"
+            value={formatWinRate(comp.top4_rate)}
+            color={getWinRateColor(comp.top4_rate)}
+          />
           <span className="font-chakra text-xs tabular-nums text-(--text-muted)">
             {comp.sample_size.toLocaleString()} games
           </span>
@@ -291,9 +296,21 @@ function PlaybookCard({
 
       {/* Mobile stats row */}
       <div className="flex items-center gap-3 border-t border-(--border-subtle) px-5 py-2.5 sm:hidden">
-        <StatPill label="WR" value={formatWinRate(comp.win_rate)} color={getWinRateColor(comp.win_rate)} />
-        <StatPill label="AVG" value={comp.avg_placement.toFixed(2)} color={getPlacementColor(Math.round(comp.avg_placement))} />
-        <StatPill label="TOP 4" value={formatWinRate(comp.top4_rate)} color={getWinRateColor(comp.top4_rate)} />
+        <StatPill
+          label="WR"
+          value={formatWinRate(comp.win_rate)}
+          color={getWinRateColor(comp.win_rate)}
+        />
+        <StatPill
+          label="AVG"
+          value={comp.avg_placement.toFixed(2)}
+          color={getPlacementColor(Math.round(comp.avg_placement))}
+        />
+        <StatPill
+          label="TOP 4"
+          value={formatWinRate(comp.top4_rate)}
+          color={getWinRateColor(comp.top4_rate)}
+        />
         <span className="ml-auto font-chakra text-[10px] tabular-nums text-(--text-muted)">
           {comp.sample_size.toLocaleString()} games
         </span>
@@ -346,23 +363,13 @@ function PlaybookCard({
   );
 }
 
-function StatPill({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) {
+function StatPill({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="font-chakra text-[9px] uppercase tracking-widest text-(--text-muted)">
         {label}
       </span>
-      <span className={cn('font-chakra text-sm font-bold tabular-nums', color)}>
-        {value}
-      </span>
+      <span className={cn('font-chakra text-sm font-bold tabular-nums', color)}>{value}</span>
     </div>
   );
 }
@@ -380,9 +387,7 @@ function DetailSection({
     <div>
       <div className="mb-3 flex items-center gap-2">
         <Icon size={14} className="text-(--accent-primary)" />
-        <h4 className="font-russo text-sm font-normal tracking-wide text-slate-200">
-          {title}
-        </h4>
+        <h4 className="font-russo text-sm font-normal tracking-wide text-slate-200">{title}</h4>
       </div>
       {children}
     </div>
@@ -418,9 +423,7 @@ function CarryRow({
           {champName.charAt(0)}
         </div>
       )}
-      <span className="min-w-0 shrink-0 text-sm font-medium text-slate-100">
-        {champName}
-      </span>
+      <span className="min-w-0 shrink-0 text-sm font-medium text-slate-100">{champName}</span>
 
       {/* Items */}
       <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -443,9 +446,7 @@ function CarryRow({
                   }}
                 />
               ) : (
-                <span className="text-[9px] font-bold text-slate-400">
-                  {name.slice(0, 2)}
-                </span>
+                <span className="text-[9px] font-bold text-slate-400">{name.slice(0, 2)}</span>
               )}
             </div>
           );
@@ -471,10 +472,7 @@ function AugmentPathSection({
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {stages.map(({ key, label }) => (
-        <div
-          key={key}
-          className="rounded-lg border border-(--border-subtle) bg-(--bg-surface) p-3"
-        >
+        <div key={key} className="rounded-lg border border-(--border-subtle) bg-(--bg-surface) p-3">
           <p className="mb-2 font-chakra text-[10px] font-semibold uppercase tracking-widest text-(--text-muted)">
             {label}
           </p>
@@ -483,10 +481,7 @@ function AugmentPathSection({
               const name = getAugmentName(aug.augment_name, augments);
               const icon = getAugmentIconUrl(aug.augment_name, augments);
               return (
-                <div
-                  key={aug.augment_name}
-                  className="flex items-center gap-2"
-                >
+                <div key={aug.augment_name} className="flex items-center gap-2">
                   {icon ? (
                     <img
                       src={icon}
@@ -499,9 +494,7 @@ function AugmentPathSection({
                   ) : (
                     <span className="h-5 w-5 shrink-0 rounded bg-(--accent-primary)/15" />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-xs text-slate-200">
-                    {name}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{name}</span>
                   <span
                     className={cn(
                       'shrink-0 font-chakra text-[11px] font-semibold tabular-nums',
@@ -513,9 +506,7 @@ function AugmentPathSection({
                 </div>
               );
             })}
-            {path[key].length === 0 && (
-              <p className="text-xs text-(--text-muted)">No data</p>
-            )}
+            {path[key].length === 0 && <p className="text-xs text-(--text-muted)">No data</p>}
           </div>
         </div>
       ))}
@@ -523,11 +514,7 @@ function AugmentPathSection({
   );
 }
 
-function LevelTimingTable({
-  timings,
-}: {
-  timings: PlaybookLevelTimingDto[];
-}) {
+function LevelTimingTable({ timings }: { timings: PlaybookLevelTimingDto[] }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-(--border-subtle)">
       <table className="w-full text-sm">
@@ -546,16 +533,11 @@ function LevelTimingTable({
         </thead>
         <tbody>
           {timings.map((timing) => (
-            <tr
-              key={timing.level}
-              className="border-b border-(--border-subtle) last:border-0"
-            >
+            <tr key={timing.level} className="border-b border-(--border-subtle) last:border-0">
               <td className="px-3 py-2 font-chakra font-semibold tabular-nums text-slate-100">
                 Lv {timing.level}
               </td>
-              <td className="px-3 py-2 text-slate-300">
-                {timing.typical_round}
-              </td>
+              <td className="px-3 py-2 text-slate-300">{timing.typical_round}</td>
               <td className="px-3 py-2 text-right font-chakra tabular-nums text-amber-400">
                 {timing.gold_needed}g
               </td>

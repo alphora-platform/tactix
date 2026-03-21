@@ -16,7 +16,7 @@ export class GameDataLoaderService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {}
 
   /**
@@ -188,9 +188,9 @@ export class GameDataLoaderService {
     }
 
     this.logger.log(
-      `Set ${setNumber}: ${Object.keys(champions).length} champions, ${Object.keys(traits).length} traits, ${
-        Object.keys(items).length
-      } items, ${Object.keys(augments).length} augments`
+      `Set ${setNumber}: ${Object.keys(champions).length} champions, ${
+        Object.keys(traits).length
+      } traits, ${Object.keys(items).length} items, ${Object.keys(augments).length} augments`
     );
     return { champions, traits, items, augments };
   }

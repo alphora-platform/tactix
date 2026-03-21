@@ -76,6 +76,7 @@ sudo certbot certonly --webroot -w /var/www/certbot \
 ```
 
 > **Lưu ý:** Nếu chưa có nginx đang chạy, dùng `--standalone` thay vì `--webroot`:
+>
 > ```bash
 > sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
 > ```
@@ -123,12 +124,12 @@ curl https://yourdomain.com/api/health
 
 Vào **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**:
 
-| Secret | Giá trị |
-|---|---|
-| `VPS_HOST` | IP hoặc hostname của VPS (vd: `123.456.789.0`) |
-| `VPS_USER` | SSH username (vd: `ubuntu`, `root`) |
-| `VPS_SSH_KEY` | Nội dung **private key** SSH (toàn bộ file `~/.ssh/id_rsa`) |
-| `VPS_DEPLOY_PATH` | Đường dẫn repo trên VPS (vd: `/opt/tactix`) |
+| Secret            | Giá trị                                                     |
+| ----------------- | ----------------------------------------------------------- |
+| `VPS_HOST`        | IP hoặc hostname của VPS (vd: `123.456.789.0`)              |
+| `VPS_USER`        | SSH username (vd: `ubuntu`, `root`)                         |
+| `VPS_SSH_KEY`     | Nội dung **private key** SSH (toàn bộ file `~/.ssh/id_rsa`) |
+| `VPS_DEPLOY_PATH` | Đường dẫn repo trên VPS (vd: `/opt/tactix`)                 |
 
 ### Tạo SSH key cho CI/CD (nếu chưa có)
 

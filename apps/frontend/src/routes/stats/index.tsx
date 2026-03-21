@@ -91,7 +91,9 @@ function PuuidPrompt() {
     }
     // Basic PUUID format check: 78-char hex with dashes
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
-      setError('That doesn\'t look like a valid PUUID. It should be a UUID like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.');
+      setError(
+        "That doesn't look like a valid PUUID. It should be a UUID like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+      );
       return;
     }
     setPuuid(trimmed);
@@ -123,13 +125,17 @@ function PuuidPrompt() {
             Enter Your PUUID
           </h1>
           <p className="mb-6 text-center text-sm leading-relaxed text-slate-400">
-            Paste your Riot PUUID to load your personal stats, tilt detection, and placement history.
+            Paste your Riot PUUID to load your personal stats, tilt detection, and placement
+            history.
           </p>
 
           <div className="space-y-3">
             <Input
               value={input}
-              onChange={(e) => { setInput(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setError('');
+              }}
               onPressEnter={handleSubmit}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               size="large"
@@ -154,10 +160,8 @@ function PuuidPrompt() {
 
           <p className="mt-5 text-center text-xs text-slate-500">
             Find your PUUID at{' '}
-            <span className="font-mono text-slate-400">
-              /lol-summoner/v1/current-summoner
-            </span>{' '}
-            in the LCU API, or from your match history via the Riot API.
+            <span className="font-mono text-slate-400">/lol-summoner/v1/current-summoner</span> in
+            the LCU API, or from your match history via the Riot API.
           </p>
         </div>
       </div>

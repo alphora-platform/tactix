@@ -8,15 +8,15 @@ Step-by-step protocol for switching Tactix to PBE data collection when a new TFT
 
 Verify the following before switching modes:
 
-| Check | Command / Action |
-|-------|-----------------|
-| API is healthy | `curl http://localhost:5500/api/health` returns 200 |
-| PostgreSQL is up | `docker exec tactix-postgres pg_isready` |
-| Redis is up | `docker exec tactix-redis redis-cli ping` → `PONG` |
-| Worker container running | `docker ps \| grep tactix-worker` shows healthy |
-| `RIOT_API_KEY` is valid | Confirm key is not expired in `.env.production` |
-| `ADMIN_API_KEY` is set | Needed for all admin endpoints below |
-| PBE is online | Check [Riot PBE status](https://status.riotgames.com/?region=pbe) |
+| Check                    | Command / Action                                                  |
+| ------------------------ | ----------------------------------------------------------------- |
+| API is healthy           | `curl http://localhost:5500/api/health` returns 200               |
+| PostgreSQL is up         | `docker exec tactix-postgres pg_isready`                          |
+| Redis is up              | `docker exec tactix-redis redis-cli ping` → `PONG`                |
+| Worker container running | `docker ps \| grep tactix-worker` shows healthy                   |
+| `RIOT_API_KEY` is valid  | Confirm key is not expired in `.env.production`                   |
+| `ADMIN_API_KEY` is set   | Needed for all admin endpoints below                              |
+| PBE is online            | Check [Riot PBE status](https://status.riotgames.com/?region=pbe) |
 
 All admin endpoints require the header:
 
@@ -159,10 +159,10 @@ This reloads metadata from Community Dragon `latest` environment (live data).
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `collect-players` returns 0 players | PBE ranked ladder empty | Wait for PBE to populate; only Challenger/GM/Master are collected |
-| Bootstrap returns 0 champions | CDragon hasn't published PBE data | Retry later; check `raw.communitydragon.org/pbe/` manually |
-| Analytics return "No patch found" | No matches ingested yet | Run manual `collect-matches`, wait for cron cycles |
-| Rate limit errors (429) | API key limits hit | Dev key: 20 req/s, 100 req/2min. Reduce collection concurrency or wait |
-| Worker not processing jobs | `APP_MODE` not set to `worker` | Verify `docker-compose.prod.yml` worker env: `APP_MODE=worker` |
+| Symptom                             | Cause                             | Fix                                                                    |
+| ----------------------------------- | --------------------------------- | ---------------------------------------------------------------------- |
+| `collect-players` returns 0 players | PBE ranked ladder empty           | Wait for PBE to populate; only Challenger/GM/Master are collected      |
+| Bootstrap returns 0 champions       | CDragon hasn't published PBE data | Retry later; check `raw.communitydragon.org/pbe/` manually             |
+| Analytics return "No patch found"   | No matches ingested yet           | Run manual `collect-matches`, wait for cron cycles                     |
+| Rate limit errors (429)             | API key limits hit                | Dev key: 20 req/s, 100 req/2min. Reduce collection concurrency or wait |
+| Worker not processing jobs          | `APP_MODE` not set to `worker`    | Verify `docker-compose.prod.yml` worker env: `APP_MODE=worker`         |

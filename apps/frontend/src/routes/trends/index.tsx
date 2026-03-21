@@ -116,7 +116,8 @@ function TrendTooltip({
           </p>
         ))}
         <p className="text-slate-400">
-          Avg Place: <span className="font-semibold text-slate-200">{row.avg_placement.toFixed(2)}</span>
+          Avg Place:{' '}
+          <span className="font-semibold text-slate-200">{row.avg_placement.toFixed(2)}</span>
         </p>
       </div>
     </div>
@@ -142,8 +143,14 @@ function TrendsPage() {
     return Array.from(map.values());
   }, [meta.data]);
 
-  const rising = useMemo(() => data.filter((comp) => comp.trend_direction === 'RISING').slice(0, 6), [data]);
-  const falling = useMemo(() => data.filter((comp) => comp.trend_direction === 'FALLING').slice(0, 6), [data]);
+  const rising = useMemo(
+    () => data.filter((comp) => comp.trend_direction === 'RISING').slice(0, 6),
+    [data]
+  );
+  const falling = useMemo(
+    () => data.filter((comp) => comp.trend_direction === 'FALLING').slice(0, 6),
+    [data]
+  );
 
   const chartData = useMemo<TrendChartRow[]>(
     () =>
@@ -195,7 +202,9 @@ function TrendsPage() {
                 src={rec.trait_icons[0]}
                 alt=""
                 className="h-5 w-5 shrink-0 rounded border border-[var(--border-subtle)] bg-black/50"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
               />
             ) : (
               <span className="h-5 w-5 shrink-0 rounded bg-[var(--bg-overlay)]/70" />
@@ -307,87 +316,88 @@ function TrendsPage() {
         <div className="border-b border-[var(--border-subtle)] px-6 py-4">
           <div className="flex items-center gap-3">
             <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--accent-primary)] opacity-80" />
-            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">Top Win Rates</h2>
+            <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">
+              Top Win Rates
+            </h2>
             <span className="text-xs text-[var(--text-secondary)]">— top 15 comps</span>
           </div>
         </div>
         <div className="p-6">
-
-        {meta.isLoading ? (
-          <div className="h-[360px] animate-pulse rounded-lg bg-[var(--bg-elevated)]/70" />
-        ) : chartData.length === 0 ? (
-          <div className="flex h-[360px] items-center justify-center">
-            <EmptyState title="No chart data available" />
-          </div>
-        ) : (
-          <div className="h-[360px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                layout="vertical"
-                margin={{ top: 6, right: 50, left: 8, bottom: 4 }}
-                barGap={3}
-              >
-                <defs>
-                  <linearGradient id="winRateGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.9} />
-                  </linearGradient>
-                  <linearGradient id="top4Grad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.75} />
-                    <stop offset="100%" stopColor="#34d399" stopOpacity={0.75} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(99,160,255,0.06)" horizontal={false} vertical />
-                <XAxis
-                  type="number"
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}%`}
-                  tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-                  axisLine={{ stroke: 'var(--border-default)' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="comp_name"
-                  width={120}
-                  tickFormatter={(value: string) => truncateLabel(value, 14)}
-                  tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
-                  axisLine={{ stroke: 'var(--border-default)' }}
-                  tickLine={false}
-                />
-                <Tooltip content={<TrendTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  wrapperStyle={{ fontSize: 11, color: 'var(--text-secondary)' }}
-                />
-                <Bar
-                  dataKey="win_rate_pct"
-                  name="Win Rate"
-                  fill="url(#winRateGrad)"
-                  radius={[0, 4, 4, 0]}
-                  barSize={10}
+          {meta.isLoading ? (
+            <div className="h-[360px] animate-pulse rounded-lg bg-[var(--bg-elevated)]/70" />
+          ) : chartData.length === 0 ? (
+            <div className="flex h-[360px] items-center justify-center">
+              <EmptyState title="No chart data available" />
+            </div>
+          ) : (
+            <div className="h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ top: 6, right: 50, left: 8, bottom: 4 }}
+                  barGap={3}
                 >
-                  <LabelList
-                    dataKey="win_rate_pct"
-                    position="right"
-                    formatter={(value: number) => `${value.toFixed(1)}%`}
-                    fill="var(--text-primary)"
-                    fontSize={10}
+                  <defs>
+                    <linearGradient id="winRateGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.9} />
+                    </linearGradient>
+                    <linearGradient id="top4Grad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.75} />
+                      <stop offset="100%" stopColor="#34d399" stopOpacity={0.75} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(99,160,255,0.06)" horizontal={false} vertical />
+                  <XAxis
+                    type="number"
+                    domain={[0, 100]}
+                    tickFormatter={(v) => `${v}%`}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                    axisLine={{ stroke: 'var(--border-default)' }}
+                    tickLine={false}
                   />
-                </Bar>
-                <Bar
-                  dataKey="top4_rate_pct"
-                  name="Top 4 Rate"
-                  fill="url(#top4Grad)"
-                  radius={[0, 4, 4, 0]}
-                  barSize={10}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+                  <YAxis
+                    type="category"
+                    dataKey="comp_name"
+                    width={120}
+                    tickFormatter={(value: string) => truncateLabel(value, 14)}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+                    axisLine={{ stroke: 'var(--border-default)' }}
+                    tickLine={false}
+                  />
+                  <Tooltip content={<TrendTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ fontSize: 11, color: 'var(--text-secondary)' }}
+                  />
+                  <Bar
+                    dataKey="win_rate_pct"
+                    name="Win Rate"
+                    fill="url(#winRateGrad)"
+                    radius={[0, 4, 4, 0]}
+                    barSize={10}
+                  >
+                    <LabelList
+                      dataKey="win_rate_pct"
+                      position="right"
+                      formatter={(value: number) => `${value.toFixed(1)}%`}
+                      fill="var(--text-primary)"
+                      fontSize={10}
+                    />
+                  </Bar>
+                  <Bar
+                    dataKey="top4_rate_pct"
+                    name="Top 4 Rate"
+                    fill="url(#top4Grad)"
+                    radius={[0, 4, 4, 0]}
+                    barSize={10}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 
@@ -396,37 +406,39 @@ function TrendsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--accent-cyan)] opacity-80" />
-              <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">All Comps</h2>
+              <h2 className="font-russo text-base font-normal text-[var(--text-primary)]">
+                All Comps
+              </h2>
             </div>
-          <Input.Search
-            value={tableSearch}
-            onChange={(e) => setTableSearch(e.target.value)}
-            onSearch={(value) => setTableSearch(value)}
-            allowClear
-            placeholder="Search comp name..."
-            size="large"
-            className="w-full sm:w-80 [&_.ant-input]:!border-[var(--border-default)] [&_.ant-input]:!bg-[var(--bg-elevated)] [&_.ant-input]:!text-slate-100 [&_.ant-input::placeholder]:!text-slate-400 [&_.ant-input-search-button]:!border-[var(--border-default)] [&_.ant-input-search-button]:!bg-[var(--bg-elevated)] [&_.ant-input-search-button]:!text-slate-200"
-          />
+            <Input.Search
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              onSearch={(value) => setTableSearch(value)}
+              allowClear
+              placeholder="Search comp name..."
+              size="large"
+              className="w-full sm:w-80 [&_.ant-input]:!border-[var(--border-default)] [&_.ant-input]:!bg-[var(--bg-elevated)] [&_.ant-input]:!text-slate-100 [&_.ant-input::placeholder]:!text-slate-400 [&_.ant-input-search-button]:!border-[var(--border-default)] [&_.ant-input-search-button]:!bg-[var(--bg-elevated)] [&_.ant-input-search-button]:!text-slate-200"
+            />
           </div>
         </div>
 
         <div className="p-6">
-        <Table
-          rowKey="comp_id"
-          columns={tableColumns}
-          dataSource={filteredTableData}
-          loading={meta.isLoading}
-          sticky
-          virtual={virtualEnabled}
-          scroll={virtualEnabled ? { y: 560, x: 1000 } : { x: 1000 }}
-          pagination={{ pageSize: 12, showSizeChanger: false }}
-          locale={{ emptyText: <EmptyState title="No comp data available" /> }}
-          className={tableClass}
-          onRow={(record) => ({
-            onClick: () => navigate({ to: '/meta/$compId', params: { compId: record.comp_id } }),
-            className: 'cursor-pointer hover:!bg-white/5',
-          })}
-        />
+          <Table
+            rowKey="comp_id"
+            columns={tableColumns}
+            dataSource={filteredTableData}
+            loading={meta.isLoading}
+            sticky
+            virtual={virtualEnabled}
+            scroll={virtualEnabled ? { y: 560, x: 1000 } : { x: 1000 }}
+            pagination={{ pageSize: 12, showSizeChanger: false }}
+            locale={{ emptyText: <EmptyState title="No comp data available" /> }}
+            className={tableClass}
+            onRow={(record) => ({
+              onClick: () => navigate({ to: '/meta/$compId', params: { compId: record.comp_id } }),
+              className: 'cursor-pointer hover:!bg-white/5',
+            })}
+          />
         </div>
       </div>
     </div>

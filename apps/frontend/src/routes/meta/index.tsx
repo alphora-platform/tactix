@@ -2,7 +2,16 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Input, Select } from 'antd';
 import { Layers, Star, TrendingUp, Flame, Search, TrendingDown, Minus } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine,
+} from 'recharts';
 import { useMetaQuery, useTierListQuery } from '@/hooks/useAnalytics';
 import { StatCard } from '@/components/ui/StatCard';
 import { ChartCard } from '@/components/ui/ChartCard';
@@ -43,7 +52,10 @@ interface TraitChip {
   icon?: string;
 }
 
-const TIER_HEADER_STYLES: Record<'S' | 'A' | 'B' | 'C', { gradient: string; border: string; glow: string }> = {
+const TIER_HEADER_STYLES: Record<
+  'S' | 'A' | 'B' | 'C',
+  { gradient: string; border: string; glow: string }
+> = {
   S: {
     gradient: 'from-amber-500/15 to-transparent',
     border: 'border-l-amber-500',
@@ -185,11 +197,16 @@ function MetaOverviewPage() {
     }
     rows.sort((a, b) => {
       switch (sortOption) {
-        case 'winRate': return b.win_rate - a.win_rate;
-        case 'top4Rate': return b.top4_rate - a.top4_rate;
-        case 'avgPlacement': return a.avg_placement - b.avg_placement;
-        case 'games': return b.sample_size - a.sample_size;
-        default: return 0;
+        case 'winRate':
+          return b.win_rate - a.win_rate;
+        case 'top4Rate':
+          return b.top4_rate - a.top4_rate;
+        case 'avgPlacement':
+          return a.avg_placement - b.avg_placement;
+        case 'games':
+          return b.sample_size - a.sample_size;
+        default:
+          return 0;
       }
     });
     return rows;
@@ -313,12 +330,17 @@ function MetaOverviewPage() {
         )}
       </div>
 
-      {comps.error && <ErrorCard message="Failed to load meta data" retry={() => comps.refetch()} />}
+      {comps.error && (
+        <ErrorCard message="Failed to load meta data" retry={() => comps.refetch()} />
+      )}
       {meta.error && <ErrorCard message="Failed to load tier list" retry={() => meta.refetch()} />}
 
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="h-4 w-[3px] rounded-full bg-[var(--accent-primary)]" style={{ boxShadow: '0 0 8px rgba(139,92,246,0.7)' }} />
+          <span
+            className="h-4 w-[3px] rounded-full bg-[var(--accent-primary)]"
+            style={{ boxShadow: '0 0 8px rgba(139,92,246,0.7)' }}
+          />
           <h2 className="font-russo text-xl font-normal text-[var(--text-primary)]">Tier List</h2>
           <p className="text-sm text-[var(--text-secondary)]">— current patch</p>
         </div>
@@ -332,7 +354,10 @@ function MetaOverviewPage() {
               >
                 <div className="h-12 border-b border-[var(--border-subtle)] bg-[var(--bg-overlay)]/40" />
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="border-b border-[var(--border-subtle)] px-4 py-3 last:border-0">
+                  <div
+                    key={i}
+                    className="border-b border-[var(--border-subtle)] px-4 py-3 last:border-0"
+                  >
                     <div className="mb-2 h-3 w-3/5 rounded-full bg-[var(--bg-overlay)]/70" />
                     <div className="h-2.5 w-1/2 rounded-full bg-[var(--bg-overlay)]/60" />
                   </div>
@@ -357,11 +382,18 @@ function MetaOverviewPage() {
       >
         {!comps.isLoading && chartData.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <EmptyState title="No comps available" description="Try adjusting the patch or region filter." />
+            <EmptyState
+              title="No comps available"
+              description="Try adjusting the patch or region filter."
+            />
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 20, left: 16, bottom: 8 }}>
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 4, right: 20, left: 16, bottom: 8 }}
+            >
               <defs>
                 <linearGradient id="cosmosGradient" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
@@ -403,7 +435,10 @@ function MetaOverviewPage() {
 
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="h-4 w-[3px] rounded-full bg-[var(--accent-cyan)]" style={{ boxShadow: '0 0 8px rgba(6,182,212,0.6)' }} />
+          <span
+            className="h-4 w-[3px] rounded-full bg-[var(--accent-cyan)]"
+            style={{ boxShadow: '0 0 8px rgba(6,182,212,0.6)' }}
+          />
           <h2 className="font-russo text-xl font-normal text-[var(--text-primary)]">Top Comps</h2>
           <p className="text-sm text-[var(--text-secondary)]">— most effective this patch</p>
         </div>
@@ -479,10 +514,17 @@ function TierSection({
               <span className="truncate font-medium text-slate-100">
                 {resolveCompName(comp.comp_id, comp.label, traits)}
               </span>
-              <span className={cn('text-xs font-semibold tabular-nums', getWinRateColor(comp.win_rate))}>
+              <span
+                className={cn('text-xs font-semibold tabular-nums', getWinRateColor(comp.win_rate))}
+              >
                 {formatWinRate(comp.win_rate)}
               </span>
-              <span className={cn('text-xs tabular-nums', getPlacementColor(Math.round(comp.avg_placement)))}>
+              <span
+                className={cn(
+                  'text-xs tabular-nums',
+                  getPlacementColor(Math.round(comp.avg_placement))
+                )}
+              >
                 {comp.avg_placement.toFixed(2)}
               </span>
             </Link>
@@ -573,20 +615,41 @@ function CompCard({
 
         <div className="grid grid-cols-3 gap-2 border-t border-[var(--border-subtle)] pt-3">
           <div className="rounded-lg bg-[var(--bg-elevated)]/60 px-2 py-2">
-            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">WIN %</p>
-            <p className={cn('font-chakra text-sm font-bold tabular-nums mt-0.5', getWinRateColor(comp.win_rate))}>
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">
+              WIN %
+            </p>
+            <p
+              className={cn(
+                'font-chakra text-sm font-bold tabular-nums mt-0.5',
+                getWinRateColor(comp.win_rate)
+              )}
+            >
               {formatWinRate(comp.win_rate)}
             </p>
           </div>
           <div className="rounded-lg bg-[var(--bg-elevated)]/60 px-2 py-2">
-            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">TOP 4</p>
-            <p className={cn('font-chakra text-sm font-bold tabular-nums mt-0.5', getWinRateColor(top4Rate))}>
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">
+              TOP 4
+            </p>
+            <p
+              className={cn(
+                'font-chakra text-sm font-bold tabular-nums mt-0.5',
+                getWinRateColor(top4Rate)
+              )}
+            >
               {formatWinRate(top4Rate)}
             </p>
           </div>
           <div className="rounded-lg bg-[var(--bg-elevated)]/60 px-2 py-2">
-            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">AVG</p>
-            <p className={cn('font-chakra text-sm font-bold tabular-nums mt-0.5', getPlacementColor(Math.round(comp.avg_placement)))}>
+            <p className="font-chakra text-[9px] uppercase tracking-widest text-[var(--text-muted)]">
+              AVG
+            </p>
+            <p
+              className={cn(
+                'font-chakra text-sm font-bold tabular-nums mt-0.5',
+                getPlacementColor(Math.round(comp.avg_placement))
+              )}
+            >
               {comp.avg_placement.toFixed(2)}
             </p>
           </div>
