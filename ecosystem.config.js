@@ -7,6 +7,9 @@ module.exports = {
       name: 'tactix-api',
       script: 'apps/api/dist/main.js',
       watch: false,
+      out_file: '/root/.pm2/logs/tactix-api-out.log',
+      error_file: '/root/.pm2/logs/tactix-api-error.log',
+      merge_logs: true,
       env: {
         ...process.env,
         APP_MODE: 'api',
@@ -17,6 +20,9 @@ module.exports = {
       name: 'tactix-worker',
       script: 'apps/api/dist/main.js',
       watch: false,
+      out_file: '/root/.pm2/logs/tactix-worker-out.log',
+      error_file: '/root/.pm2/logs/tactix-worker-error.log',
+      merge_logs: true,
       env: {
         ...process.env,
         APP_MODE: 'worker',
