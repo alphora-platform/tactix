@@ -33,6 +33,8 @@ export interface EtlProcessMatchJobData {
  */
 @Processor(QUEUE_NAMES.ETL_PIPELINE, {
   concurrency: 5,
+  lockDuration: 60_000,
+  lockRenewTime: 30_000,
 })
 export class EtlProcessor extends WorkerHost {
   private readonly logger = new Logger(EtlProcessor.name);

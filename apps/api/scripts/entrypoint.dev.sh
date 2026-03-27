@@ -35,5 +35,8 @@ npx nx run api:build
 echo "🚀 Starting file watcher for hot reload (background)..."
 npx nx run api:build-watch &
 
+echo "🚀 Creating PM2 log directory for pm2 monit..."
+mkdir -p /root/.pm2/logs
+
 echo "🚀 Starting PM2 runtime (foreground — streams logs to Docker)..."
 exec pm2-runtime ecosystem.config.js

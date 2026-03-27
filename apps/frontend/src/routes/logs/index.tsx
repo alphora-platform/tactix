@@ -20,9 +20,11 @@ interface LogEntry {
   level: 'DEBUG' | 'LOG' | 'WARN' | 'ERROR' | 'VERBOSE';
   context: string;
   message: string;
+  source?: 'api' | 'worker';
 }
 
 type LogLevel = 'ALL' | 'DEBUG' | 'LOG' | 'WARN' | 'ERROR';
+type LogSource = 'ALL' | 'api' | 'worker';
 
 const LEVEL_COLORS: Record<LogEntry['level'], string> = {
   DEBUG: 'text-slate-400',
@@ -60,8 +62,33 @@ function formatTime(iso: string): string {
 
 let idCounter = 0;
 
-function ensureId(entry: Omit<LogEntry, 'id'> & { id?: string }): LogEntry {
-  return { ...entry, id: entry.id ?? `log-${idCounter++}` } as LogEntry;
+function normalizeLevel(level: string): LogEntry['level'] {
+  const up = level.toUpperCase() as LogEntry['level'];
+  return (['DEBUG', 'LOG', 'WARN', 'ERROR', 'VERBOSE'] as const).includes(up) ? up : 'LOG';
+}
+
+function ensureId(entry: Omit<LogEntry, 'id'> & { id?: string; level?: string }): LogEntry {
+  return {
+    ...entry,
+    id: entry.id ?? `log-${idCounter++}`,
+    level: normalizeLevel(entry.level ?? 'log'),
+  } as LogEntry;
+}
+
+function SourceBadge({ source }: { source?: 'api' | 'worker' }) {
+  if (!source) return null;
+  return (
+    <span
+      className={cn(
+        'shrink-0 rounded px-1 font-mono text-[10px] font-semibold uppercase tracking-wider',
+        source === 'worker'
+          ? 'bg-violet-500/15 text-violet-400'
+          : 'bg-cyan-500/15 text-cyan-400'
+      )}
+    >
+      {source}
+    </span>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -73,6 +100,7 @@ function LogsPage() {
   const [connected, setConnected] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [levelFilter, setLevelFilter] = useState<LogLevel>('ALL');
+  const [sourceFilter, setSourceFilter] = useState<LogSource>('ALL');
   const [contextSearch, setContextSearch] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -135,9 +163,17 @@ function LogsPage() {
     }
   }, [logs, autoScroll]);
 
+  // Counts for source badges
+  const apiCount = logs.filter((l) => !l.source || l.source === 'api').length;
+  const workerCount = logs.filter((l) => l.source === 'worker').length;
+
   // Filter logs
   const filtered = logs.filter((log) => {
     if (levelFilter !== 'ALL' && log.level !== levelFilter) return false;
+    if (sourceFilter !== 'ALL') {
+      const logSource = log.source ?? 'api';
+      if (logSource !== sourceFilter) return false;
+    }
     if (contextSearch && !log.context.toLowerCase().includes(contextSearch.toLowerCase()))
       return false;
     return true;
@@ -152,6 +188,15 @@ function LogsPage() {
         subtitle="Real-time application log stream"
         actions={
           <div className="flex items-center gap-2">
+            {/* Source stats */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-cyan-400">
+                api {apiCount}
+              </span>
+              <span className="rounded bg-violet-500/10 px-2 py-0.5 font-mono text-violet-400">
+                worker {workerCount}
+              </span>
+            </div>
             {/* Connection status badge */}
             <div
               className={cn(
@@ -189,6 +234,18 @@ function LogsPage() {
             { value: 'LOG', label: 'LOG' },
             { value: 'WARN', label: 'WARN' },
             { value: 'ERROR', label: 'ERROR' },
+          ]}
+        />
+
+        <Select
+          value={sourceFilter}
+          onChange={(val) => setSourceFilter(val)}
+          className="w-32"
+          popupClassName="!bg-(--bg-elevated)"
+          options={[
+            { value: 'ALL', label: 'All Sources' },
+            { value: 'api', label: 'API' },
+            { value: 'worker', label: 'Worker' },
           ]}
         />
 
@@ -239,6 +296,7 @@ function LogsPage() {
           filtered.map((log) => (
             <div key={log.id} className="flex gap-2 py-0.5 hover:bg-white/[0.02]">
               <span className="shrink-0 text-slate-600">[{formatTime(log.timestamp)}]</span>
+              <SourceBadge source={log.source} />
               <span
                 className={cn(
                   'shrink-0 rounded px-1 font-semibold',

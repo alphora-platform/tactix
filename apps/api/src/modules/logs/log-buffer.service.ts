@@ -7,6 +7,7 @@ export interface LogEntry {
   level: 'log' | 'warn' | 'error' | 'debug' | 'verbose';
   context: string;
   message: string;
+  source?: 'api' | 'worker';
 }
 
 const MAX_BUFFER_SIZE = 500;
@@ -17,13 +18,15 @@ export class LogBufferService implements LoggerService {
   private nextId = 1;
   readonly emitter = new EventEmitter();
 
-  private push(level: LogEntry['level'], message: unknown, context?: string) {
+  private push(level: LogEntry['level'], message: unknown, context?: string, source?: LogEntry['source']) {
+    const appMode = process.env.APP_MODE || 'api';
     const entry: LogEntry = {
       id: this.nextId++,
       timestamp: new Date().toISOString(),
       level,
       context: context || '',
       message: typeof message === 'string' ? message : JSON.stringify(message),
+      source: source ?? (appMode === 'worker' ? 'worker' : 'api'),
     };
 
     if (this.buffer.length >= MAX_BUFFER_SIZE) {
@@ -36,6 +39,16 @@ export class LogBufferService implements LoggerService {
     const tag = `[${entry.level.toUpperCase()}]`;
     const ctx = entry.context ? `[${entry.context}] ` : '';
     process.stdout.write(`${entry.timestamp} ${tag} ${ctx}${entry.message}\n`);
+  }
+
+  /** Inject an already-formed entry from another process (e.g. worker via Redis). */
+  pushExternal(entry: Omit<LogEntry, 'id'>) {
+    const stored: LogEntry = { ...entry, id: this.nextId++ };
+    if (this.buffer.length >= MAX_BUFFER_SIZE) {
+      this.buffer.shift();
+    }
+    this.buffer.push(stored);
+    this.emitter.emit('log.entry', stored);
   }
 
   log(message: unknown, context?: string) {

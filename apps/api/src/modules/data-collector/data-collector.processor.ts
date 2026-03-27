@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Processor, WorkerHost, OnWorkerEvent, InjectQueue } from '@nestjs/bullmq';
-import { Job, Queue } from 'bullmq';
+import { Job, Queue, DelayedError } from 'bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Player } from '../../database/entities';
@@ -57,6 +57,8 @@ interface CollectPlayerJobData {
 @Processor(QUEUE_NAMES.MATCH_COLLECTION, {
   concurrency: 5,
   limiter: { max: 15, duration: 1_000 }, // Stay safely under Riot's 20 req/s
+  lockDuration: 120_000, // 2 min — long enough for a full player match fetch loop
+  lockRenewTime: 60_000,
 })
 export class DataCollectorProcessor extends WorkerHost {
   private readonly logger = new Logger(DataCollectorProcessor.name);
@@ -232,7 +234,7 @@ export class DataCollectorProcessor extends WorkerHost {
           `[${region}] 429 for ${shortId}... — delaying job ${job.id ?? ''} by ${delayMs}ms`
         );
         await job.moveToDelayed(Date.now() + delayMs, job.token);
-        return; // Must return (not throw) so BullMQ doesn't mark as failed.
+        throw new DelayedError(); // Signals BullMQ to skip moveToFinished on this job.
       }
 
       if (error instanceof RiotApiNotFoundException) {
