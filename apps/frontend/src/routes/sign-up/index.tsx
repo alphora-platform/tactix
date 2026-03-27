@@ -22,8 +22,10 @@ function SignUpPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-(--accent-primary) to-(--accent-cyan)"
-            style={{ boxShadow: '0 0 24px rgba(139,92,246,0.5)' }}>
+          <div
+            className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-(--accent-primary) to-(--accent-cyan)"
+            style={{ boxShadow: '0 0 24px rgba(139,92,246,0.5)' }}
+          >
             <span className="font-russo text-xl text-white">T</span>
           </div>
           <h1 className="font-russo text-2xl tracking-[0.12em] text-slate-100">TACTIX</h1>
