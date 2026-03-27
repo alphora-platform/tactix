@@ -14,14 +14,20 @@ export class AuthController {
 
   @Public()
   @Post('sign-up')
-  signUp(@Body() dto: SignUpDto, @Res({ passthrough: true }) res: Response): Promise<AuthResponseDto> {
+  signUp(
+    @Body() dto: SignUpDto,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<AuthResponseDto> {
     return this.authService.signUp(dto, res);
   }
 
   @Public()
   @Post('sign-in')
   @HttpCode(HttpStatus.OK)
-  signIn(@Body() dto: SignInDto, @Res({ passthrough: true }) res: Response): Promise<AuthResponseDto> {
+  signIn(
+    @Body() dto: SignInDto,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<AuthResponseDto> {
     return this.authService.signIn(dto, res);
   }
 

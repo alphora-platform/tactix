@@ -15,8 +15,7 @@ export interface JwtPayload {
   exp?: number;
 }
 
-const cookieExtractor = (req: Request): string | null =>
-  req?.cookies?.['access_token'] ?? null;
+const cookieExtractor = (req: Request): string | null => req?.cookies?.['access_token'] ?? null;
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {

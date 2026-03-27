@@ -1,6 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
-import { signIn, signUp, signOut, type SignInPayload, type SignUpPayload } from '../lib/api/auth.api';
+import {
+  signIn,
+  signUp,
+  signOut,
+  type SignInPayload,
+  type SignUpPayload,
+} from '../lib/api/auth.api';
 import { useAuthStore } from '../lib/store/auth.store';
 
 export function useSignIn() {
