@@ -17,6 +17,8 @@ import {
   Trophy,
   FlaskConical,
   LogOut,
+  ScrollText,
+  Settings,
 } from 'lucide-react';
 import { PatchSelector } from './PatchSelector';
 import { RegionFilter } from './RegionFilter';
@@ -35,6 +37,8 @@ const NAV_ITEMS = [
   { to: '/pbe', label: 'PBE', icon: FlaskConical },
   { to: '/player', label: 'Player', icon: Users },
   { to: '/match', label: 'Match', icon: Search },
+  { to: '/logs', label: 'Logs', icon: ScrollText },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 
 /** Subset shown in the mobile bottom nav bar (max 5 for comfortable tap targets) */
@@ -49,6 +53,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
   '/regions': 'Regional Analysis',
   '/stats': 'My Stats',
   '/pbe': 'PBE Preview',
+  '/logs': 'Logs',
+  '/settings': 'Settings',
 };
 
 function getBreadcrumb(pathname: string): string {

@@ -5,6 +5,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { LIVE_REGIONS, PBE_REGIONS, Region } from '../riot-api/constants/regions.constants';
 import { QUEUE_NAMES, JOB_NAMES } from './constants/queue.constants';
+import { CrawlSettingsService } from '../settings/crawl-settings.service';
 
 interface CollectRegionJobData {
   region: Region;
@@ -50,6 +51,7 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
 
   constructor(
     private readonly config: ConfigService,
+    private readonly crawlSettings: CrawlSettingsService,
     @InjectQueue(QUEUE_NAMES.MATCH_COLLECTION)
     private readonly matchQueue: Queue<CollectRegionJobData>,
     @InjectQueue(QUEUE_NAMES.VIEW_REFRESH)
@@ -76,6 +78,31 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
     return this.collectorMode === 'pbe' ? PBE_REGIONS : LIVE_REGIONS;
   }
 
+  /**
+   * Reads DB crawl settings and syncs the in-memory mode + active regions.
+   * Returns false if crawling is disabled (callers should bail out).
+   */
+  private async syncSettingsAndCheck(): Promise<{ enabled: boolean; regions: Region[] }> {
+    const settings = await this.crawlSettings.getSettings();
+
+    if (!settings.isEnabled) {
+      this.logger.warn('[Scheduler] Crawling is disabled via settings — skipping.');
+      return { enabled: false, regions: [] };
+    }
+
+    const mode = settings.crawlMode === 'pbe' ? 'pbe' : 'live';
+    if (mode !== this.collectorMode) {
+      this.setMode(mode);
+    }
+
+    const regions =
+      mode === 'pbe'
+        ? PBE_REGIONS
+        : (settings.activeRegions as Region[]).filter((r) => LIVE_REGIONS.includes(r as Region));
+
+    return { enabled: true, regions };
+  }
+
   async onApplicationBootstrap() {
     this.logger.log(`[Scheduler] Application started — triggering initial jobs immediately...`);
     await this.scheduleRegionCollection();
@@ -95,6 +122,9 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
    */
   @Cron('0 */30 * * * *')
   async scheduleRegionCollection(): Promise<void> {
+    const { enabled, regions } = await this.syncSettingsAndCheck();
+    if (!enabled) return;
+
     const queueDepth = await this.matchQueue.count();
     this.logger.log(`[Scheduler] Cron fired — queue depth before enqueue: ${queueDepth} jobs`);
 
@@ -104,8 +134,6 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
       'GRANDMASTER',
       'MASTER',
     ];
-
-    const regions = this.getActiveRegions();
     const jobs = regions.map((region) => ({
       name: JOB_NAMES.COLLECT_REGION,
       data: { region, tiers } satisfies CollectRegionJobData,
@@ -167,8 +195,10 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
    */
   @Cron('0 0 2 * * *')
   async schedulePlayerListRefresh(): Promise<void> {
+    const { enabled, regions } = await this.syncSettingsAndCheck();
+    if (!enabled) return;
+
     const batchId = Date.now();
-    const regions = this.getActiveRegions();
 
     const jobs = regions.map((region) => ({
       name: JOB_NAMES.REFRESH_PLAYER_LIST,

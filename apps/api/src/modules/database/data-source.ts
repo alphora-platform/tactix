@@ -11,6 +11,7 @@ import {
   MetaSnapshot,
   PatchPrediction,
   PatchVersion,
+  CrawlSettings,
 } from '../../database/entities';
 
 dotenv.config();
@@ -42,6 +43,7 @@ export const datasourceOption: DataSourceOptions = {
     MetaSnapshot,
     PatchPrediction,
     PatchVersion,
+    CrawlSettings,
   ],
   migrations:
     process.env.NODE_ENV === 'production'
