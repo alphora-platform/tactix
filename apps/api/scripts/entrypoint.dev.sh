@@ -26,14 +26,14 @@ set -e
 #   echo "✅ Database has data, skipping seed..."
 # fi
 
-echo "🚀 Installing PM2 globally for log monitoring..."
+echo "🚀 Installing PM2 globally..."
 npm install -g pm2
 
-echo "🚀 Building backend for PM2..."
+echo "🚀 Building backend..."
 npx nx run api:build
 
-echo "🚀 Starting PM2 processes (API & Worker)..."
-pm2 start ecosystem.config.js
+echo "🚀 Starting file watcher for hot reload (background)..."
+npx nx run api:build-watch &
 
-echo "🚀 Starting file watcher for hot reload..."
-npx nx run api:build-watch
+echo "🚀 Starting PM2 runtime (foreground — streams logs to Docker)..."
+exec pm2-runtime ecosystem.config.js
