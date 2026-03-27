@@ -5,14 +5,8 @@ import { useAuthStore } from '@/lib/store/auth.store';
 const AUTH_ROUTES = ['/sign-in', '/sign-up'];
 
 export const Route = createRootRoute({
-  beforeLoad: ({ location }) => {
-    const isAuthRoute = AUTH_ROUTES.some((r) => location.pathname.startsWith(r));
-    if (isAuthRoute) return;
-
-    const user = useAuthStore.getState().user;
-    if (!user) {
-      throw redirect({ to: '/sign-in', replace: true });
-    }
+  beforeLoad: () => {
+    // TODO: re-enable auth guard when auth feature is ready
   },
   component: RootLayout,
 });
