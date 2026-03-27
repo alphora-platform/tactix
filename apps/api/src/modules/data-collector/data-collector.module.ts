@@ -13,6 +13,7 @@ import {
 import { RiotApiModule } from '../riot-api/riot-api.module';
 import { AlertsModule } from '../alerts/alerts.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { SettingsModule } from '../settings/settings.module';
 import { DataCollectorService } from './data-collector.service';
 import { DataCollectorController } from './data-collector.controller';
 import { MatchParser } from './match.parser';
@@ -38,6 +39,7 @@ const workerOnlyProviders = isWorker
     RiotApiModule,
     AlertsModule, // Provides QUEUE_NAMES.ALERTS queue to CollectorSchedulerService
     AnalyticsModule, // Provides MetaStatsService for patch sync in EtlService
+    SettingsModule, // Provides CrawlSettingsService for dynamic crawl config
     TypeOrmModule.forFeature([
       Player,
       Match,

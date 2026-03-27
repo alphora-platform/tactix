@@ -14,12 +14,14 @@ import { Route as TrendsIndexRouteImport } from './routes/trends/index'
 import { Route as StatsIndexRouteImport } from './routes/stats/index'
 import { Route as SignUpIndexRouteImport } from './routes/sign-up/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as RegionsIndexRouteImport } from './routes/regions/index'
 import { Route as PlayerIndexRouteImport } from './routes/player/index'
 import { Route as PlaybookIndexRouteImport } from './routes/playbook/index'
 import { Route as PbeIndexRouteImport } from './routes/pbe/index'
 import { Route as MetaIndexRouteImport } from './routes/meta/index'
 import { Route as MatchIndexRouteImport } from './routes/match/index'
+import { Route as LogsIndexRouteImport } from './routes/logs/index'
 import { Route as MetaCompIdRouteImport } from './routes/meta/$compId'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 
@@ -46,6 +48,11 @@ const SignUpIndexRoute = SignUpIndexRouteImport.update({
 const SignInIndexRoute = SignInIndexRouteImport.update({
   id: '/sign-in/',
   path: '/sign-in/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegionsIndexRoute = RegionsIndexRouteImport.update({
@@ -78,6 +85,11 @@ const MatchIndexRoute = MatchIndexRouteImport.update({
   path: '/match/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogsIndexRoute = LogsIndexRouteImport.update({
+  id: '/logs/',
+  path: '/logs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MetaCompIdRoute = MetaCompIdRouteImport.update({
   id: '/meta/$compId',
   path: '/meta/$compId',
@@ -93,12 +105,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/meta/$compId': typeof MetaCompIdRoute
+  '/logs/': typeof LogsIndexRoute
   '/match/': typeof MatchIndexRoute
   '/meta/': typeof MetaIndexRoute
   '/pbe/': typeof PbeIndexRoute
   '/playbook/': typeof PlaybookIndexRoute
   '/player/': typeof PlayerIndexRoute
   '/regions/': typeof RegionsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/sign-up/': typeof SignUpIndexRoute
   '/stats/': typeof StatsIndexRoute
@@ -108,12 +122,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/meta/$compId': typeof MetaCompIdRoute
+  '/logs': typeof LogsIndexRoute
   '/match': typeof MatchIndexRoute
   '/meta': typeof MetaIndexRoute
   '/pbe': typeof PbeIndexRoute
   '/playbook': typeof PlaybookIndexRoute
   '/player': typeof PlayerIndexRoute
   '/regions': typeof RegionsIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/sign-in': typeof SignInIndexRoute
   '/sign-up': typeof SignUpIndexRoute
   '/stats': typeof StatsIndexRoute
@@ -124,12 +140,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/meta/$compId': typeof MetaCompIdRoute
+  '/logs/': typeof LogsIndexRoute
   '/match/': typeof MatchIndexRoute
   '/meta/': typeof MetaIndexRoute
   '/pbe/': typeof PbeIndexRoute
   '/playbook/': typeof PlaybookIndexRoute
   '/player/': typeof PlayerIndexRoute
   '/regions/': typeof RegionsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/sign-up/': typeof SignUpIndexRoute
   '/stats/': typeof StatsIndexRoute
@@ -141,12 +159,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/callback'
     | '/meta/$compId'
+    | '/logs/'
     | '/match/'
     | '/meta/'
     | '/pbe/'
     | '/playbook/'
     | '/player/'
     | '/regions/'
+    | '/settings/'
     | '/sign-in/'
     | '/sign-up/'
     | '/stats/'
@@ -156,12 +176,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/callback'
     | '/meta/$compId'
+    | '/logs'
     | '/match'
     | '/meta'
     | '/pbe'
     | '/playbook'
     | '/player'
     | '/regions'
+    | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/stats'
@@ -171,12 +193,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/callback'
     | '/meta/$compId'
+    | '/logs/'
     | '/match/'
     | '/meta/'
     | '/pbe/'
     | '/playbook/'
     | '/player/'
     | '/regions/'
+    | '/settings/'
     | '/sign-in/'
     | '/sign-up/'
     | '/stats/'
@@ -187,12 +211,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   MetaCompIdRoute: typeof MetaCompIdRoute
+  LogsIndexRoute: typeof LogsIndexRoute
   MatchIndexRoute: typeof MatchIndexRoute
   MetaIndexRoute: typeof MetaIndexRoute
   PbeIndexRoute: typeof PbeIndexRoute
   PlaybookIndexRoute: typeof PlaybookIndexRoute
   PlayerIndexRoute: typeof PlayerIndexRoute
   RegionsIndexRoute: typeof RegionsIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   SignInIndexRoute: typeof SignInIndexRoute
   SignUpIndexRoute: typeof SignUpIndexRoute
   StatsIndexRoute: typeof StatsIndexRoute
@@ -234,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in/'
       preLoaderRoute: typeof SignInIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/regions/': {
@@ -278,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MatchIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/logs/': {
+      id: '/logs/'
+      path: '/logs'
+      fullPath: '/logs/'
+      preLoaderRoute: typeof LogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meta/$compId': {
       id: '/meta/$compId'
       path: '/meta/$compId'
@@ -299,12 +339,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   MetaCompIdRoute: MetaCompIdRoute,
+  LogsIndexRoute: LogsIndexRoute,
   MatchIndexRoute: MatchIndexRoute,
   MetaIndexRoute: MetaIndexRoute,
   PbeIndexRoute: PbeIndexRoute,
   PlaybookIndexRoute: PlaybookIndexRoute,
   PlayerIndexRoute: PlayerIndexRoute,
   RegionsIndexRoute: RegionsIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   SignInIndexRoute: SignInIndexRoute,
   SignUpIndexRoute: SignUpIndexRoute,
   StatsIndexRoute: StatsIndexRoute,
