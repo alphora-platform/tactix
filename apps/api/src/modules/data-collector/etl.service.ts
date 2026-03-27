@@ -7,6 +7,7 @@ import {
   ParticipantUnit,
   ParticipantTrait,
   ParticipantAugment,
+  Player,
 } from '../../database/entities';
 import { RiotMatchDetail } from '../riot-api/interfaces/riot-api.interfaces';
 import { MetaStatsService } from '../analytics/meta-stats.service';
@@ -76,6 +77,8 @@ export class EtlService {
     private readonly traitRepo: Repository<ParticipantTrait>,
     @InjectRepository(ParticipantAugment)
     private readonly augmentRepo: Repository<ParticipantAugment>,
+    @InjectRepository(Player)
+    private readonly playerRepo: Repository<Player>,
     private readonly metaStatsService: MetaStatsService
   ) {}
 
@@ -239,6 +242,33 @@ export class EtlService {
     this.metaStatsService.syncPatchVersions().catch((err: Error) => {
       this.logger.warn(`[ETL] patch sync failed: ${err.message}`);
     });
+
+    // ── PBE viral crawl: auto-seed all 8 participants as PBE players ──
+    // PBE has no leaderboard, so we grow the crawl pool organically by
+    // registering every participant we encounter. orIgnore ensures we never
+    // overwrite an existing player row (e.g. one that was manually seeded).
+    if (isPbe) {
+      const puuids = info.participants.map((p) => p.puuid);
+      await this.playerRepo
+        .createQueryBuilder()
+        .insert()
+        .into(Player)
+        .values(
+          puuids.map((puuid) => ({
+            puuid,
+            region: 'PBE',
+            summonerName: puuid,
+            tier: 'PBE_TESTER',
+            lp: 0,
+            wins: 0,
+            losses: 0,
+          }))
+        )
+        .orIgnore()
+        .execute();
+
+      this.logger.debug(`[ETL] [PBE] Auto-seeded ${puuids.length} participants for future crawl`);
+    }
 
     return { skipped: false, matchId, participantsSaved };
   }
