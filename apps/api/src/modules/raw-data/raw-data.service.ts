@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Match } from '../../database/entities/match.entity';
 import { Player } from '../../database/entities/player.entity';
 
@@ -35,6 +35,29 @@ export class RawDataService {
     }
 
     return player;
+  }
+
+  async getPlayers(params: {
+    page: number;
+    limit: number;
+    region?: string;
+    name?: string;
+    tier?: string;
+  }): Promise<{ data: Player[]; total: number; page: number; limit: number }> {
+    const { page, limit, region, name, tier } = params;
+    const where: Record<string, unknown> = {};
+    if (region) where['region'] = region;
+    if (name) where['summonerName'] = ILike(`%${name}%`);
+    if (tier) where['tier'] = tier;
+
+    const [data, total] = await this.playerRepo.findAndCount({
+      where,
+      order: { updatedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total, page, limit };
   }
 
   async getMatchById(matchId: string): Promise<Match> {
