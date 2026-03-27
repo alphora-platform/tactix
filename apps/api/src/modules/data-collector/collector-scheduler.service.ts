@@ -73,11 +73,6 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
     this.collectorMode = mode;
   }
 
-  /** Returns the regions to collect based on current mode. */
-  private getActiveRegions(): Region[] {
-    return this.collectorMode === 'pbe' ? PBE_REGIONS : LIVE_REGIONS;
-  }
-
   /**
    * Reads DB crawl settings and syncs the in-memory mode + active regions.
    * Returns false if crawling is disabled (callers should bail out).
