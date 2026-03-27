@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Input, message } from 'antd';
-import { Settings, Wifi, WifiOff, FlaskConical, Globe } from 'lucide-react';
+import { Input, message, Modal } from 'antd';
+import { Settings, Wifi, WifiOff, FlaskConical, Globe, Database, Trash2, Users, FileText, BarChart2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils/cn';
-import { useCrawlSettings, useUpdateCrawlSettings } from '@/hooks/useSettings';
+import { useCrawlSettings, useUpdateCrawlSettings, useDbStats, usePurgeMatchData } from '@/hooks/useSettings';
 
 export const Route = createFileRoute('/settings/')({
   component: SettingsPage,
@@ -321,6 +321,110 @@ function SettingsPage() {
             {isPending ? 'Saving…' : 'Save Settings'}
           </button>
         </div>
+
+        {/* Database management */}
+        <DbManagementCard />
+      </div>
+    </div>
+  );
+}
+
+function DbManagementCard() {
+  const { data: stats, isLoading } = useDbStats();
+  const { mutate: purge, isPending: purging } = usePurgeMatchData();
+
+  const handlePurge = () => {
+    Modal.confirm({
+      title: 'Purge Set 16 match data?',
+      content: (
+        <div className="space-y-2 pt-1 text-sm text-slate-400">
+          <p>This will permanently delete:</p>
+          <ul className="ml-4 list-disc space-y-1">
+            <li>All matches + participants</li>
+            <li>All meta snapshots</li>
+            <li>All patch versions</li>
+          </ul>
+          <p className="pt-1 font-semibold text-slate-200">
+            Players are kept and their stats are reset for Set 17.
+          </p>
+        </div>
+      ),
+      okText: 'Purge',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancel',
+      onOk: () =>
+        new Promise((resolve, reject) => {
+          purge(undefined, {
+            onSuccess: (result) => {
+              message.success(
+                `Purged ${result.deletedMatches.toLocaleString()} matches, ${result.deletedSnapshots.toLocaleString()} snapshots`
+              );
+              resolve(undefined);
+            },
+            onError: () => {
+              message.error('Purge failed');
+              reject();
+            },
+          });
+        }),
+    });
+  };
+
+  const statItems = [
+    { icon: Users, label: 'Players', value: stats?.players, color: 'text-[var(--accent-primary)]' },
+    { icon: FileText, label: 'Matches', value: stats?.matches, color: 'text-emerald-400' },
+    { icon: BarChart2, label: 'Snapshots', value: stats?.metaSnapshots, color: 'text-[var(--accent-cyan)]' },
+    { icon: Database, label: 'Patches', value: stats?.patchVersions, color: 'text-amber-400' },
+  ];
+
+  return (
+    <div className="rounded-xl border border-rose-500/20 bg-[var(--bg-surface)] p-5">
+      <p className="mb-4 flex items-center gap-2 font-medium text-slate-200">
+        <Database size={16} className="text-rose-400" />
+        Database Management
+      </p>
+
+      {/* Stats row */}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {statItems.map(({ icon: Icon, label, value, color }) => (
+          <div
+            key={label}
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 py-3"
+          >
+            <div className="mb-1 flex items-center gap-1.5">
+              <Icon size={13} className={color} />
+              <span className="text-[11px] text-slate-500">{label}</span>
+            </div>
+            <p className={cn('font-chakra text-lg font-semibold', color)}>
+              {isLoading ? '—' : (value ?? 0).toLocaleString()}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Purge action */}
+      <div className="flex items-start justify-between gap-4 rounded-lg border border-rose-500/20 bg-rose-500/5 p-4">
+        <div>
+          <p className="mb-0.5 font-medium text-rose-300">Purge Set 16 Match Data</p>
+          <p className="text-xs text-slate-500">
+            Deletes all matches, snapshots and patch history. Players are preserved and reset for
+            Set 17.
+          </p>
+        </div>
+        <button
+          onClick={handlePurge}
+          disabled={purging}
+          className={cn(
+            'flex shrink-0 items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2',
+            'font-chakra text-sm font-semibold text-rose-400 transition-all',
+            'hover:border-rose-500/70 hover:bg-rose-500/20',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            purging && 'animate-pulse'
+          )}
+        >
+          <Trash2 size={14} />
+          {purging ? 'Purging…' : 'Purge'}
+        </button>
       </div>
     </div>
   );

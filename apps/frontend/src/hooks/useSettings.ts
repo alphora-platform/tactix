@@ -1,6 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 
+export interface DbStats {
+  players: number;
+  matches: number;
+  metaSnapshots: number;
+  patchVersions: number;
+}
+
+export interface PurgeResult {
+  deletedMatches: number;
+  deletedSnapshots: number;
+  deletedPatchVersions: number;
+  deletedPatchPredictions: number;
+}
+
 export interface CrawlSettings {
   id: number;
   crawlMode: 'pbe' | 'official';
@@ -22,6 +36,30 @@ export function useCrawlSettings() {
     queryFn: async () => {
       const { data } = await apiClient.get('/settings/crawl');
       return data;
+    },
+  });
+}
+
+export function useDbStats() {
+  return useQuery<DbStats>({
+    queryKey: ['settings', 'db', 'stats'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/settings/db/stats');
+      return data;
+    },
+    refetchInterval: 30_000,
+  });
+}
+
+export function usePurgeMatchData() {
+  const queryClient = useQueryClient();
+  return useMutation<PurgeResult>({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/settings/db/purge-match-data');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'db', 'stats'] });
     },
   });
 }
