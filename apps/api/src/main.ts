@@ -4,7 +4,8 @@ import { AppModule } from './app.module';
 import { corsConfig } from './common/config/cors.config';
 import { ConfigService } from '@nestjs/config';
 import AppDataSource from './modules/database/data-source';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
+import { LogBufferService } from './modules/logs/log-buffer.service';
 
 async function bootstrap() {
   const appMode = process.env.APP_MODE || 'api';
@@ -17,7 +18,8 @@ async function bootstrap() {
     process.exit(0);
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(LogBufferService));
 
   if (appMode === 'worker') {
     // In worker mode, we don't need to listen for incoming HTTP requests.
