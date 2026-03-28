@@ -26,17 +26,30 @@ set -e
 #   echo "✅ Database has data, skipping seed..."
 # fi
 
-echo "🚀 Installing PM2 globally..."
-npm install -g pm2
+if ! command -v pm2 > /dev/null 2>&1; then
+  echo "🚀 Installing PM2 globally..."
+  npm install -g pm2
+else
+  echo "✅ PM2 already installed, skipping..."
+fi
 
 echo "🚀 Building backend..."
 npx nx run api:build
 
-echo "🚀 Starting file watcher for hot reload (background)..."
-npx nx run api:build-watch &
-
-echo "🚀 Creating PM2 log directory for pm2 monit..."
+echo "🚀 Creating PM2 log directory..."
 mkdir -p /root/.pm2/logs
 
-echo "🚀 Starting PM2 runtime (foreground — streams logs to Docker)..."
-exec pm2-runtime ecosystem.config.js
+echo "🚀 Starting PM2 processes..."
+pm2 start ecosystem.config.js
+
+echo "🚀 Streaming PM2 logs to stdout..."
+pm2 logs &
+
+echo "🚀 Starting webpack watcher (triggers pm2 restart on successful rebuild)..."
+npx nx run api:build-watch 2>&1 | while IFS= read -r line; do
+  echo "$line"
+  if echo "$line" | grep -qE "webpack compiled successfully|compiled successfully"; then
+    echo "🔄 Webpack compiled — restarting PM2 processes..."
+    pm2 restart all --update-env 2>/dev/null || true
+  fi
+done
