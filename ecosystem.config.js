@@ -6,7 +6,8 @@ module.exports = {
     {
       name: 'tactix-api',
       script: 'apps/api/dist/main.js',
-      watch: false,
+      watch: ['apps/api/dist/main.js'],
+      watch_delay: 1000,
       out_file: '/root/.pm2/logs/tactix-api-out.log',
       error_file: '/root/.pm2/logs/tactix-api-error.log',
       merge_logs: true,
@@ -19,7 +20,8 @@ module.exports = {
     {
       name: 'tactix-worker',
       script: 'apps/api/dist/main.js',
-      watch: false,
+      watch: ['apps/api/dist/main.js'],
+      watch_delay: 1000,
       out_file: '/root/.pm2/logs/tactix-worker-out.log',
       error_file: '/root/.pm2/logs/tactix-worker-error.log',
       merge_logs: true,
