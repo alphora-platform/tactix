@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Input, message, Modal } from 'antd';
-import { Settings, Wifi, WifiOff, FlaskConical, Globe, Database, Trash2, Users, FileText, BarChart2 } from 'lucide-react';
+import { Input, message } from 'antd';
+import { Settings, Wifi, WifiOff, FlaskConical, Globe, Database, Trash2, Users, FileText, BarChart2, AlertTriangle, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils/cn';
@@ -332,41 +332,20 @@ function SettingsPage() {
 function DbManagementCard() {
   const { data: stats, isLoading } = useDbStats();
   const { mutate: purge, isPending: purging } = usePurgeMatchData();
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handlePurge = () => {
-    Modal.confirm({
-      title: 'Purge Set 16 match data?',
-      content: (
-        <div className="space-y-2 pt-1 text-sm text-slate-400">
-          <p>This will permanently delete:</p>
-          <ul className="ml-4 list-disc space-y-1">
-            <li>All matches + participants</li>
-            <li>All meta snapshots</li>
-            <li>All patch versions</li>
-          </ul>
-          <p className="pt-1 font-semibold text-slate-200">
-            Players are kept and their stats are reset for Set 17.
-          </p>
-        </div>
-      ),
-      okText: 'Purge',
-      okButtonProps: { danger: true },
-      cancelText: 'Cancel',
-      onOk: () =>
-        new Promise((resolve, reject) => {
-          purge(undefined, {
-            onSuccess: (result) => {
-              message.success(
-                `Purged ${result.deletedMatches.toLocaleString()} matches, ${result.deletedSnapshots.toLocaleString()} snapshots`
-              );
-              resolve(undefined);
-            },
-            onError: () => {
-              message.error('Purge failed');
-              reject();
-            },
-          });
-        }),
+  const handleConfirm = () => {
+    purge(undefined, {
+      onSuccess: (result) => {
+        message.success(
+          `Purged ${result.deletedMatches.toLocaleString()} matches, ${result.deletedSnapshots.toLocaleString()} snapshots`
+        );
+        setShowConfirm(false);
+      },
+      onError: () => {
+        message.error('Purge failed');
+        setShowConfirm(false);
+      },
     });
   };
 
@@ -412,20 +391,105 @@ function DbManagementCard() {
           </p>
         </div>
         <button
-          onClick={handlePurge}
+          onClick={() => setShowConfirm(true)}
           disabled={purging}
           className={cn(
             'flex shrink-0 items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2',
             'font-chakra text-sm font-semibold text-rose-400 transition-all',
             'hover:border-rose-500/70 hover:bg-rose-500/20',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            purging && 'animate-pulse'
+            'disabled:cursor-not-allowed disabled:opacity-50'
           )}
         >
           <Trash2 size={14} />
-          {purging ? 'Purging…' : 'Purge'}
+          Purge
         </button>
       </div>
+
+      {/* Dark confirmation modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => !purging && setShowConfirm(false)}
+          />
+
+          {/* Dialog */}
+          <div className="relative w-full max-w-md rounded-2xl border border-rose-500/20 bg-[var(--bg-elevated)] shadow-2xl">
+            {/* Top accent bar */}
+            <div className="h-[3px] rounded-t-2xl bg-gradient-to-r from-rose-600 via-rose-400 to-rose-600" />
+
+            <div className="p-6">
+              {/* Header */}
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/15">
+                    <AlertTriangle size={20} className="text-rose-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-russo text-base text-slate-100">Purge Set 16 match data?</h3>
+                    <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !purging && setShowConfirm(false)}
+                  className="rounded-lg p-1 text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-300"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="mb-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-2 text-sm">
+                <p className="text-slate-400">The following will be permanently deleted:</p>
+                <ul className="space-y-1.5 text-slate-300">
+                  {[
+                    'All matches & participant data',
+                    'All meta snapshots',
+                    'All patch versions & predictions',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-rose-500 shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  <p className="text-xs font-semibold text-emerald-300">
+                    Players are preserved and stats reset for Set 17.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  disabled={purging}
+                  className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] py-2.5 font-chakra text-sm font-semibold text-slate-400 transition-all hover:text-slate-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={purging}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5',
+                    'bg-rose-500/20 border border-rose-500/40 font-chakra text-sm font-semibold text-rose-300',
+                    'transition-all hover:bg-rose-500/30 hover:border-rose-500/60 hover:text-rose-200',
+                    'disabled:cursor-not-allowed disabled:opacity-50',
+                    purging && 'animate-pulse'
+                  )}
+                >
+                  <Trash2 size={14} />
+                  {purging ? 'Purging…' : 'Yes, Purge'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
