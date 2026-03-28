@@ -53,17 +53,27 @@ export class DbAdminService {
    */
   async purgeMatchData(job?: Job): Promise<PurgeResult> {
     this.logger.warn('[DbAdmin] Starting match data purge — players will be preserved');
-    const progress = async (pct: number) => { if (job) await job.updateProgress(pct); };
+    const progress = async (pct: number) => {
+      if (job) await job.updateProgress(pct);
+    };
 
     await progress(5);
 
     // Snapshot counts before truncation so we can report what was deleted
-    const [beforeStats, snapshotCount, patchVersionCount, patchPredictionCount] = await Promise.all([
-      this.getStats(),
-      this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM meta_snapshots'),
-      this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM patch_versions'),
-      this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM patch_predictions'),
-    ]);
+    const [beforeStats, snapshotCount, patchVersionCount, patchPredictionCount] = await Promise.all(
+      [
+        this.getStats(),
+        this.dataSource.query<[{ count: string }]>(
+          'SELECT COUNT(*)::int AS count FROM meta_snapshots'
+        ),
+        this.dataSource.query<[{ count: string }]>(
+          'SELECT COUNT(*)::int AS count FROM patch_versions'
+        ),
+        this.dataSource.query<[{ count: string }]>(
+          'SELECT COUNT(*)::int AS count FROM patch_predictions'
+        ),
+      ]
+    );
 
     await progress(20);
 

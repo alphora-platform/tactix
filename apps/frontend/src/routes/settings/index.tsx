@@ -1,6 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Input, message } from 'antd';
-import { Settings, Wifi, WifiOff, FlaskConical, Globe, Database, Trash2, Users, FileText, BarChart2, AlertTriangle, X, ExternalLink } from 'lucide-react';
+import {
+  Settings,
+  Wifi,
+  WifiOff,
+  FlaskConical,
+  Globe,
+  Database,
+  Trash2,
+  Users,
+  FileText,
+  BarChart2,
+  AlertTriangle,
+  X,
+  ExternalLink,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -354,7 +368,12 @@ function DbManagementCard() {
   const statItems = [
     { icon: Users, label: 'Players', value: stats?.players, color: 'text-[var(--accent-primary)]' },
     { icon: FileText, label: 'Matches', value: stats?.matches, color: 'text-emerald-400' },
-    { icon: BarChart2, label: 'Snapshots', value: stats?.metaSnapshots, color: 'text-[var(--accent-cyan)]' },
+    {
+      icon: BarChart2,
+      label: 'Snapshots',
+      value: stats?.metaSnapshots,
+      color: 'text-[var(--accent-cyan)]',
+    },
     { icon: Database, label: 'Patches', value: stats?.patchVersions, color: 'text-amber-400' },
   ];
 
@@ -429,7 +448,9 @@ function DbManagementCard() {
                     <AlertTriangle size={20} className="text-rose-400" />
                   </div>
                   <div>
-                    <h3 className="font-russo text-base text-slate-100">Purge Set 16 match data?</h3>
+                    <h3 className="font-russo text-base text-slate-100">
+                      Purge Set 16 match data?
+                    </h3>
                     <p className="text-xs text-slate-500">This action cannot be undone.</p>
                   </div>
                 </div>

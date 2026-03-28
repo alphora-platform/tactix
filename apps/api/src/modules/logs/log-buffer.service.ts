@@ -18,7 +18,12 @@ export class LogBufferService implements LoggerService {
   private nextId = 1;
   readonly emitter = new EventEmitter();
 
-  private push(level: LogEntry['level'], message: unknown, context?: string, source?: LogEntry['source']) {
+  private push(
+    level: LogEntry['level'],
+    message: unknown,
+    context?: string,
+    source?: LogEntry['source']
+  ) {
     const appMode = process.env.APP_MODE || 'api';
     const entry: LogEntry = {
       id: this.nextId++,
