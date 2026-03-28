@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CheckCircle2, Clock, Loader2, XCircle, AlertTriangle, ListChecks, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Clock, Loader2, XCircle, AlertTriangle, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils/cn';
 import { useJobsList } from '@/hooks/useJobs';
@@ -10,7 +10,7 @@ export const Route = createFileRoute('/jobs/')({
 });
 
 /* ------------------------------------------------------------------ */
-/*  Helpers                                                             */
+/*  Config                                                              */
 /* ------------------------------------------------------------------ */
 
 const STATUS_CONFIG = {
@@ -62,11 +62,25 @@ const STATUS_CONFIG = {
     bar: 'bg-slate-400',
     spin: false,
   },
-} satisfies Record<JobSummary['status'], { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; color: string; bg: string; bar: string; spin: boolean }>;
+} satisfies Record<
+  JobSummary['status'],
+  {
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    color: string;
+    bg: string;
+    bar: string;
+    spin: boolean;
+  }
+>;
 
 const JOB_LABELS: Record<string, string> = {
   'purge-match-data': 'Purge Match Data',
 };
+
+/* ------------------------------------------------------------------ */
+/*  Formatters                                                          */
+/* ------------------------------------------------------------------ */
 
 function formatDuration(start: string | null, end: string | null): string {
   if (!start) return '—';
@@ -79,101 +93,100 @@ function formatDuration(start: string | null, end: string | null): string {
 function formatTime(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString(undefined, {
-    month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
 }
 
 /* ------------------------------------------------------------------ */
-/*  JobCard                                                             */
+/*  Sub-components                                                      */
 /* ------------------------------------------------------------------ */
 
-function JobCard({ job }: { job: JobSummary }) {
-  const cfg = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.unknown;
+function StatusBadge({ status }: { status: JobSummary['status'] }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.unknown;
   const Icon = cfg.icon;
-  const label = JOB_LABELS[job.name] ?? job.name;
-
-  const result = job.result as Record<string, number> | null;
-
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)]">
-      {/* Top accent line based on status */}
-      <div className={cn('h-[3px]', cfg.bar)} />
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap',
+        cfg.bg,
+        cfg.color
+      )}
+    >
+      <Icon size={11} className={cfg.spin ? 'animate-spin' : ''} />
+      {cfg.label}
+    </span>
+  );
+}
 
-      <div className="p-5">
-        {/* Header row */}
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="font-russo text-sm text-slate-100">{label}</p>
-            <p className="mt-0.5 font-mono text-[11px] text-slate-600">id: {job.id}</p>
-          </div>
-          <span className={cn('flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold', cfg.bg, cfg.color)}>
-            <Icon size={12} className={cfg.spin ? 'animate-spin' : ''} />
-            {cfg.label}
-          </span>
-        </div>
-
-        {/* Progress bar (always shown, full when complete) */}
-        <div className="mb-4">
-          <div className="mb-1 flex justify-between font-chakra text-[11px] text-slate-500">
-            <span>Progress</span>
-            <span>{job.status === 'completed' ? 100 : job.progress}%</span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">
-            <div
-              className={cn('h-full rounded-full transition-all duration-300', cfg.bar)}
-              style={{ width: `${job.status === 'completed' ? 100 : job.progress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Timestamps */}
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          {[
-            { label: 'Enqueued', value: formatTime(job.enqueuedAt) },
-            { label: 'Started', value: formatTime(job.startedAt) },
-            { label: 'Duration', value: formatDuration(job.startedAt, job.finishedAt) },
-          ].map(({ label: l, value }) => (
-            <div key={l}>
-              <p className="font-chakra text-[10px] uppercase tracking-widest text-slate-600">{l}</p>
-              <p className="font-chakra text-xs text-slate-400">{value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Result */}
-        {job.status === 'completed' && result && (
-          <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/5 p-3">
-            <p className="mb-2 font-chakra text-[10px] uppercase tracking-widest text-emerald-600">Result</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-chakra text-xs text-slate-300">
-              {Object.entries(result).map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-slate-500">{k.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
-                  <span className="font-semibold text-emerald-300">{Number(v).toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Error */}
-        {job.status === 'failed' && job.error && (
-          <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
-            <p className="mb-1 font-chakra text-[10px] uppercase tracking-widest text-rose-600">Error</p>
-            <p className="font-mono text-xs text-rose-300 break-all">{job.error}</p>
-          </div>
-        )}
+function ProgressBar({ job }: { job: JobSummary }) {
+  const cfg = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.unknown;
+  const pct = job.status === 'completed' ? 100 : job.progress;
+  return (
+    <div className="flex items-center gap-2 min-w-[100px]">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+        <div
+          className={cn('h-full rounded-full transition-all duration-300', cfg.bar)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
+      <span className="w-8 text-right font-chakra text-[11px] text-slate-500 tabular-nums">
+        {pct}%
+      </span>
     </div>
   );
 }
+
+function ResultCell({ job }: { job: JobSummary }) {
+  if (job.status === 'failed' && job.error) {
+    return (
+      <span
+        className="font-mono text-[11px] text-rose-400 line-clamp-1 max-w-[220px]"
+        title={job.error}
+      >
+        {job.error}
+      </span>
+    );
+  }
+  if (job.status === 'completed' && job.result) {
+    const entries = Object.entries(job.result as Record<string, number>);
+    return (
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+        {entries.map(([k, v]) => (
+          <span key={k} className="font-chakra text-[11px] text-slate-400 whitespace-nowrap">
+            <span className="text-slate-600">{k.replace(/([A-Z])/g, ' $1').toLowerCase()}:</span>{' '}
+            <span className="text-emerald-300 font-semibold">{Number(v).toLocaleString()}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return <span className="text-slate-700">—</span>;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Table columns header                                                */
+/* ------------------------------------------------------------------ */
+
+const COLUMNS = [
+  { key: 'job', label: 'Job', width: 'w-[200px]' },
+  { key: 'status', label: 'Status', width: 'w-[120px]' },
+  { key: 'progress', label: 'Progress', width: 'w-[160px]' },
+  { key: 'enqueued', label: 'Enqueued', width: 'w-[160px]' },
+  { key: 'started', label: 'Started', width: 'w-[160px]' },
+  { key: 'duration', label: 'Duration', width: 'w-[100px]' },
+  { key: 'result', label: 'Result / Error', width: '' },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                                */
 /* ------------------------------------------------------------------ */
 
 function JobsPage() {
-  const { data: jobs = [], isLoading, refetch, isFetching } = useJobsList();
+  const { data: jobs = [], isLoading, connected } = useJobsList();
 
   const activeCount = jobs.filter((j) => j.status === 'active' || j.status === 'waiting').length;
 
@@ -186,45 +199,161 @@ function JobsPage() {
           <div className="flex items-center gap-3">
             {activeCount > 0 && (
               <span className="flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 font-chakra text-xs font-semibold text-cyan-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" style={{ animation: 'live-blink 1.5s ease-in-out infinite' }} />
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-cyan-400"
+                  style={{ animation: 'live-blink 1.5s ease-in-out infinite' }}
+                />
                 {activeCount} running
               </span>
             )}
-            <button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs text-slate-400 transition-colors hover:text-slate-200 disabled:opacity-50"
+            <div
+              className={cn(
+                'flex items-center gap-1.5 rounded-full border px-3 py-1 font-chakra text-xs font-semibold',
+                connected
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                  : 'border-slate-500/30 bg-slate-500/10 text-slate-500'
+              )}
             >
-              <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
-              Refresh
-            </button>
+              <span
+                className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  connected ? 'bg-emerald-400' : 'bg-slate-500'
+                )}
+                style={
+                  connected ? { animation: 'live-blink 1.5s ease-in-out infinite' } : undefined
+                }
+              />
+              {connected ? 'Live' : 'Connecting…'}
+            </div>
           </div>
         }
       />
 
-      {isLoading && (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 animate-pulse rounded-xl bg-[var(--bg-surface)]" />
-          ))}
-        </div>
-      )}
+      <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)]">
+        {/* Table header */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border-default)] bg-[var(--bg-elevated)]">
+                {COLUMNS.map((col) => (
+                  <th
+                    key={col.key}
+                    className={cn(
+                      'px-4 py-3 text-left font-chakra text-[11px] font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap',
+                      col.width
+                    )}
+                  >
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-      {!isLoading && jobs.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] py-16 text-center">
-          <ListChecks size={32} className="mb-3 text-slate-600" />
-          <p className="font-russo text-sm text-slate-500">No jobs yet</p>
-          <p className="mt-1 text-xs text-slate-600">Background jobs triggered from Settings will appear here.</p>
-        </div>
-      )}
+            <tbody className="divide-y divide-[var(--border-default)]/50">
+              {isLoading &&
+                Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i}>
+                    {COLUMNS.map((col) => (
+                      <td key={col.key} className="px-4 py-3.5">
+                        <div
+                          className="h-3 animate-pulse rounded-full bg-[var(--bg-elevated)]"
+                          style={{ width: `${50 + ((i * 13 + COLUMNS.indexOf(col) * 17) % 35)}%` }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
 
-      {jobs.length > 0 && (
-        <div className="space-y-4">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
+              {!isLoading && jobs.length === 0 && (
+                <tr>
+                  <td colSpan={COLUMNS.length} className="px-4 py-16">
+                    <div className="flex flex-col items-center justify-center gap-3 text-center">
+                      <ListChecks size={32} className="text-slate-600" strokeWidth={1.5} />
+                      <p className="font-russo text-sm text-slate-500">No jobs yet</p>
+                      <p className="text-xs text-slate-600">
+                        Background jobs triggered from Settings will appear here.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {jobs.map((job) => {
+                const cfg = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.unknown;
+                return (
+                  <tr
+                    key={job.id}
+                    className={cn(
+                      'group transition-colors hover:bg-[var(--bg-elevated)]/40',
+                      job.status === 'active' && 'bg-cyan-400/[0.03]'
+                    )}
+                  >
+                    {/* Job */}
+                    <td className="px-4 py-3.5">
+                      <p className="font-russo text-sm text-slate-100">
+                        {JOB_LABELS[job.name] ?? job.name}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10px] text-slate-600">{job.id}</p>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={job.status} />
+                    </td>
+
+                    {/* Progress */}
+                    <td className="px-4 py-3.5">
+                      <ProgressBar job={job} />
+                    </td>
+
+                    {/* Enqueued */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-chakra text-xs text-slate-400">
+                        {formatTime(job.enqueuedAt)}
+                      </span>
+                    </td>
+
+                    {/* Started */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-chakra text-xs text-slate-400">
+                        {formatTime(job.startedAt)}
+                      </span>
+                    </td>
+
+                    {/* Duration */}
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={cn(
+                          'font-chakra text-xs tabular-nums',
+                          job.status === 'active' ? cfg.color : 'text-slate-400'
+                        )}
+                      >
+                        {formatDuration(job.startedAt, job.finishedAt)}
+                      </span>
+                    </td>
+
+                    {/* Result / Error */}
+                    <td className="px-4 py-3.5">
+                      <ResultCell job={job} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* Footer count */}
+        {!isLoading && jobs.length > 0 && (
+          <div className="border-t border-[var(--border-default)]/50 px-4 py-2.5">
+            <p className="font-chakra text-[11px] text-slate-600">
+              {jobs.length} job{jobs.length !== 1 ? 's' : ''} &mdash;{' '}
+              {jobs.filter((j) => j.status === 'completed').length} completed,{' '}
+              {jobs.filter((j) => j.status === 'failed').length} failed
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

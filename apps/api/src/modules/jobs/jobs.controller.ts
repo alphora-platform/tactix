@@ -1,8 +1,20 @@
-import { Controller, Get, HttpCode, HttpStatus, Logger, NotFoundException, Param, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  NotFoundException,
+  Param,
+  Post,
+  Sse,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { Observable, fromEvent, switchMap, filter } from 'rxjs';
 import { Public } from '../auth/decorators/public.decorator';
 import { SYSTEM_QUEUE, SYSTEM_JOB_NAMES } from './jobs.constants';
+import { JobsEventsService } from './jobs-events.service';
 
 export interface JobSummary {
   id: string;
@@ -23,7 +35,8 @@ export class JobsController {
 
   constructor(
     @InjectQueue(SYSTEM_QUEUE)
-    private readonly systemQueue: Queue
+    private readonly systemQueue: Queue,
+    private readonly jobsEvents: JobsEventsService
   ) {}
 
   /** Enqueue a purge-match-data background job. */
@@ -43,6 +56,19 @@ export class JobsController {
     return { jobId: job.id, name: job.name, enqueuedAt: new Date().toISOString() };
   }
 
+  /** SSE stream — emits a JobSummary whenever a job changes state or progress. */
+  @Sse('stream')
+  stream(): Observable<MessageEvent> {
+    return fromEvent<string>(this.jobsEvents.emitter, 'job.change').pipe(
+      switchMap(async (jobId) => {
+        const job = await this.systemQueue.getJob(jobId);
+        if (!job) return null;
+        return { data: await this.toSummary(job) } as MessageEvent;
+      }),
+      filter((v): v is MessageEvent => v !== null)
+    );
+  }
+
   /** List recent system jobs across all states. */
   @Get()
   async listJobs(): Promise<JobSummary[]> {
@@ -54,7 +80,9 @@ export class JobsController {
 
     const summaries = await Promise.all(jobs.map((j) => this.toSummary(j)));
     // Most recent first
-    return summaries.sort((a, b) => new Date(b.enqueuedAt).getTime() - new Date(a.enqueuedAt).getTime());
+    return summaries.sort(
+      (a, b) => new Date(b.enqueuedAt).getTime() - new Date(a.enqueuedAt).getTime()
+    );
   }
 
   /** Get a single job by ID. */

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 
@@ -20,36 +21,58 @@ export interface EnqueueResponse {
 }
 
 const JOBS_KEY = ['jobs'];
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
+/** Merges an updated job into the jobs list (replaces by id, or prepends if new). */
+function mergeJob(prev: JobSummary[], updated: JobSummary): JobSummary[] {
+  const idx = prev.findIndex((j) => j.id === updated.id);
+  if (idx >= 0) {
+    const next = [...prev];
+    next[idx] = updated;
+    return next;
+  }
+  return [updated, ...prev];
+}
+
+/**
+ * Loads the jobs list once on mount, then keeps it live via SSE.
+ * Returns a `connected` boolean for the SSE connection status.
+ */
 export function useJobsList() {
-  const jobs = useQuery<JobSummary[]>({
+  const queryClient = useQueryClient();
+  const [connected, setConnected] = useState(false);
+
+  const query = useQuery<JobSummary[]>({
     queryKey: JOBS_KEY,
     queryFn: async () => {
       const { data } = await apiClient.get('/jobs');
       return data;
     },
-    refetchInterval: (query) => {
-      const jobs = query.state.data ?? [];
-      const hasActive = jobs.some((j) => j.status === 'active' || j.status === 'waiting');
-      return hasActive ? 1500 : 5000;
-    },
+    staleTime: Infinity, // SSE keeps data fresh — no background refetch needed
   });
-  return jobs;
-}
 
-export function useJob(id: string) {
-  return useQuery<JobSummary>({
-    queryKey: [...JOBS_KEY, id],
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/jobs/${id}`);
-      return data;
-    },
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status === 'active' || status === 'waiting' ? 1000 : false;
-    },
-    enabled: !!id,
-  });
+  useEffect(() => {
+    const es = new EventSource(`${API_BASE}/jobs/stream`, { withCredentials: true });
+
+    es.onopen = () => setConnected(true);
+    es.onerror = () => setConnected(false);
+
+    es.addEventListener('message', (event) => {
+      try {
+        const updated: JobSummary = JSON.parse(event.data);
+        queryClient.setQueryData<JobSummary[]>(JOBS_KEY, (prev = []) => mergeJob(prev, updated));
+      } catch {
+        // ignore malformed events
+      }
+    });
+
+    return () => {
+      es.close();
+      setConnected(false);
+    };
+  }, [queryClient]);
+
+  return { ...query, connected };
 }
 
 export function useEnqueuePurge() {
