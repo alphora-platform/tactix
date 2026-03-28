@@ -17,6 +17,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { LogsModule } from './modules/logs/logs.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 // Determine mode
 const appMode = process.env.APP_MODE || 'api'; // default 'api'
@@ -44,6 +45,7 @@ const baseModules: any[] = [
   AuthModule,
   LogsModule,
   SettingsModule,
+  JobsModule,
 ];
 
 const featureModules = [];

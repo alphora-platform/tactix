@@ -9,6 +9,6 @@ import { SettingsController } from './settings.controller';
   imports: [TypeOrmModule.forFeature([CrawlSettings])],
   controllers: [SettingsController],
   providers: [CrawlSettingsService, DbAdminService],
-  exports: [CrawlSettingsService],
+  exports: [CrawlSettingsService, DbAdminService],
 })
 export class SettingsModule {}

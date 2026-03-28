@@ -19,6 +19,7 @@ import {
   LogOut,
   ScrollText,
   Settings,
+  ListChecks,
 } from 'lucide-react';
 import { PatchSelector } from './PatchSelector';
 import { RegionFilter } from './RegionFilter';
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { to: '/player', label: 'Player', icon: Users },
   { to: '/match', label: 'Match', icon: Search },
   { to: '/logs', label: 'Logs', icon: ScrollText },
+  { to: '/jobs', label: 'Jobs', icon: ListChecks },
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 
@@ -54,6 +56,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
   '/stats': 'My Stats',
   '/pbe': 'PBE Preview',
   '/logs': 'Logs',
+  '/jobs': 'Background Jobs',
   '/settings': 'Settings',
 };
 

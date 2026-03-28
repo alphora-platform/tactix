@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Input, message } from 'antd';
-import { Settings, Wifi, WifiOff, FlaskConical, Globe, Database, Trash2, Users, FileText, BarChart2, AlertTriangle, X } from 'lucide-react';
+import { Settings, Wifi, WifiOff, FlaskConical, Globe, Database, Trash2, Users, FileText, BarChart2, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils/cn';
-import { useCrawlSettings, useUpdateCrawlSettings, useDbStats, usePurgeMatchData } from '@/hooks/useSettings';
+import { useCrawlSettings, useUpdateCrawlSettings, useDbStats } from '@/hooks/useSettings';
+import { useEnqueuePurge } from '@/hooks/useJobs';
 
 export const Route = createFileRoute('/settings/')({
   component: SettingsPage,
@@ -331,19 +333,19 @@ function SettingsPage() {
 
 function DbManagementCard() {
   const { data: stats, isLoading } = useDbStats();
-  const { mutate: purge, isPending: purging } = usePurgeMatchData();
+  const { mutate: enqueue, isPending: enqueuing } = useEnqueuePurge();
+  const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleConfirm = () => {
-    purge(undefined, {
-      onSuccess: (result) => {
-        message.success(
-          `Purged ${result.deletedMatches.toLocaleString()} matches, ${result.deletedSnapshots.toLocaleString()} snapshots`
-        );
+    enqueue(undefined, {
+      onSuccess: () => {
+        message.success('Purge job started — tracking in Jobs page');
         setShowConfirm(false);
+        navigate({ to: '/jobs' });
       },
       onError: () => {
-        message.error('Purge failed');
+        message.error('Failed to enqueue purge job');
         setShowConfirm(false);
       },
     });
@@ -392,7 +394,7 @@ function DbManagementCard() {
         </div>
         <button
           onClick={() => setShowConfirm(true)}
-          disabled={purging}
+          disabled={enqueuing}
           className={cn(
             'flex shrink-0 items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2',
             'font-chakra text-sm font-semibold text-rose-400 transition-all',
@@ -466,24 +468,24 @@ function DbManagementCard() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirm(false)}
-                  disabled={purging}
+                  disabled={enqueuing}
                   className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] py-2.5 font-chakra text-sm font-semibold text-slate-400 transition-all hover:text-slate-200 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={purging}
+                  disabled={enqueuing}
                   className={cn(
                     'flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5',
                     'bg-rose-500/20 border border-rose-500/40 font-chakra text-sm font-semibold text-rose-300',
                     'transition-all hover:bg-rose-500/30 hover:border-rose-500/60 hover:text-rose-200',
                     'disabled:cursor-not-allowed disabled:opacity-50',
-                    purging && 'animate-pulse'
+                    enqueuing && 'animate-pulse'
                   )}
                 >
-                  <Trash2 size={14} />
-                  {purging ? 'Purging…' : 'Yes, Purge'}
+                  {enqueuing ? <ExternalLink size={14} /> : <Trash2 size={14} />}
+                  {enqueuing ? 'Queuing…' : 'Yes, Purge'}
                 </button>
               </div>
             </div>

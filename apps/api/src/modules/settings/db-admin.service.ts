@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import type { Job } from 'bullmq';
 
 export interface DbStats {
   players: number;
@@ -50,34 +51,39 @@ export class DbAdminService {
    * Uses TRUNCATE CASCADE (instant) instead of DELETE to avoid row-by-row
    * scanning and RETURNING overhead that causes HTTP timeouts on large datasets.
    */
-  async purgeMatchData(): Promise<PurgeResult> {
+  async purgeMatchData(job?: Job): Promise<PurgeResult> {
     this.logger.warn('[DbAdmin] Starting match data purge — players will be preserved');
+    const progress = async (pct: number) => { if (job) await job.updateProgress(pct); };
+
+    await progress(5);
 
     // Snapshot counts before truncation so we can report what was deleted
-    const before = await this.getStats();
-
-    const [snapshotCount, patchVersionCount, patchPredictionCount] = await Promise.all([
+    const [beforeStats, snapshotCount, patchVersionCount, patchPredictionCount] = await Promise.all([
+      this.getStats(),
       this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM meta_snapshots'),
       this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM patch_versions'),
       this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM patch_predictions'),
     ]);
 
+    await progress(20);
+
     // TRUNCATE CASCADE: drops matches + all FK-dependent child tables instantly
-    await this.dataSource.query(
-      'TRUNCATE TABLE matches CASCADE'
-    );
+    await this.dataSource.query('TRUNCATE TABLE matches CASCADE');
+    await progress(60);
 
     await this.dataSource.query('TRUNCATE TABLE meta_snapshots');
+    await progress(70);
+
     await this.dataSource.query('TRUNCATE TABLE patch_versions');
     await this.dataSource.query('TRUNCATE TABLE patch_predictions');
+    await progress(85);
 
     // Reset player crawl state for the new set
-    await this.dataSource.query(
-      'UPDATE players SET last_fetch_at = NULL, wins = 0, losses = 0'
-    );
+    await this.dataSource.query('UPDATE players SET last_fetch_at = NULL, wins = 0, losses = 0');
+    await progress(100);
 
     const result: PurgeResult = {
-      deletedMatches: before.matches,
+      deletedMatches: beforeStats.matches,
       deletedSnapshots: Number(snapshotCount[0].count),
       deletedPatchVersions: Number(patchVersionCount[0].count),
       deletedPatchPredictions: Number(patchPredictionCount[0].count),

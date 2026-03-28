@@ -22,6 +22,7 @@ import { Route as PbeIndexRouteImport } from './routes/pbe/index'
 import { Route as MetaIndexRouteImport } from './routes/meta/index'
 import { Route as MatchIndexRouteImport } from './routes/match/index'
 import { Route as LogsIndexRouteImport } from './routes/logs/index'
+import { Route as JobsIndexRouteImport } from './routes/jobs/index'
 import { Route as MetaCompIdRouteImport } from './routes/meta/$compId'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 
@@ -90,6 +91,11 @@ const LogsIndexRoute = LogsIndexRouteImport.update({
   path: '/logs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JobsIndexRoute = JobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MetaCompIdRoute = MetaCompIdRouteImport.update({
   id: '/meta/$compId',
   path: '/meta/$compId',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/meta/$compId': typeof MetaCompIdRoute
+  '/jobs/': typeof JobsIndexRoute
   '/logs/': typeof LogsIndexRoute
   '/match/': typeof MatchIndexRoute
   '/meta/': typeof MetaIndexRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/meta/$compId': typeof MetaCompIdRoute
+  '/jobs': typeof JobsIndexRoute
   '/logs': typeof LogsIndexRoute
   '/match': typeof MatchIndexRoute
   '/meta': typeof MetaIndexRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/meta/$compId': typeof MetaCompIdRoute
+  '/jobs/': typeof JobsIndexRoute
   '/logs/': typeof LogsIndexRoute
   '/match/': typeof MatchIndexRoute
   '/meta/': typeof MetaIndexRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/callback'
     | '/meta/$compId'
+    | '/jobs/'
     | '/logs/'
     | '/match/'
     | '/meta/'
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/callback'
     | '/meta/$compId'
+    | '/jobs'
     | '/logs'
     | '/match'
     | '/meta'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/callback'
     | '/meta/$compId'
+    | '/jobs/'
     | '/logs/'
     | '/match/'
     | '/meta/'
@@ -211,6 +223,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   MetaCompIdRoute: typeof MetaCompIdRoute
+  JobsIndexRoute: typeof JobsIndexRoute
   LogsIndexRoute: typeof LogsIndexRoute
   MatchIndexRoute: typeof MatchIndexRoute
   MetaIndexRoute: typeof MetaIndexRoute
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jobs/': {
+      id: '/jobs/'
+      path: '/jobs'
+      fullPath: '/jobs/'
+      preLoaderRoute: typeof JobsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meta/$compId': {
       id: '/meta/$compId'
       path: '/meta/$compId'
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   MetaCompIdRoute: MetaCompIdRoute,
+  JobsIndexRoute: JobsIndexRoute,
   LogsIndexRoute: LogsIndexRoute,
   MatchIndexRoute: MatchIndexRoute,
   MetaIndexRoute: MetaIndexRoute,
