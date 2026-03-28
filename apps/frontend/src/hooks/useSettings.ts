@@ -55,7 +55,9 @@ export function usePurgeMatchData() {
   const queryClient = useQueryClient();
   return useMutation<PurgeResult>({
     mutationFn: async () => {
-      const { data } = await apiClient.post('/settings/db/purge-match-data');
+      const { data } = await apiClient.post('/settings/db/purge-match-data', undefined, {
+        timeout: 120_000, // 2 min — TRUNCATE on large datasets can take time
+      });
       return data;
     },
     onSuccess: () => {

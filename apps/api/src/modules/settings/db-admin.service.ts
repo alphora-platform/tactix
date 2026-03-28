@@ -46,38 +46,42 @@ export class DbAdminService {
    * Purges all match data and analytics for the old set.
    * Keeps the `players` table intact so crawled players carry over to Set 17.
    * Also resets `last_fetch_at` so all players get re-crawled in Set 17.
+   *
+   * Uses TRUNCATE CASCADE (instant) instead of DELETE to avoid row-by-row
+   * scanning and RETURNING overhead that causes HTTP timeouts on large datasets.
    */
   async purgeMatchData(): Promise<PurgeResult> {
     this.logger.warn('[DbAdmin] Starting match data purge — players will be preserved');
 
-    const result = await this.dataSource.transaction(async (manager) => {
-      // matches CASCADE → participants → participant_units/traits/augments
-      const { affected: deletedMatches } = await manager.query(
-        'DELETE FROM matches RETURNING match_id'
-      );
+    // Snapshot counts before truncation so we can report what was deleted
+    const before = await this.getStats();
 
-      const { affected: deletedSnapshots } = await manager.query(
-        'DELETE FROM meta_snapshots RETURNING id'
-      );
+    const [snapshotCount, patchVersionCount, patchPredictionCount] = await Promise.all([
+      this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM meta_snapshots'),
+      this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM patch_versions'),
+      this.dataSource.query<[{ count: string }]>('SELECT COUNT(*)::int AS count FROM patch_predictions'),
+    ]);
 
-      const { affected: deletedPatchVersions } = await manager.query(
-        'DELETE FROM patch_versions RETURNING patch'
-      );
+    // TRUNCATE CASCADE: drops matches + all FK-dependent child tables instantly
+    await this.dataSource.query(
+      'TRUNCATE TABLE matches CASCADE'
+    );
 
-      const { affected: deletedPatchPredictions } = await manager.query(
-        'DELETE FROM patch_predictions RETURNING id'
-      );
+    await this.dataSource.query('TRUNCATE TABLE meta_snapshots');
+    await this.dataSource.query('TRUNCATE TABLE patch_versions');
+    await this.dataSource.query('TRUNCATE TABLE patch_predictions');
 
-      // Reset last_fetch_at so all players get re-crawled in the new set
-      await manager.query('UPDATE players SET last_fetch_at = NULL, wins = 0, losses = 0');
+    // Reset player crawl state for the new set
+    await this.dataSource.query(
+      'UPDATE players SET last_fetch_at = NULL, wins = 0, losses = 0'
+    );
 
-      return {
-        deletedMatches: deletedMatches ?? 0,
-        deletedSnapshots: deletedSnapshots ?? 0,
-        deletedPatchVersions: deletedPatchVersions ?? 0,
-        deletedPatchPredictions: deletedPatchPredictions ?? 0,
-      };
-    });
+    const result: PurgeResult = {
+      deletedMatches: before.matches,
+      deletedSnapshots: Number(snapshotCount[0].count),
+      deletedPatchVersions: Number(patchVersionCount[0].count),
+      deletedPatchPredictions: Number(patchPredictionCount[0].count),
+    };
 
     this.logger.warn(
       `[DbAdmin] Purge complete — matches: ${result.deletedMatches}, ` +
