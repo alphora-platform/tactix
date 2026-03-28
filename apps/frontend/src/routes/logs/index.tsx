@@ -81,9 +81,7 @@ function SourceBadge({ source }: { source?: 'api' | 'worker' }) {
     <span
       className={cn(
         'shrink-0 rounded px-1 font-mono text-[10px] font-semibold uppercase tracking-wider',
-        source === 'worker'
-          ? 'bg-violet-500/15 text-violet-400'
-          : 'bg-cyan-500/15 text-cyan-400'
+        source === 'worker' ? 'bg-violet-500/15 text-violet-400' : 'bg-cyan-500/15 text-cyan-400'
       )}
     >
       {source}
@@ -103,6 +101,7 @@ function LogsPage() {
   const [sourceFilter, setSourceFilter] = useState<LogSource>('ALL');
   const [contextSearch, setContextSearch] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Append logs helper (caps at MAX_ENTRIES)
@@ -156,10 +155,10 @@ function LogsPage() {
     };
   }, [appendLogs]);
 
-  // Auto-scroll
+  // Auto-scroll — use scrollIntoView on a sentinel element for reliable layout reads
   useEffect(() => {
-    if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (autoScroll && scrollEndRef.current) {
+      scrollEndRef.current.scrollIntoView({ block: 'end' });
     }
   }, [logs, autoScroll]);
 
@@ -269,7 +268,7 @@ function LogsPage() {
               : 'border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
           )}
         >
-          {autoScroll ? <Play size={12} /> : <Pause size={12} />}
+          {autoScroll ? <Pause size={12} /> : <Play size={12} />}
           {autoScroll ? 'Auto-scroll' : 'Paused'}
         </button>
 
@@ -311,6 +310,7 @@ function LogsPage() {
             </div>
           ))
         )}
+        <div ref={scrollEndRef} />
       </div>
 
       {/* Footer info */}
