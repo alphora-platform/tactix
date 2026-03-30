@@ -27,22 +27,22 @@ dev-logs:
 # PRODUCTION
 ###################
 prod-up:
-	docker compose -f docker/docker-compose.prod.yml up -d
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml up -d
 
 prod-down:
-	docker compose -f docker/docker-compose.prod.yml down
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml down
 
 prod-pull:
-	docker compose -f docker/docker-compose.prod.yml pull
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml pull
 
 prod-logs:
-	docker compose -f docker/docker-compose.prod.yml logs -f
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml logs -f
 
 prod-status:
-	docker compose -f docker/docker-compose.prod.yml ps
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml ps
 
 prod-restart-api:
-	docker compose -f docker/docker-compose.prod.yml restart api worker
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml restart api worker
 
 prod-restart-frontend:
-	docker compose -f docker/docker-compose.prod.yml restart frontend
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml restart frontend

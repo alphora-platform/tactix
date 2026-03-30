@@ -1,6 +1,5 @@
 import path from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
-import * as dotenv from 'dotenv';
 import {
   Player,
   Match,
@@ -13,8 +12,6 @@ import {
   PatchVersion,
   CrawlSettings,
 } from '../../database/entities';
-
-dotenv.config();
 
 const envBool = (value: string | undefined): boolean =>
   (value ?? '').trim().toLowerCase() === 'true';
