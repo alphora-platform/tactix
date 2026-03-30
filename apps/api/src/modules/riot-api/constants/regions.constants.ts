@@ -42,7 +42,7 @@ export const REGIONAL_ROUTES: Record<Region, string> = {
   [Region.EUW]: 'europe',
   [Region.EUNE]: 'europe',
   [Region.TR]: 'europe',
-  [Region.PBE]: 'americas',
+  [Region.PBE]: 'pbe1',
 };
 
 export function getPlatformUrl(region: Region): string {
