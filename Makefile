@@ -26,6 +26,9 @@ dev-logs:
 ###################
 # PRODUCTION
 ###################
+prod-migrate:
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml run --rm -e APP_MODE=migrate api
+
 prod-up:
 	docker compose --env-file .env.production -f docker/docker-compose.prod.yml up -d
 
