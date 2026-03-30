@@ -69,7 +69,7 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo mkdir -p /var/www/certbot
 
 # Lấy cert — certbot tự sửa nginx config thêm SSL
-sudo certbot --nginx -d tactix.gg -d www.tactix.gg
+sudo certbot --nginx -d tactixtft.site -d www.tactixtft.site
 ```
 
 Kiểm tra auto-renew:
