@@ -108,7 +108,7 @@ wait_healthy "tactix-frontend"
 # ─── [7] Reload nginx ──────────────────────────────────────────────────────
 echo ""
 echo "[7/7] Reloading nginx..."
-docker exec tactix-nginx nginx -s reload
+sudo systemctl reload nginx
 
 # ─── Final verification ────────────────────────────────────────────────────
 echo ""

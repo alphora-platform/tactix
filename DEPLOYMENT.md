@@ -1,22 +1,37 @@
-# Deployment Guide
+# Deployment Guide — Tactix
 
-Pipeline tự động deploy lên VPS production khi push vào branch `dev`.
+Pipeline tự động deploy lên VPS khi push vào branch `dev`.
 
 ```
-push to dev → GitHub Actions → Build Docker images → Push to GHCR → SSH deploy to VPS
+push to dev → GitHub Actions → Build Docker images → Push GHCR → SSH deploy to VPS
 ```
 
----
+## Kiến trúc production
 
-## Yêu cầu
+```
+Internet
+    │
+    ▼
+[Nginx :80/:443]  ← chạy trực tiếp trên VPS host, Let's Encrypt SSL
+    │
+    ├── /api/* ──► [tactix-api :5500]     (APP_MODE=api, Docker)
+    │
+    └── /* ──────► [tactix-frontend :3000] (React SPA nginx, Docker)
+                        │
+               [tactix-worker]  (APP_MODE=worker, BullMQ, Docker)
+                        │
+               [tactix-postgres] [tactix-redis]  (Docker, internal only)
+```
 
-- VPS với Ubuntu 22.04+ và Docker Engine v24+
-- Domain trỏ A record về IP của VPS
-- GitHub repository (để lưu secrets và GHCR images)
+- **Nginx** chạy trên host, quản lý SSL và reverse proxy
+- **API + Frontend + Worker + DB + Redis** chạy trong Docker (network `tactix-internal`)
+- API và Frontend chỉ bind `127.0.0.1` — không expose trực tiếp ra internet
 
 ---
 
 ## Phần 1: Chuẩn bị VPS (chỉ làm 1 lần)
+
+> Xem `docs/tactix-server-setup.md` để setup bảo mật server, firewall, fail2ban trước.
 
 ### 1.1 Cài Docker
 
@@ -26,96 +41,105 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-### 1.2 Clone repo
+### 1.2 Cài Nginx trên host
+
+```bash
+sudo apt install -y nginx
+sudo systemctl enable nginx
+```
+
+### 1.3 Cấu hình Nginx reverse proxy
+
+```bash
+sudo nano /etc/nginx/sites-available/tactix.conf
+```
+
+Dán nội dung từ `docker/nginx/nginx.prod.conf` (đã có domain `tactix.gg` và các security headers).
+
+```bash
+sudo ln -s /etc/nginx/sites-available/tactix.conf /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 1.4 Lấy SSL certificate (Let's Encrypt)
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo mkdir -p /var/www/certbot
+
+# Lấy cert — certbot tự sửa nginx config thêm SSL
+sudo certbot --nginx -d tactix.gg -d www.tactix.gg
+```
+
+Kiểm tra auto-renew:
+
+```bash
+sudo systemctl status certbot.timer
+sudo certbot renew --dry-run
+```
+
+### 1.5 Clone repo
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/tactix.git /opt/tactix
 cd /opt/tactix
 ```
 
-### 1.3 Tạo file `.env.production`
+### 1.6 Tạo `.env.production`
 
 ```bash
 cp .env.production.example .env.production
+chmod 600 .env.production
 nano .env.production
 ```
 
-Điền đầy đủ các giá trị:
+Các biến bắt buộc:
 
 ```env
 NODE_ENV=production
 PORT=5500
-APP_URL=https://yourdomain.com
 
 POSTGRES_USER=tactix
 POSTGRES_PASSWORD=<mật_khẩu_mạnh>
 POSTGRES_DB=tactix
 
-RIOT_API_KEY=RGAPI-xxxx
+REDIS_HOST=redis
+REDIS_PORT=6379
 
-CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+RIOT_API_KEY=RGAPI-xxxx
+ADMIN_API_KEY=<random_secret>
+
+JWT_SECRET=<256-bit_secret>
+JWT_EXPIRES_IN=7d
+
+APP_URL=https://tactix.gg
+CORS_ORIGINS=https://tactix.gg,https://www.tactix.gg
 
 GITHUB_OWNER=your-github-username
 GITHUB_REPO=tactix
 IMAGE_TAG=latest
 ```
 
-### 1.4 Cài Certbot và lấy SSL certificate
+### 1.7 Đăng nhập GHCR
 
 ```bash
-# Tạo thư mục certbot webroot
-sudo mkdir -p /var/www/certbot
-
-# Cài certbot
-sudo apt install -y certbot
-
-# Lấy certificate (domain phải đã trỏ về IP VPS)
-sudo certbot certonly --webroot -w /var/www/certbot \
-  -d yourdomain.com -d www.yourdomain.com \
-  --email your@email.com --agree-tos --non-interactive
+# GitHub PAT với scope read:packages
+echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
 ```
 
-> **Lưu ý:** Nếu chưa có nginx đang chạy, dùng `--standalone` thay vì `--webroot`:
->
-> ```bash
-> sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
-> ```
-
-### 1.5 Cập nhật nginx config với domain thật
-
-```bash
-# Thay yourdomain.com bằng domain thật trong file config
-sed -i 's/yourdomain.com/your-actual-domain.com/g' docker/nginx/nginx.prod.conf
-```
-
-### 1.6 Đăng nhập GHCR trên VPS
-
-```bash
-# Tạo GitHub Personal Access Token tại:
-# github.com → Settings → Developer Settings → Personal access tokens → Classic
-# Scope cần: read:packages
-
-echo "YOUR_GITHUB_PAT" | docker login ghcr.io \
-  -u YOUR_GITHUB_USERNAME --password-stdin
-```
-
-### 1.7 Deploy lần đầu thủ công
+### 1.8 Deploy lần đầu thủ công
 
 ```bash
 cd /opt/tactix
-docker compose -f docker/docker-compose.prod.yml up -d
+make prod-up
 ```
 
-Kiểm tra các container đang chạy:
+Kiểm tra:
 
 ```bash
 make prod-status
-```
-
-Kiểm tra API hoạt động:
-
-```bash
-curl https://yourdomain.com/api/health
+curl https://tactix.gg/api/health
 ```
 
 ---
@@ -124,66 +148,57 @@ curl https://yourdomain.com/api/health
 
 Vào **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**:
 
-| Secret            | Giá trị                                                     |
-| ----------------- | ----------------------------------------------------------- |
-| `VPS_HOST`        | IP hoặc hostname của VPS (vd: `123.456.789.0`)              |
-| `VPS_USER`        | SSH username (vd: `ubuntu`, `root`)                         |
-| `VPS_SSH_KEY`     | Nội dung **private key** SSH (toàn bộ file `~/.ssh/id_rsa`) |
-| `VPS_DEPLOY_PATH` | Đường dẫn repo trên VPS (vd: `/opt/tactix`)                 |
+| Secret            | Giá trị                                                |
+| ----------------- | ------------------------------------------------------ |
+| `VPS_HOST`        | IP hoặc hostname của VPS                               |
+| `VPS_USER`        | SSH username (vd: `khoa`)                              |
+| `VPS_SSH_KEY`     | Nội dung private key SSH (toàn bộ `~/.ssh/id_ed25519`) |
+| `VPS_DEPLOY_PATH` | Đường dẫn repo trên VPS (vd: `/opt/tactix`)            |
 
-### Tạo SSH key cho CI/CD (nếu chưa có)
+Tạo SSH key riêng cho CI/CD:
 
 ```bash
-# Trên máy local
 ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/tactix_deploy
-
-# Copy public key lên VPS
-ssh-copy-id -i ~/.ssh/tactix_deploy.pub user@your-vps-ip
-
-# Nội dung VPS_SSH_KEY = nội dung file ~/.ssh/tactix_deploy (private key)
-cat ~/.ssh/tactix_deploy
+ssh-copy-id -i ~/.ssh/tactix_deploy.pub khoa@<VPS_IP>
+cat ~/.ssh/tactix_deploy   # → copy vào VPS_SSH_KEY secret
 ```
 
 ---
 
 ## Phần 3: Quy trình deploy tự động
 
-Mỗi khi push lên branch `dev`, GitHub Actions chạy 3 jobs tuần tự:
+Mỗi khi push lên `dev`, GitHub Actions chạy 3 jobs:
 
 ```
-[1] test          → nx affected lint + test
-[2] build-and-push → Build API + Frontend Docker images → Push to GHCR
-[3] deploy        → SSH vào VPS → chạy deploy.sh
+[1] test           → nx affected lint + test
+[2] build-and-push → Build API + Frontend Docker images → Push GHCR
+[3] deploy         → SSH vào VPS → chạy deploy.sh
 ```
 
 ### deploy.sh làm gì
 
 ```
-[1] Lưu image tag hiện tại (để rollback nếu cần)
+[1] Lưu image tag hiện tại (để rollback)
 [2] Pull images mới từ GHCR
 [3] Chạy database migrations (one-shot container)
-[4] Update container api → health check
-[5] Update container worker
-[6] Update container frontend → health check
-[7] Reload nginx
-[8] Final health check → rollback nếu fail
+[4] Update API container → wait healthy
+[5] Update Worker container
+[6] Update Frontend container → wait healthy
+[7] sudo systemctl reload nginx
+[8] Final health check → rollback tự động nếu fail
 [9] Dọn dẹp dangling images
 ```
 
-**Rollback tự động:** nếu bất kỳ bước nào fail, script tự động restart containers với image tag cũ.
-
 ---
 
-## Phần 4: Gia hạn SSL certificate
+## Phần 4: SSL certificate tự động gia hạn
 
-Certificate Let's Encrypt hết hạn sau 90 ngày. Thêm cron job để tự động gia hạn:
+Certbot đã có systemd timer tự renew. Sau khi renew cần reload nginx:
 
 ```bash
-# Mở crontab
 crontab -e
-
-# Thêm dòng này (chạy lúc 3:00 sáng ngày 1 và 15 hàng tháng)
-0 3 1,15 * * certbot renew --quiet && docker exec tactix-nginx nginx -s reload
+# Thêm: chạy lúc 3:00 sáng ngày 1 và 15 hàng tháng
+0 3 1,15 * * certbot renew --quiet && sudo systemctl reload nginx
 ```
 
 ---
@@ -191,28 +206,31 @@ crontab -e
 ## Phần 5: Các lệnh thường dùng
 
 ```bash
-# Xem trạng thái tất cả containers
+# Xem trạng thái containers
 make prod-status
 
-# Xem logs realtime
+# Xem logs realtime (tất cả)
 make prod-logs
 
-# Xem logs của service cụ thể
+# Xem logs service cụ thể
 docker compose -f docker/docker-compose.prod.yml logs -f api
 
-# Restart API + Worker (không downtime cho frontend)
+# Restart API + Worker
 make prod-restart-api
 
-# Restart Frontend + Nginx
+# Restart Frontend
 make prod-restart-frontend
+
+# Reload nginx (host)
+sudo nginx -t && sudo systemctl reload nginx
 
 # Pull images mới nhất
 make prod-pull
 
-# Dừng toàn bộ (KHÔNG xóa volumes)
+# Dừng stack (KHÔNG xóa volumes)
 make prod-down
 
-# SSH vào container để debug
+# SSH vào container debug
 docker exec -it tactix-api sh
 docker exec -it tactix-postgres psql -U tactix -d tactix
 ```
@@ -221,10 +239,9 @@ docker exec -it tactix-postgres psql -U tactix -d tactix
 
 ## Phần 6: Xử lý sự cố
 
-### Container không start được
+### Container không start
 
 ```bash
-# Xem logs của container bị lỗi
 docker logs tactix-api --tail 50
 docker logs tactix-postgres --tail 20
 ```
@@ -233,8 +250,6 @@ docker logs tactix-postgres --tail 20
 
 ```bash
 cd /opt/tactix
-source .env.production
-
 docker run --rm \
   --network tactix-prod_tactix-internal \
   --env-file .env.production \
@@ -249,55 +264,23 @@ docker run --rm \
 ```bash
 cd /opt/tactix
 git pull origin dev
-
-GITHUB_OWNER=your-username \
-GITHUB_REPO=tactix \
-IMAGE_TAG=latest \
-bash apps/api/scripts/deploy.sh
+GITHUB_OWNER=your-username GITHUB_REPO=tactix IMAGE_TAG=latest \
+  bash apps/api/scripts/deploy.sh
 ```
 
 ### Rollback về version cụ thể
 
 ```bash
 cd /opt/tactix
-
-# Thay <short-sha> bằng 7-char commit SHA muốn rollback về
-GITHUB_OWNER=your-username \
-GITHUB_REPO=tactix \
-IMAGE_TAG=<short-sha> \
-bash apps/api/scripts/deploy.sh
+# Thay <sha> bằng 7-char commit SHA
+GITHUB_OWNER=your-username GITHUB_REPO=tactix IMAGE_TAG=<sha> \
+  bash apps/api/scripts/deploy.sh
 ```
 
 ### Nginx không nhận certificate
 
 ```bash
-# Kiểm tra certificate còn hạn không
-sudo certbot certificates
-
-# Test nginx config
-docker exec tactix-nginx nginx -t
-
-# Reload nginx
-docker exec tactix-nginx nginx -s reload
+sudo certbot certificates       # kiểm tra cert
+sudo nginx -t                   # test config
+sudo systemctl reload nginx     # reload
 ```
-
----
-
-## Kiến trúc
-
-```
-Internet
-    │
-    ▼
-[nginx :80/:443]  ← Let's Encrypt SSL
-    │
-    ├─── /api/* ──────► [api :5500]  (APP_MODE=api)
-    │                        │
-    └─── /* ─────────► [frontend :80]  (nginx SPA)
-                             │
-                    [worker]  (APP_MODE=worker, BullMQ)
-                        │
-                  [postgres] [redis]
-```
-
-Tất cả services giao tiếp qua Docker network `tactix-internal` — không có port nào expose ra ngoài ngoại trừ nginx (80, 443).

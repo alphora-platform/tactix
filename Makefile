@@ -45,4 +45,4 @@ prod-restart-api:
 	docker compose -f docker/docker-compose.prod.yml restart api worker
 
 prod-restart-frontend:
-	docker compose -f docker/docker-compose.prod.yml restart frontend nginx
+	docker compose -f docker/docker-compose.prod.yml restart frontend
