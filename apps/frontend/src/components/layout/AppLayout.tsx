@@ -166,18 +166,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </span>
             </div>
           )}
-
-          <button
-            onClick={toggleSidebar}
-            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-            className={cn(
-              'flex shrink-0 items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors duration-150',
-              'hover:bg-white/5 hover:text-slate-200',
-              !sidebarOpen && 'absolute left-3'
-            )}
-          >
-            {sidebarOpen ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
-          </button>
         </div>
 
         {/* Nav */}
@@ -267,7 +255,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {/* Disclaimer */}
         <div
           className={cn(
-            'mx-2 mb-3 rounded-lg border border-(--border-subtle) bg-(--bg-elevated)/30 px-3',
+            'mx-2 rounded-lg border border-(--border-subtle) bg-(--bg-elevated)/30 px-3',
             sidebarOpen ? 'py-2' : 'flex items-center justify-center py-3'
           )}
         >
@@ -282,6 +270,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="font-russo text-[10px] text-slate-500">Tx</span>
           )}
         </div>
+
+        {/* Collapse toggle */}
+        <button
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          className={cn(
+            'mx-2 mb-3 mt-1 flex items-center rounded-lg px-3 py-2 text-slate-500 transition-colors duration-150 hover:bg-white/5 hover:text-slate-200',
+            sidebarOpen ? 'gap-2' : 'justify-center'
+          )}
+        >
+          {sidebarOpen ? (
+            <>
+              <ChevronLeft size={15} />
+              <span className="font-chakra text-xs">Collapse</span>
+            </>
+          ) : (
+            <ChevronRight size={15} />
+          )}
+        </button>
       </aside>
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
