@@ -16,7 +16,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Refresh: registered in ViewRefreshService alongside the other analytics views.
  * Requires a unique index on (patch, comp_id, region) for CONCURRENTLY refresh.
  */
-export class CreateCompStatsByRegionView20260226160000 implements MigrationInterface {
+export class CreateCompStatsByRegionView1771286400000 implements MigrationInterface {
   async up(qr: QueryRunner): Promise<void> {
     // ── View ──────────────────────────────────────────────────────────────────
     await qr.query(`

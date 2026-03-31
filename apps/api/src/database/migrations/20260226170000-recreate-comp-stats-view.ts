@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class RecreateCompStatsView20260226170000 implements MigrationInterface {
+export class RecreateCompStatsView1771372800000 implements MigrationInterface {
   async up(qr: QueryRunner): Promise<void> {
     // Drop the old materialized view
     await qr.query(`DROP MATERIALIZED VIEW IF EXISTS mv_comp_stats`);

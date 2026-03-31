@@ -19,7 +19,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Refresh: enqueued into `view-refresh` queue every 30 min by
  * CollectorSchedulerService alongside the other analytics views.
  */
-export class CreateCompTrendView20260226000000 implements MigrationInterface {
+export class CreateCompTrendView1771113600000 implements MigrationInterface {
   async up(qr: QueryRunner): Promise<void> {
     // ── View ─────────────────────────────────────────────────────────────────
     await qr.query(`

@@ -18,7 +18,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Both require a unique index for REFRESH MATERIALIZED VIEW CONCURRENTLY.
  */
-export class CreateCompDeepDiveViews20260226150000 implements MigrationInterface {
+export class CreateCompDeepDiveViews1771200000000 implements MigrationInterface {
   async up(qr: QueryRunner): Promise<void> {
     // ── mv_item_combo_stats ───────────────────────────────────────────────────
     //
