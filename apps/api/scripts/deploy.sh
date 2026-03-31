@@ -76,13 +76,7 @@ trap rollback ERR
 # ─── [3] Run database migrations ───────────────────────────────────────────
 echo ""
 echo "[3/7] Running database migrations..."
-docker run --rm \
-  --network tactix-prod_tactix-internal \
-  --env-file .env.production \
-  -e APP_MODE=migrate \
-  -e NODE_ENV=production \
-  "${API_IMAGE}" \
-  node dist/main.js
+make prod-migrate
 echo "Migrations complete."
 
 # ─── [4] Update API ────────────────────────────────────────────────────────
