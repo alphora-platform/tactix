@@ -1,9 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateCoreTables1000000000000 implements MigrationInterface {
-  name = 'CreateCoreTables1000000000000';
+export class CreateAllTables1000000000000 implements MigrationInterface {
+  name = 'CreateAllTables1000000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // ── patch_predictions enum ─────────────────────────────────────────────────
+    await queryRunner.query(
+      `CREATE TYPE "public"."patch_predictions_predicted_direction_enum" AS ENUM('up', 'down', 'neutral')`
+    );
+
     // ── players ────────────────────────────────────────────────────────────────
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "players" (
@@ -23,7 +28,7 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       `CREATE INDEX IF NOT EXISTS "IDX_players_region_tier" ON "players" ("region", "tier")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_players_region"      ON "players" ("region")`
+      `CREATE INDEX IF NOT EXISTS "IDX_players_region" ON "players" ("region")`
     );
 
     // ── matches ────────────────────────────────────────────────────────────────
@@ -42,25 +47,25 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_version_datetime"  ON "matches" ("game_version", "game_datetime")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_version_datetime" ON "matches" ("game_version", "game_datetime")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_patch_region"      ON "matches" ("patch", "region")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_patch_region" ON "matches" ("patch", "region")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_game_version"      ON "matches" ("game_version")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_game_version" ON "matches" ("game_version")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_game_datetime"     ON "matches" ("game_datetime")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_game_datetime" ON "matches" ("game_datetime")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_tft_set_number"    ON "matches" ("tft_set_number")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_tft_set_number" ON "matches" ("tft_set_number")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_patch"             ON "matches" ("patch")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_patch" ON "matches" ("patch")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_matches_region"            ON "matches" ("region")`
+      `CREATE INDEX IF NOT EXISTS "IDX_matches_region" ON "matches" ("region")`
     );
 
     // ── participants ───────────────────────────────────────────────────────────
@@ -85,7 +90,7 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       `CREATE INDEX IF NOT EXISTS "IDX_participant_puuid_match" ON "participants" ("puuid", "match_id")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_participants_puuid"      ON "participants" ("puuid")`
+      `CREATE INDEX IF NOT EXISTS "IDX_participants_puuid" ON "participants" ("puuid")`
     );
 
     // ── participant_units ──────────────────────────────────────────────────────
@@ -104,7 +109,7 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_participant_units_match_puuid"  ON "participant_units" ("match_id", "puuid")`
+      `CREATE INDEX IF NOT EXISTS "IDX_participant_units_match_puuid" ON "participant_units" ("match_id", "puuid")`
     );
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS "IDX_participant_units_character_id" ON "participant_units" ("character_id")`
@@ -130,7 +135,7 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       `CREATE INDEX IF NOT EXISTS "IDX_participant_traits_match_puuid" ON "participant_traits" ("match_id", "puuid")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_participant_traits_trait_name"  ON "participant_traits" ("trait_name")`
+      `CREATE INDEX IF NOT EXISTS "IDX_participant_traits_trait_name" ON "participant_traits" ("trait_name")`
     );
 
     // ── participant_augments ───────────────────────────────────────────────────
@@ -147,7 +152,7 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_participant_augments_match_puuid"  ON "participant_augments" ("match_id", "puuid")`
+      `CREATE INDEX IF NOT EXISTS "IDX_participant_augments_match_puuid" ON "participant_augments" ("match_id", "puuid")`
     );
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS "IDX_participant_augments_augment_name" ON "participant_augments" ("augment_name")`
@@ -177,7 +182,7 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
       `CREATE INDEX IF NOT EXISTS "IDX_meta_snapshots_patch_time" ON "meta_snapshots" ("patch", "snapshot_time")`
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_meta_snapshots_patch"      ON "meta_snapshots" ("patch")`
+      `CREATE INDEX IF NOT EXISTS "IDX_meta_snapshots_patch" ON "meta_snapshots" ("patch")`
     );
 
     // ── patch_versions ─────────────────────────────────────────────────────────
@@ -204,16 +209,53 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
         CONSTRAINT "PK_crawl_settings" PRIMARY KEY ("id")
       )
     `);
-
-    // Seed the singleton crawl_settings row
     await queryRunner.query(`
       INSERT INTO "crawl_settings" ("id", "crawl_mode", "active_regions", "is_enabled")
       VALUES (1, 'official', 'NA,EUW,KR', true)
       ON CONFLICT ("id") DO NOTHING
     `);
+
+    // ── patch_predictions ──────────────────────────────────────────────────────
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "patch_predictions" (
+        "id"                       uuid            NOT NULL DEFAULT gen_random_uuid(),
+        "patch"                    varchar(16)     NOT NULL,
+        "comp_id"                  varchar(32)     NOT NULL,
+        "predicted_direction"      "public"."patch_predictions_predicted_direction_enum" NOT NULL,
+        "predicted_score"          double precision NOT NULL,
+        "actual_winrate_before"    double precision,
+        "actual_winrate_after"     double precision,
+        "accuracy_score"           integer,
+        "evaluated_at"             TIMESTAMP,
+        "created_at"               TIMESTAMP       NOT NULL DEFAULT now(),
+        CONSTRAINT "PK_patch_predictions" PRIMARY KEY ("id")
+      )
+    `);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_patch_predictions_patch" ON "patch_predictions" ("patch")`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_patch_predictions_comp_id" ON "patch_predictions" ("comp_id")`
+    );
+
+    // ── users ──────────────────────────────────────────────────────────────────
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "users" (
+        "id"            UUID            NOT NULL DEFAULT gen_random_uuid(),
+        "email"         VARCHAR(255)    NOT NULL,
+        "username"      VARCHAR(100)    NOT NULL,
+        "password_hash" VARCHAR(255)    NOT NULL,
+        "created_at"    TIMESTAMP       NOT NULL DEFAULT now(),
+        "updated_at"    TIMESTAMP       NOT NULL DEFAULT now(),
+        CONSTRAINT "PK_users" PRIMARY KEY ("id"),
+        CONSTRAINT "UQ_users_email" UNIQUE ("email")
+      )
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "patch_predictions"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "crawl_settings"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "patch_versions"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "meta_snapshots"`);
@@ -223,5 +265,8 @@ export class CreateCoreTables1000000000000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS "participants"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "matches"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "players"`);
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "public"."patch_predictions_predicted_direction_enum"`
+    );
   }
 }
