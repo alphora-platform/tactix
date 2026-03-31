@@ -11,7 +11,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tactix}']
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tactix}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,11 +28,11 @@ services:
     image: redis:7-alpine
     container_name: tactix-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory-policy noeviction
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -47,14 +51,15 @@ services:
       APP_MODE: api
       NODE_ENV: production
     ports:
-      - '127.0.0.1:5500:5500' # Host nginx proxies /api/ → localhost:5500
+      - "127.0.0.1:5500:5500" # Host nginx proxies /api/ → localhost:5500
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:5500/api/health || exit 1']
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost:5500/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,11 +91,11 @@ services:
     container_name: tactix-frontend
     restart: unless-stopped
     ports:
-      - '127.0.0.1:3000:80' # Host nginx proxies / → localhost:3000
+      - "127.0.0.1:3000:80" # Host nginx proxies / → localhost:3000
     depends_on:
       - api
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:80/health || exit 1']
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
