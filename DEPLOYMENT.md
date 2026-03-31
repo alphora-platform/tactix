@@ -156,7 +156,7 @@ Tạo các **repository secrets** sau:
 | `VPS_USER`    | SSH username (vd: `khoa`)                              |
 | `VPS_SSH_KEY` | Nội dung private key SSH (toàn bộ `~/.ssh/id_ed25519`) |
 
-Tạo thêm **repository variable** sau:
+Tạo thêm **environment variable** trong environment `tactix`:
 
 | Variable          | Giá trị                                                                      |
 | ----------------- | ---------------------------------------------------------------------------- |
@@ -170,9 +170,9 @@ ssh-copy-id -i ~/.ssh/tactix_deploy.pub khoa@<VPS_IP>
 cat ~/.ssh/tactix_deploy   # → copy vào VPS_SSH_KEY secret
 ```
 
-`VPS_DEPLOY_PATH` giờ được lưu dưới dạng GitHub Actions Variable thay vì secret để dễ debug hơn. Biến này phải trỏ đúng vào thư mục root của repo đã clone trên VPS. Nếu thư mục không tồn tại hoặc không phải git repo, workflow sẽ dừng ngay ở bước SSH.
+`VPS_DEPLOY_PATH` được đọc từ GitHub Actions environment `tactix` trong job deploy để dễ debug hơn. Biến này phải trỏ đúng vào thư mục root của repo đã clone trên VPS. Nếu thư mục không tồn tại hoặc không phải git repo, workflow sẽ dừng ngay ở bước SSH.
 
-Nếu bạn chắc chắn path đúng nhưng workflow vẫn báo `cd: no such file or directory`, kiểm tra lại secret này có bị dính ký tự ẩn như `\r` hoặc dấu cách ở cuối chuỗi hay không. Path này không nhạy cảm, nên có thể chuyển sang GitHub Actions Variable để dễ debug hơn thay vì lưu dưới dạng secret.
+Nếu bạn chắc chắn path đúng nhưng workflow vẫn báo path không tồn tại, kiểm tra lại environment variable này có bị dính ký tự ẩn như `\r` hoặc dấu cách ở đầu/cuối chuỗi hay không. Workflow cũng sẽ in ra `hostname`, `whoami`, `pwd`, và `ls -ld /project /project/tactix` để giúp đối chiếu giữa session GitHub Actions và lúc bạn SSH tay.
 
 ---
 
