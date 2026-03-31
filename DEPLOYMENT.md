@@ -146,14 +146,21 @@ curl https://tactix.gg/api/health
 
 ## Phần 2: Cấu hình GitHub Secrets
 
-Vào **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**:
+Vào **GitHub repo → Settings → Secrets and variables → Actions**:
 
-| Secret            | Giá trị                                                |
-| ----------------- | ------------------------------------------------------ |
-| `VPS_HOST`        | IP hoặc hostname của VPS                               |
-| `VPS_USER`        | SSH username (vd: `khoa`)                              |
-| `VPS_SSH_KEY`     | Nội dung private key SSH (toàn bộ `~/.ssh/id_ed25519`) |
-| `VPS_DEPLOY_PATH` | Đường dẫn repo trên VPS (vd: `/opt/tactix`)            |
+Tạo các **repository secrets** sau:
+
+| Secret        | Giá trị                                                |
+| ------------- | ------------------------------------------------------ |
+| `VPS_HOST`    | IP hoặc hostname của VPS                               |
+| `VPS_USER`    | SSH username (vd: `khoa`)                              |
+| `VPS_SSH_KEY` | Nội dung private key SSH (toàn bộ `~/.ssh/id_ed25519`) |
+
+Tạo thêm **repository variable** sau:
+
+| Variable          | Giá trị                                                                      |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `VPS_DEPLOY_PATH` | Repo root trên VPS, phải tồn tại sẵn và chứa `.git` (vd: `/project/tactix`) |
 
 Tạo SSH key riêng cho CI/CD:
 
@@ -162,6 +169,10 @@ ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/tactix_deploy
 ssh-copy-id -i ~/.ssh/tactix_deploy.pub khoa@<VPS_IP>
 cat ~/.ssh/tactix_deploy   # → copy vào VPS_SSH_KEY secret
 ```
+
+`VPS_DEPLOY_PATH` giờ được lưu dưới dạng GitHub Actions Variable thay vì secret để dễ debug hơn. Biến này phải trỏ đúng vào thư mục root của repo đã clone trên VPS. Nếu thư mục không tồn tại hoặc không phải git repo, workflow sẽ dừng ngay ở bước SSH.
+
+Nếu bạn chắc chắn path đúng nhưng workflow vẫn báo `cd: no such file or directory`, kiểm tra lại secret này có bị dính ký tự ẩn như `\r` hoặc dấu cách ở cuối chuỗi hay không. Path này không nhạy cảm, nên có thể chuyển sang GitHub Actions Variable để dễ debug hơn thay vì lưu dưới dạng secret.
 
 ---
 
@@ -266,6 +277,24 @@ cd /opt/tactix
 git pull origin dev
 GITHUB_OWNER=your-username GITHUB_REPO=tactix IMAGE_TAG=latest \
   bash apps/api/scripts/deploy.sh
+```
+
+### Lỗi `zsh:cd: no such file or directory: ***`
+
+`***` là giá trị secret bị GitHub Actions mask trong log, không phải literal path. Lỗi này gần như luôn có nghĩa là `VPS_DEPLOY_PATH` đang sai hoặc repo chưa được clone vào path đó trên VPS.
+
+Kiểm tra nhanh trên VPS:
+
+```bash
+ls -la /opt
+ls -la /opt/tactix
+git -C /opt/tactix status
+```
+
+Nếu repo chưa có:
+
+```bash
+git clone <YOUR_REPO_URL> /opt/tactix
 ```
 
 ### Rollback về version cụ thể

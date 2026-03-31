@@ -110,11 +110,38 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 2222
+          script_stop: true
           script: |
-            cd ${{ secrets.VPS_DEPLOY_PATH }}
-            git pull origin dev
+            set -euo pipefail
+
+            DEPLOY_PATH="$(printf '%s' '${{ vars.VPS_DEPLOY_PATH }}' | tr -d '\r' | sed 's/[[:space:]]*$//')"
+
+            if [ -z "$DEPLOY_PATH" ]; then
+              echo "VPS_DEPLOY_PATH is empty."
+              exit 1
+            fi
+
+            if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "Deploy path does not exist on VPS: $DEPLOY_PATH"
+              echo "Clone the repository on the VPS first, then point VPS_DEPLOY_PATH at that repo root."
+              exit 1
+            fi
+
+            cd "$DEPLOY_PATH"
+
+            if [ ! -d .git ]; then
+              echo "Deploy path is not a git repository: $DEPLOY_PATH"
+              exit 1
+            fi
+
+            if [ ! -f apps/api/scripts/deploy.sh ]; then
+              echo "Missing deploy script at apps/api/scripts/deploy.sh inside $DEPLOY_PATH"
+              exit 1
+            fi
+
+            git pull --ff-only origin dev
             chmod +x apps/api/scripts/deploy.sh
-            GITHUB_OWNER=${{ github.repository_owner }} \
-            GITHUB_REPO=tactix \
-            IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }} \
+            GITHUB_OWNER='${{ github.repository_owner }}' \
+            GITHUB_REPO='tactix' \
+            IMAGE_TAG='${{ needs.build-and-push.outputs.image_tag }}' \
             bash apps/api/scripts/deploy.sh
