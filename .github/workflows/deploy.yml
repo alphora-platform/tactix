@@ -125,6 +125,8 @@ jobs:
             echo "Filesystem probe:"
             ls -ld /project || true
             ls -ld /project/tactix || true
+            ls -ld "$HOME/project" || true
+            ls -ld "$HOME/project/tactix" || true
             ls -ld "$DEPLOY_PATH" || true
 
             if [ -z "$DEPLOY_PATH" ]; then
@@ -133,6 +135,13 @@ jobs:
             fi
 
             if [ ! -d "$DEPLOY_PATH" ]; then
+              if [ -d "$HOME${DEPLOY_PATH}" ]; then
+                echo "Deploy path does not exist on VPS: $DEPLOY_PATH"
+                echo "But this path exists under the SSH user's home: $HOME${DEPLOY_PATH}"
+                echo "Set VPS_DEPLOY_PATH to $HOME${DEPLOY_PATH} instead."
+                exit 1
+              fi
+
               echo "Deploy path does not exist on VPS: $DEPLOY_PATH"
               echo "Clone the repository on the VPS first, then point VPS_DEPLOY_PATH at that repo root."
               exit 1
