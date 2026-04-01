@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - test/auto-deploy
 
 env:
   REGISTRY: ghcr.io
@@ -159,7 +160,7 @@ jobs:
               exit 1
             fi
 
-            git pull --ff-only origin dev
+            git pull --ff-only origin '${{ github.ref_name }}'
             chmod +x apps/api/scripts/deploy.sh
             GITHUB_OWNER='${{ github.repository_owner }}' \
             GITHUB_REPO='tactix' \
