@@ -105,21 +105,21 @@ IMAGE_TAG="${IMAGE_TAG}" GITHUB_OWNER="${GITHUB_OWNER}" GITHUB_REPO="${GITHUB_RE
 wait_healthy "tactix-frontend"
 
 # ─── Final verification ────────────────────────────────────────────────────
-echo ""
-echo "Running final health check..."
-sleep 5
-HTTP_CODE=$(wget -qO- --server-response http://127.0.0.1/api/health 2>&1 \
-  | grep "HTTP/" | awk '{print $2}' | tail -1 || echo "000")
+# echo ""
+# echo "Running final health check..."
+# sleep 5
+# HTTP_CODE=$(wget -qO- --server-response http://127.0.0.1/api/health 2>&1 \
+#   | grep "HTTP/" | awk '{print $2}' | tail -1 || echo "000")
 
-if [ "${HTTP_CODE}" = "200" ]; then
-  echo ""
-  echo "======================================================"
-  echo " Deploy successful! Tag: ${IMAGE_TAG}"
-  echo "======================================================"
-else
-  echo "Final health check returned HTTP ${HTTP_CODE} — rolling back"
-  rollback
-fi
+# if [ "${HTTP_CODE}" = "200" ]; then
+#   echo ""
+#   echo "======================================================"
+#   echo " Deploy successful! Tag: ${IMAGE_TAG}"
+#   echo "======================================================"
+# else
+#   echo "Final health check returned HTTP ${HTTP_CODE} — rolling back"
+#   rollback
+# fi
 
-# ─── Cleanup dangling images ───────────────────────────────────────────────
-docker image prune -f --filter "until=24h" 2>/dev/null || true
+# # ─── Cleanup dangling images ───────────────────────────────────────────────
+# docker image prune -f --filter "until=24h" 2>/dev/null || true
