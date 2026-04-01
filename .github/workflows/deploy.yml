@@ -161,7 +161,6 @@ jobs:
             fi
 
             git pull --ff-only origin '${{ github.ref_name }}'
-            chmod +x apps/api/scripts/deploy.sh
             GITHUB_OWNER='${{ github.repository_owner }}' \
             GITHUB_REPO='tactix' \
             IMAGE_TAG='${{ needs.build-and-push.outputs.image_tag }}' \
