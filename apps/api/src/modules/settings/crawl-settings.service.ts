@@ -2,9 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CrawlSettings } from '../../database/entities/crawl-settings.entity';
+import { Region } from '../riot-api/constants/regions.constants';
 import { UpdateCrawlSettingsDto } from './dto/update-crawl-settings.dto';
 
-const DEFAULT_REGIONS = ['kr', 'euw1', 'na1', 'eune1', 'br1'];
+const DEFAULT_REGIONS: Region[] = [Region.NA, Region.EUW, Region.KR];
 const SINGLETON_ID = 1;
 
 @Injectable()

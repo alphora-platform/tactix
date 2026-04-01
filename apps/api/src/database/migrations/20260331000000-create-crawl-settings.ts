@@ -19,7 +19,8 @@ export class CreateCrawlSettings20260331000000 implements MigrationInterface {
     await queryRunner.query(`
       INSERT INTO "crawl_settings" ("id", "crawl_mode", "active_regions", "is_enabled")
       VALUES (1, 'official', 'NA,EUW,KR', true)
-      ON CONFLICT ("id") DO NOTHING
+      ON CONFLICT ("id") DO UPDATE SET "active_regions" = 'NA,EUW,KR'
+        WHERE crawl_settings."active_regions" NOT LIKE '%NA%'
     `);
   }
 
