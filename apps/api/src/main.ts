@@ -59,6 +59,9 @@ async function bootstrap() {
     // In worker mode, we don't need to listen for incoming HTTP requests.
     // Just initialize the app to start the cron jobs and BullMQ processors.
     await app.init();
+    // NestFactory.create() only auto-flushes buffered logs inside listen(),
+    // which is never called in worker mode. Flush manually so startup logs appear.
+    app.flushLogs();
     Logger.log(`🚀 Worker process is running (No HTTP server)`);
     return;
   }
