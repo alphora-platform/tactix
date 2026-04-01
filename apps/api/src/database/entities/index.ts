@@ -9,3 +9,5 @@ export { PatchPrediction } from './patch-prediction.entity';
 export { PatchVersion } from './patch-version.entity';
 export { User } from './user.entity';
 export { CrawlSettings } from './crawl-settings.entity';
+export { Set17Champion } from './set17-champion.entity';
+export { Set17Trait } from './set17-trait.entity';

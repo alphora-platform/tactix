@@ -11,6 +11,8 @@ import {
   PatchPrediction,
   PatchVersion,
   CrawlSettings,
+  Set17Champion,
+  Set17Trait,
 } from '../../database/entities';
 
 const envBool = (value: string | undefined): boolean =>
@@ -41,6 +43,8 @@ export const datasourceOption: DataSourceOptions = {
     PatchPrediction,
     PatchVersion,
     CrawlSettings,
+    Set17Champion,
+    Set17Trait,
   ],
   migrations:
     process.env.NODE_ENV === 'production'
