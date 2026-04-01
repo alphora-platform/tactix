@@ -30,7 +30,12 @@ export class LogBufferService implements LoggerService {
       timestamp: new Date().toISOString(),
       level,
       context: context || '',
-      message: typeof message === 'string' ? message : JSON.stringify(message),
+      message:
+        typeof message === 'string'
+          ? message
+          : message instanceof Error
+          ? message.message
+          : JSON.stringify(message),
       source: source ?? (appMode === 'worker' ? 'worker' : 'api'),
     };
 
@@ -62,8 +67,9 @@ export class LogBufferService implements LoggerService {
 
   error(message: unknown, trace?: string, context?: string) {
     this.push('error', message, context);
-    if (trace) {
-      process.stderr.write(`${trace}\n`);
+    const stack = trace ?? (message instanceof Error ? message.stack : undefined);
+    if (stack) {
+      process.stderr.write(`${stack}\n`);
     }
   }
 
