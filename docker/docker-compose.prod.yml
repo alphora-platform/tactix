@@ -94,10 +94,10 @@ services:
     depends_on:
       - api
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:80/health || exit 1']
-      interval: 30s
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1/health || exit 1']
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
       start_period: 20s
     networks:
       - tactix-internal
