@@ -20,6 +20,7 @@ import {
   ScrollText,
   Settings,
   ListChecks,
+  Sparkles,
 } from 'lucide-react';
 import { PatchSelector } from './PatchSelector';
 import { RegionFilter } from './RegionFilter';
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { to: '/trends', label: 'Trends', icon: TrendingUp },
   { to: '/regions', label: 'Regions', icon: Globe },
   { to: '/stats', label: 'My Stats', icon: User },
+  { to: '/set17', label: 'Set 17', icon: Sparkles },
   { to: '/pbe', label: 'PBE', icon: FlaskConical },
   { to: '/player', label: 'Player', icon: Users },
   { to: '/match', label: 'Match', icon: Search },
@@ -54,6 +56,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
   '/trends': 'Trends',
   '/regions': 'Regional Analysis',
   '/stats': 'My Stats',
+  '/set17': 'Set 17: Space Gods',
   '/pbe': 'PBE Preview',
   '/logs': 'Logs',
   '/jobs': 'Background Jobs',
