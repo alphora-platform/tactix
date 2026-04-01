@@ -1,21 +1,37 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig, type PluginOption } from 'vite';
 import path from 'path';
 
-export default defineConfig(() => ({
-  root: import.meta.dirname,
-  cacheDir: '../../node_modules/.vite/apps/frontend',
-  plugins: [
+const isNxGraphCreation = () =>
+  typeof globalThis === 'object' &&
+  'NX_GRAPH_CREATION' in globalThis &&
+  Boolean((globalThis as typeof globalThis & { NX_GRAPH_CREATION?: boolean }).NX_GRAPH_CREATION);
+
+async function loadPlugins(): Promise<PluginOption[]> {
+  if (isNxGraphCreation()) {
+    return [];
+  }
+
+  const [{ default: react }, { TanStackRouterVite }, { default: tailwindcss }] = await Promise.all([
+    import('@vitejs/plugin-react'),
+    import('@tanstack/router-plugin/vite'),
+    import('@tailwindcss/vite'),
+  ]);
+
+  return [
     TanStackRouterVite({
       routesDirectory: './src/routes',
       generatedRouteTree: './src/routeTree.gen.ts',
     }),
     react(),
     tailwindcss(),
-  ],
+  ];
+}
+
+export default defineConfig(async () => ({
+  root: import.meta.dirname,
+  cacheDir: '../../node_modules/.vite/apps/frontend',
+  plugins: await loadPlugins(),
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
