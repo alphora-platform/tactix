@@ -69,6 +69,11 @@ async function bootstrap() {
   app.setGlobalPrefix(globalPrefix);
   const port = process.env.PORT || 3000;
 
+  // Health check — raw Express middleware, bypasses NestJS routing/guards
+  // so it works regardless of module registration or DI state.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use('/api/health', (_req: any, res: any) => res.status(200).json({ status: 'ok' }));
+
   // Cookie parser — required for HttpOnly JWT cookie auth
   app.use(cookieParser());
 
