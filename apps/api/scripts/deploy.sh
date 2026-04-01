@@ -66,12 +66,12 @@ rollback() {
 
 # ─── [1] Save current tags for rollback ────────────────────────────────────
 echo ""
-echo "[1/7] Saving current image tags..."
+echo "[1/6] Saving current image tags..."
 save_current_tags
 
 # ─── [2] Pull new images ───────────────────────────────────────────────────
 echo ""
-echo "[2/7] Pulling images: ${IMAGE_TAG}"
+echo "[2/6] Pulling images: ${IMAGE_TAG}"
 IMAGE_TAG="${IMAGE_TAG}" GITHUB_OWNER="${GITHUB_OWNER}" GITHUB_REPO="${GITHUB_REPO}" \
   docker compose -f "${COMPOSE_FILE}" pull api worker frontend
 
@@ -80,40 +80,35 @@ trap rollback ERR
 
 # ─── [3] Run database migrations ───────────────────────────────────────────
 echo ""
-echo "[3/7] Running database migrations..."
+echo "[3/6] Running database migrations..."
 make prod-migrate
 echo "Migrations complete."
 
 # ─── [4] Update API ────────────────────────────────────────────────────────
 echo ""
-echo "[4/7] Updating API container..."
+echo "[4/6] Updating API container..."
 IMAGE_TAG="${IMAGE_TAG}" GITHUB_OWNER="${GITHUB_OWNER}" GITHUB_REPO="${GITHUB_REPO}" \
   docker compose -f "${COMPOSE_FILE}" up -d --no-deps --no-build api
 wait_healthy "tactix-api"
 
 # ─── [5] Update Worker ─────────────────────────────────────────────────────
 echo ""
-echo "[5/7] Updating Worker container..."
+echo "[5/6] Updating Worker container..."
 IMAGE_TAG="${IMAGE_TAG}" GITHUB_OWNER="${GITHUB_OWNER}" GITHUB_REPO="${GITHUB_REPO}" \
   docker compose -f "${COMPOSE_FILE}" up -d --no-deps --no-build worker
 
 # ─── [6] Update Frontend ───────────────────────────────────────────────────
 echo ""
-echo "[6/7] Updating Frontend container..."
+echo "[6/6] Updating Frontend container..."
 IMAGE_TAG="${IMAGE_TAG}" GITHUB_OWNER="${GITHUB_OWNER}" GITHUB_REPO="${GITHUB_REPO}" \
   docker compose -f "${COMPOSE_FILE}" up -d --no-deps --no-build frontend
 wait_healthy "tactix-frontend"
-
-# ─── [7] Reload nginx ──────────────────────────────────────────────────────
-echo ""
-echo "[7/7] Reloading nginx..."
-sudo systemctl reload nginx
 
 # ─── Final verification ────────────────────────────────────────────────────
 echo ""
 echo "Running final health check..."
 sleep 5
-HTTP_CODE=$(wget -qO- --server-response http://localhost/api/health 2>&1 \
+HTTP_CODE=$(wget -qO- --server-response http://127.0.0.1/api/health 2>&1 \
   | grep "HTTP/" | awk '{print $2}' | tail -1 || echo "000")
 
 if [ "${HTTP_CODE}" = "200" ]; then
