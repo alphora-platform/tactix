@@ -31,6 +31,10 @@ wait_healthy() {
     sleep "${interval}"
   done
   echo "ERROR: ${container} did not become healthy."
+  echo ""
+  echo "=== Last 80 lines of ${container} logs ==="
+  docker logs --tail 80 "${container}" 2>&1 || true
+  echo "=== End of ${container} logs ==="
   return 1
 }
 
