@@ -158,8 +158,8 @@ Tạo các **repository secrets** sau:
 
 Tạo thêm **environment variable** trong environment `tactix`:
 
-| Variable          | Giá trị                                                                      |
-| ----------------- | ---------------------------------------------------------------------------- |
+| Variable          | Giá trị                                                                     |
+| ----------------- | --------------------------------------------------------------------------- |
 | `VPS_DEPLOY_PATH` | Repo root trên VPS, phải tồn tại sẵn và chứa `.git` (vd: `/project/tactix`) |
 
 Tạo SSH key riêng cho CI/CD:
