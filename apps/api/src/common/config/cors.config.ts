@@ -51,15 +51,10 @@ export const corsConfig: CorsModuleAsyncOptions = {
         origin: string | undefined,
         callback: (err: Error | null, allow?: boolean) => void
       ) => {
-        // Allow requests without Origin header only in development
-        // (e.g., Postman, curl, server-to-server)
-        // In production/staging, reject requests without Origin
+        // Always allow requests without Origin header
+        // (curl, server-to-server, health checks — CORS is browser-only)
         if (!origin) {
-          if (isDevelopment()) {
-            return callback(null, true);
-          }
-          const errorMessage = 'CORS: Requests without Origin header are not allowed';
-          return callback(new Error(errorMessage), false);
+          return callback(null, true);
         }
 
         if (isDevelopment() && origin.startsWith('http://localhost')) {
@@ -88,6 +83,7 @@ export const corsConfig: CorsModuleAsyncOptions = {
         'X-HTTP-Method-Override',
         'Cache-Control',
         'Pragma',
+        'X-Admin-Key',
       ],
 
       // Headers exposed to the client
