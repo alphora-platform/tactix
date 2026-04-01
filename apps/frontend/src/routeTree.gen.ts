@@ -22,6 +22,7 @@ import { Route as PbeIndexRouteImport } from './routes/pbe/index'
 import { Route as MetaIndexRouteImport } from './routes/meta/index'
 import { Route as MatchIndexRouteImport } from './routes/match/index'
 import { Route as LogsIndexRouteImport } from './routes/logs/index'
+import { Route as Set17IndexRouteImport } from './routes/set17/index'
 import { Route as JobsIndexRouteImport } from './routes/jobs/index'
 import { Route as MetaCompIdRouteImport } from './routes/meta/$compId'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -91,6 +92,11 @@ const LogsIndexRoute = LogsIndexRouteImport.update({
   path: '/logs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Set17IndexRoute = Set17IndexRouteImport.update({
+  id: '/set17/',
+  path: '/set17/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JobsIndexRoute = JobsIndexRouteImport.update({
   id: '/jobs/',
   path: '/jobs/',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/playbook/': typeof PlaybookIndexRoute
   '/player/': typeof PlayerIndexRoute
   '/regions/': typeof RegionsIndexRoute
+  '/set17/': typeof Set17IndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/sign-up/': typeof SignUpIndexRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/playbook': typeof PlaybookIndexRoute
   '/player': typeof PlayerIndexRoute
   '/regions': typeof RegionsIndexRoute
+  '/set17': typeof Set17IndexRoute
   '/settings': typeof SettingsIndexRoute
   '/sign-in': typeof SignInIndexRoute
   '/sign-up': typeof SignUpIndexRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/playbook/': typeof PlaybookIndexRoute
   '/player/': typeof PlayerIndexRoute
   '/regions/': typeof RegionsIndexRoute
+  '/set17/': typeof Set17IndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/sign-up/': typeof SignUpIndexRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/playbook/'
     | '/player/'
     | '/regions/'
+    | '/set17/'
     | '/settings/'
     | '/sign-in/'
     | '/sign-up/'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/playbook'
     | '/player'
     | '/regions'
+    | '/set17'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/playbook/'
     | '/player/'
     | '/regions/'
+    | '/set17/'
     | '/settings/'
     | '/sign-in/'
     | '/sign-up/'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   PlaybookIndexRoute: typeof PlaybookIndexRoute
   PlayerIndexRoute: typeof PlayerIndexRoute
   RegionsIndexRoute: typeof RegionsIndexRoute
+  Set17IndexRoute: typeof Set17IndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   SignInIndexRoute: typeof SignInIndexRoute
   SignUpIndexRoute: typeof SignUpIndexRoute
@@ -310,6 +323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PbeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/set17/': {
+      id: '/set17/'
+      path: '/set17'
+      fullPath: '/set17/'
+      preLoaderRoute: typeof Set17IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meta/': {
       id: '/meta/'
       path: '/meta'
@@ -367,6 +387,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlaybookIndexRoute: PlaybookIndexRoute,
   PlayerIndexRoute: PlayerIndexRoute,
   RegionsIndexRoute: RegionsIndexRoute,
+  Set17IndexRoute: Set17IndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   SignInIndexRoute: SignInIndexRoute,
   SignUpIndexRoute: SignUpIndexRoute,
