@@ -29,6 +29,16 @@ dev-logs:
 prod-migrate:
 	docker compose --env-file .env.production -f docker/docker-compose.prod.yml run --rm -e APP_MODE=migrate api
 
+prod-seed-pbe:
+	@if [ -z "$(PUUIDS)" ]; then \
+		echo "Usage: make prod-seed-pbe PUUIDS='puuid1,puuid2,...'"; \
+		exit 1; \
+	fi
+	docker compose --env-file .env.production -f docker/docker-compose.prod.yml run --rm \
+		-e APP_MODE=seed-pbe \
+		-e SEED_PBE_PUUIDS="$(PUUIDS)" \
+		api
+
 prod-up:
 	docker compose --env-file .env.production -f docker/docker-compose.prod.yml up -d
 

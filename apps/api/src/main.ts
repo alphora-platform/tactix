@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import AppDataSource from './modules/database/data-source';
 import cookieParser from 'cookie-parser';
 import { LogBufferService } from './modules/logs/log-buffer.service';
+import { Player } from './database/entities';
 
 async function bootstrap() {
   const appMode = process.env.APP_MODE || 'api';
@@ -14,6 +15,39 @@ async function bootstrap() {
     await AppDataSource.initialize();
     const migrations = await AppDataSource.runMigrations();
     Logger.log(`Ran ${migrations.length} migration(s) successfully`);
+    await AppDataSource.destroy();
+    process.exit(0);
+  }
+
+  if (appMode === 'seed-pbe') {
+    const rawPuuids = process.env.SEED_PBE_PUUIDS ?? '';
+    const puuids = rawPuuids
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (puuids.length === 0) {
+      Logger.error('SEED_PBE_PUUIDS env var is required (comma-separated PUUIDs)');
+      process.exit(1);
+    }
+    await AppDataSource.initialize();
+    await AppDataSource.getRepository(Player)
+      .createQueryBuilder()
+      .insert()
+      .into(Player)
+      .values(
+        puuids.map((puuid) => ({
+          puuid,
+          region: 'PBE',
+          summonerName: puuid,
+          tier: 'PBE_TESTER',
+          lp: 0,
+          wins: 0,
+          losses: 0,
+        }))
+      )
+      .orIgnore()
+      .execute();
+    Logger.log(`[PBE] Seeded ${puuids.length} player(s)`);
     await AppDataSource.destroy();
     process.exit(0);
   }
