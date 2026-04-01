@@ -18,6 +18,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { LogsModule } from './modules/logs/logs.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { MetadataSet17Module } from './modules/metadata-set17/metadata-set17.module';
 
 // Determine mode
 const appMode = process.env.APP_MODE || 'api'; // default 'api'
@@ -42,6 +43,7 @@ const baseModules: any[] = [
   DatabaseModule,
   RiotApiModule,
   MetadataModule,
+  MetadataSet17Module,
   AuthModule,
   LogsModule,
   SettingsModule,

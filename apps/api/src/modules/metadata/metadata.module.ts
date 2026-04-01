@@ -9,10 +9,11 @@ import { GameDataLoaderService } from './game-data-loader.service';
 import { MetadataCacheService } from './metadata-cache.service';
 import { FriendlyNameService } from './friendly-name.service';
 import { AssetUrlService } from './asset-url.service';
+import { MetadataSet17Module } from '../metadata-set17/metadata-set17.module';
 
 @Global()
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, MetadataSet17Module],
   controllers: [MetadataController],
   providers: [
     MetadataService,
