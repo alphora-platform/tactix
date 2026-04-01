@@ -18,7 +18,8 @@ echo "======================================================"
 # ─── Helper: wait for a container to become healthy ────────────────────────
 wait_healthy() {
   local container="$1"
-  local retries=15
+  local retries=25
+  local interval=12
   echo "Waiting for ${container} to be healthy..."
   for i in $(seq 1 $retries); do
     status=$(docker inspect --format='{{.State.Health.Status}}' "${container}" 2>/dev/null || echo "missing")
@@ -27,7 +28,7 @@ wait_healthy() {
       return 0
     fi
     echo "  Attempt ${i}/${retries}: status=${status}"
-    sleep 6
+    sleep "${interval}"
   done
   echo "ERROR: ${container} did not become healthy."
   return 1
