@@ -21,7 +21,7 @@ import { CrawlSettingsService } from '../settings/crawl-settings.service';
 import { AdminApiKeyGuard } from '../../common/guards/admin-api-key.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { QUEUE_NAMES, JOB_NAMES } from './constants/queue.constants';
-import { LIVE_REGIONS, PBE_REGIONS, Region } from '../riot-api/constants/regions.constants';
+import { PBE_REGIONS, platformIdsToRegions } from '../riot-api/constants/regions.constants';
 
 @Controller('data-collector')
 export class DataCollectorController {
@@ -47,9 +47,7 @@ export class DataCollectorController {
   async collectPlayers() {
     const settings = await this.crawlSettings.getSettings();
     const regions =
-      settings.crawlMode === 'pbe'
-        ? PBE_REGIONS
-        : (settings.activeRegions as Region[]).filter((r) => LIVE_REGIONS.includes(r as Region));
+      settings.crawlMode === 'pbe' ? PBE_REGIONS : platformIdsToRegions(settings.activeRegions);
 
     const batchId = Date.now();
     const jobs = regions.map((region) => ({
@@ -81,9 +79,7 @@ export class DataCollectorController {
   async collectMatches() {
     const settings = await this.crawlSettings.getSettings();
     const regions =
-      settings.crawlMode === 'pbe'
-        ? PBE_REGIONS
-        : (settings.activeRegions as Region[]).filter((r) => LIVE_REGIONS.includes(r as Region));
+      settings.crawlMode === 'pbe' ? PBE_REGIONS : platformIdsToRegions(settings.activeRegions);
 
     const batchId = Date.now();
     const tiers: Array<'CHALLENGER' | 'GRANDMASTER' | 'MASTER'> = [

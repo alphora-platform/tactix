@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { LIVE_REGIONS, PBE_REGIONS, Region } from '../riot-api/constants/regions.constants';
+import { PBE_REGIONS, Region, platformIdsToRegions } from '../riot-api/constants/regions.constants';
 import { QUEUE_NAMES, JOB_NAMES } from './constants/queue.constants';
 import { CrawlSettingsService } from '../settings/crawl-settings.service';
 
@@ -90,10 +90,7 @@ export class CollectorSchedulerService implements OnApplicationBootstrap {
       this.setMode(mode);
     }
 
-    const regions =
-      mode === 'pbe'
-        ? PBE_REGIONS
-        : (settings.activeRegions as Region[]).filter((r) => LIVE_REGIONS.includes(r as Region));
+    const regions = mode === 'pbe' ? PBE_REGIONS : platformIdsToRegions(settings.activeRegions);
 
     return { enabled: true, regions };
   }

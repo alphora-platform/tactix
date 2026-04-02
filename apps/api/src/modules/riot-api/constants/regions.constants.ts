@@ -75,5 +75,17 @@ export const ALL_REGIONS: Region[] = [...LIVE_REGIONS, Region.PBE];
 /** Legacy default — kept for backward compat with existing code. */
 export const DEFAULT_REGIONS: Region[] = LIVE_REGIONS;
 
+/** Reverse lookup: platform ID → Region enum (e.g. 'na1' → Region.NA). */
+export const PLATFORM_TO_REGION: Record<string, Region> = Object.fromEntries(
+  Object.entries(PLATFORM_ROUTES).map(([region, platform]) => [platform, region as Region])
+) as Record<string, Region>;
+
+/** Convert an array of platform IDs (from DB) to Region enums. */
+export function platformIdsToRegions(platformIds: string[]): Region[] {
+  return platformIds
+    .map((id) => PLATFORM_TO_REGION[id])
+    .filter((r): r is Region => r !== undefined && LIVE_REGIONS.includes(r));
+}
+
 /** Valid platform routing values for API validation. */
 export const VALID_PLATFORM_IDS = Object.values(PLATFORM_ROUTES);
