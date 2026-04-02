@@ -1,14 +1,8 @@
 import { Select } from 'antd';
 import { ChevronDown } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings.store';
+import { usePatchesQuery } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils/cn';
-
-const PATCH_OPTIONS = [
-  { value: '', label: '16.5 (Latest)' },
-  { value: '16.4', label: '16.4' },
-  { value: '16.3', label: '16.3' },
-  { value: '16.2', label: '16.2' },
-] as const;
 
 interface PatchSelectorProps {
   className?: string;
@@ -17,13 +11,24 @@ interface PatchSelectorProps {
 
 export function PatchSelector({ className, onValueChange }: PatchSelectorProps) {
   const { selectedPatch, setSelectedPatch } = useSettingsStore();
+  const { data } = usePatchesQuery();
+
+  const options = (data?.patches ?? []).map((patch) => ({
+    value: patch === data?.current ? '' : patch,
+    label: patch === data?.current ? `${patch} (Latest)` : patch,
+  }));
+
+  // Fallback if no data yet
+  if (options.length === 0) {
+    options.push({ value: '', label: 'Loading...' });
+  }
 
   return (
     <Select
       aria-label="Patch selector"
       value={selectedPatch}
       variant="filled"
-      options={PATCH_OPTIONS}
+      options={options}
       suffixIcon={<ChevronDown size={14} className="text-slate-400" />}
       onChange={(value) => {
         setSelectedPatch(value);
