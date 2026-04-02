@@ -1,30 +1,32 @@
 #!/bin/sh
 set -e
 
-# # Check if database is ready
-# until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\q' 2>/dev/null; do
-#   echo "⏳ Waiting for database connection..."
-#   sleep 2
-# done
-# echo "✅ Database is ready!"
+# Check if database is ready
+until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\q' 2>/dev/null; do
+  echo "⏳ Waiting for database connection..."
+  sleep 2
+done
+echo "✅ Database is ready!"
 
-# # Check if database has any tables in public schema
-# HAS_TABLES="$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM information_schema.tables WHERE table_schema='public' LIMIT 1;" 2>/dev/null || true)"
-# if [ "$HAS_TABLES" != "1" ]; then
-#   echo "🔄 Database has no tables, running migration..."
-#   npx nx run api:migration
-# else
-#   echo "✅ Database has tables, skipping migration..."
-# fi
+# Check if database has any tables in public schema
+HAS_TABLES="$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM information_schema.tables WHERE table_schema='public' LIMIT 1;" 2>/dev/null || true)"
+if [ "$HAS_TABLES" != "1" ]; then
+  echo "🔄 Database has no tables, running migration..."
+  cd /usr/src/app/apps/api && npm run migration:run
+  cd /usr/src/app
+else
+  echo "✅ Database has tables, skipping migration..."
+fi
 
-# # Check if database has data (users table)
-# USERS_COUNT="$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT COUNT(*) FROM users;" 2>/dev/null || true)"
-# if [ "$USERS_COUNT" = "" ] || [ "$USERS_COUNT" = "0" ]; then
-#   echo "🔄 Database has no data, running seed..."
-#   npx nx run api:seed
-# else
-#   echo "✅ Database has data, skipping seed..."
-# fi
+# Check if set17 static data is seeded
+CHAMP_COUNT="$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT COUNT(*) FROM set17_champions;" 2>/dev/null || true)"
+if [ "$CHAMP_COUNT" = "" ] || [ "$CHAMP_COUNT" = "0" ]; then
+  echo "🔄 No set17 data found, running seed..."
+  cd /usr/src/app/apps/api && npx ts-node --project tsconfig.app.json src/database/seeds/set17-static-data.seed.ts
+  cd /usr/src/app
+else
+  echo "✅ Set17 data already seeded ($CHAMP_COUNT champions), skipping..."
+fi
 
 if ! command -v pm2 > /dev/null 2>&1; then
   echo "🚀 Installing PM2 globally..."
