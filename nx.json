@@ -62,6 +62,13 @@
       "plugin": "@nx/jest/plugin",
       "options": { "targetName": "test" },
       "exclude": ["apps/api-e2e/**/*"]
+    },
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e",
+        "ciTargetName": "e2e-ci"
+      }
     }
   ],
   "nxCloudId": "698d79c258ba2ad0e3aba7f2",
