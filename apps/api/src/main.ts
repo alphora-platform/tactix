@@ -7,6 +7,7 @@ import AppDataSource from './modules/database/data-source';
 import cookieParser from 'cookie-parser';
 import { LogBufferService } from './modules/logs/log-buffer.service';
 import { Player } from './database/entities';
+import { seedSet17StaticData } from './database/seeds/set17-static-data.seed';
 
 async function bootstrap() {
   const appMode = process.env.APP_MODE || 'api';
@@ -15,6 +16,13 @@ async function bootstrap() {
     await AppDataSource.initialize();
     const migrations = await AppDataSource.runMigrations();
     Logger.log(`Ran ${migrations.length} migration(s) successfully`);
+    await AppDataSource.destroy();
+    process.exit(0);
+  }
+
+  if (appMode === 'seed-set17') {
+    await AppDataSource.initialize();
+    await seedSet17StaticData(AppDataSource);
     await AppDataSource.destroy();
     process.exit(0);
   }

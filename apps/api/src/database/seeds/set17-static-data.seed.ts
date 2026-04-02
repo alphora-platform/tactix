@@ -789,11 +789,7 @@ function getRowPosition(role: string): string {
 
 // ── Main Seed Function ──────────────────────────────────────────────────────
 
-async function seed() {
-  const ds = new DataSource(datasourceOption);
-  await ds.initialize();
-  console.log('Connected to database.');
-
+export async function seedSet17StaticData(ds: DataSource) {
   const championRepo = ds.getRepository(Set17Champion);
   const traitRepo = ds.getRepository(Set17Trait);
 
@@ -854,11 +850,19 @@ async function seed() {
   console.log(
     `\nDone! Seeded ${champSuccess} champions (${champFail} failed), ${traitSuccess} traits (${traitFail} failed)`
   );
-
-  await ds.destroy();
 }
 
-seed().catch((err) => {
-  console.error('Seed script failed:', err);
-  process.exit(1);
-});
+// ── Standalone execution ───────────────────────────────────────────────────
+
+if (require.main === module) {
+  (async () => {
+    const ds = new DataSource(datasourceOption);
+    await ds.initialize();
+    console.log('Connected to database.');
+    await seedSet17StaticData(ds);
+    await ds.destroy();
+  })().catch((err) => {
+    console.error('Seed script failed:', err);
+    process.exit(1);
+  });
+}
