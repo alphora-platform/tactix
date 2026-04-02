@@ -10,6 +10,7 @@ import {
   Player,
 } from '../../database/entities';
 import { RiotMatchDetail } from '../riot-api/interfaces/riot-api.interfaces';
+import { RiotApiService } from '../riot-api/riot-api.service';
 import { MetaStatsService } from '../analytics/meta-stats.service';
 
 // ─── Validation constants ───────────────────────────────────────────────────
@@ -34,7 +35,7 @@ const EXPECTED_PARTICIPANT_COUNT = 8;
 
 // ─── Skip reason type ───────────────────────────────────────────────────────
 
-type SkipReason = 'non_ranked' | 'invalid_participant_count' | 'missing_match_id';
+type SkipReason = 'non_ranked' | 'invalid_participant_count' | 'missing_match_id' | 'old_patch';
 
 interface SkipResult {
   skipped: true;
@@ -79,6 +80,7 @@ export class EtlService {
     private readonly augmentRepo: Repository<ParticipantAugment>,
     @InjectRepository(Player)
     private readonly playerRepo: Repository<Player>,
+    private readonly riotApiService: RiotApiService,
     private readonly metaStatsService: MetaStatsService
   ) {}
 
@@ -135,6 +137,17 @@ export class EtlService {
 
     // ── Extract patch ("Version 14.3.610.1234" → "14.3") ─────────────
     const patch = this.extractPatch(info.game_version);
+
+    // ── Gate 4: patch version (live only) ────────────────────────────
+    // Reject matches from old patches to keep analytics clean.
+    // PBE is exempt — it runs ahead of live and patch versions differ.
+    if (!isPbe && patch !== 'unknown') {
+      const latestPatch = await this.riotApiService.getLatestPatch();
+      if (latestPatch && patch !== latestPatch) {
+        this.logger.debug(`[ETL] Skipping ${matchId}: patch=${patch} != latest=${latestPatch}`);
+        return { skipped: true, reason: 'old_patch', matchId };
+      }
+    }
 
     // ── Upsert match (idempotent) ─────────────────────────────────────
     await this.matchRepo

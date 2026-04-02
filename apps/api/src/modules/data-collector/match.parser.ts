@@ -49,6 +49,7 @@ export interface ParsedMatch {
   gameDatetime: Date;
   gameLength: number;
   tftSetNumber: number;
+  patch: string;
 }
 
 export interface ParsedMatchData {
@@ -78,13 +79,16 @@ export class MatchParser {
       return null;
     }
 
+    const patch = this.extractPatch(info.game_version);
+
     const match: ParsedMatch = {
       matchId: metadata.match_id,
-      gameVersion: this.extractPatch(info.game_version),
+      gameVersion: info.game_version ?? 'unknown',
       queueId: info.queue_id,
       gameDatetime: new Date(info.game_datetime),
       gameLength: info.game_length,
       tftSetNumber: info.tft_set_number,
+      patch,
     };
 
     const participants = info.participants
