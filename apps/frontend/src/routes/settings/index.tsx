@@ -16,7 +16,7 @@ import {
   ExternalLink,
   Play,
   RefreshCw,
-  CheckCircle2,
+  Eye,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
@@ -28,6 +28,7 @@ import {
   useDbStats,
   useCollectPlayers,
   useCollectMatches,
+  useRefreshViews,
 } from '@/hooks/useSettings';
 import { useEnqueuePurge } from '@/hooks/useJobs';
 
@@ -95,7 +96,7 @@ function SettingsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Settings" subtitle="Crawl configuration" />
-        <div className="h-48 animate-pulse rounded-xl bg-[var(--bg-surface)]" />
+        <div className="h-48 animate-pulse rounded-xl bg-(--bg-surface)" />
       </div>
     );
   }
@@ -106,7 +107,7 @@ function SettingsPage() {
 
       <div className="mx-auto max-w-2xl space-y-4">
         {/* Master toggle */}
-        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5">
+        <div className="rounded-xl border border-(--border-default) bg-(--bg-surface) p-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {enabled ? (
@@ -130,17 +131,17 @@ function SettingsPage() {
             <button
               onClick={() => setEnabled((v) => !v)}
               className={cn(
-                'relative flex h-8 w-[136px] shrink-0 items-center rounded-lg border p-0.5 transition-all duration-200',
+                'relative flex h-8 w-34 shrink-0 items-center rounded-lg border p-0.5 transition-all duration-200',
                 enabled
                   ? 'border-emerald-500/40 bg-emerald-500/10'
-                  : 'border-[var(--border-default)] bg-[var(--bg-elevated)]'
+                  : 'border-(--border-default) bg-(--bg-elevated)'
               )}
             >
               {/* Sliding indicator */}
               <span
                 className={cn(
-                  'absolute h-[26px] w-[64px] rounded-md transition-all duration-200',
-                  enabled ? 'left-0.5 bg-emerald-500/25' : 'left-[67px] bg-slate-600/40'
+                  'absolute h-6.5 w-16 rounded-md transition-all duration-200',
+                  enabled ? 'left-0.5 bg-emerald-500/25' : 'left-16.75 bg-slate-600/40'
                 )}
               />
               <span
@@ -175,12 +176,12 @@ function SettingsPage() {
         {/* Crawl mode */}
         <div
           className={cn(
-            'rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 transition-opacity',
+            'rounded-xl border border-(--border-default) bg-(--bg-surface) p-5 transition-opacity',
             !enabled && 'pointer-events-none opacity-40'
           )}
         >
           <p className="mb-4 flex items-center gap-2 font-medium text-slate-200">
-            <Settings size={16} className="text-[var(--accent-primary)]" />
+            <Settings size={16} className="text-(--accent-primary)" />
             Crawl Mode
           </p>
 
@@ -191,27 +192,25 @@ function SettingsPage() {
               className={cn(
                 'rounded-xl border p-4 text-left transition-all',
                 mode === 'official'
-                  ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/10'
-                  : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--accent-primary)]/40'
+                  ? 'border-(--accent-primary) bg-(--accent-primary)/10'
+                  : 'border-(--border-default) bg-(--bg-elevated) hover:border-(--accent-primary)/40'
               )}
             >
               <div className="mb-2 flex items-center gap-2">
                 <Globe
                   size={16}
-                  className={
-                    mode === 'official' ? 'text-[var(--accent-primary)]' : 'text-slate-400'
-                  }
+                  className={mode === 'official' ? 'text-(--accent-primary)' : 'text-slate-400'}
                 />
                 <span
                   className={cn(
                     'font-chakra font-semibold',
-                    mode === 'official' ? 'text-[var(--accent-primary)]' : 'text-slate-300'
+                    mode === 'official' ? 'text-(--accent-primary)' : 'text-slate-300'
                   )}
                 >
                   Official
                 </span>
                 {mode === 'official' && (
-                  <span className="ml-auto rounded-full bg-[var(--accent-primary)]/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-primary)] uppercase">
+                  <span className="ml-auto rounded-full bg-(--accent-primary)/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-(--accent-primary) uppercase">
                     Active
                   </span>
                 )}
@@ -226,7 +225,7 @@ function SettingsPage() {
                 'rounded-xl border p-4 text-left transition-all',
                 mode === 'pbe'
                   ? 'border-amber-500/60 bg-amber-500/10'
-                  : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-amber-500/30'
+                  : 'border-(--border-default) bg-(--bg-elevated) hover:border-amber-500/30'
               )}
             >
               <div className="mb-2 flex items-center gap-2">
@@ -267,12 +266,12 @@ function SettingsPage() {
         {mode === 'official' && (
           <div
             className={cn(
-              'rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 transition-opacity',
+              'rounded-xl border border-(--border-default) bg-(--bg-surface) p-5 transition-opacity',
               !enabled && 'pointer-events-none opacity-40'
             )}
           >
             <p className="mb-4 flex items-center gap-2 font-medium text-slate-200">
-              <Globe size={16} className="text-[var(--accent-primary)]" />
+              <Globe size={16} className="text-(--accent-primary)" />
               Active Regions
               <span className="ml-auto font-chakra text-xs text-slate-500">
                 {regions.length} selected
@@ -288,8 +287,8 @@ function SettingsPage() {
                     className={cn(
                       'rounded-lg border py-2 text-center font-chakra text-xs font-semibold transition-all',
                       checked
-                        ? 'border-[var(--accent-primary)]/60 bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]'
-                        : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-slate-500 hover:border-[var(--accent-primary)]/30 hover:text-slate-300'
+                        ? 'border-(--accent-primary)/60 bg-(--accent-primary)/15 text-(--accent-primary)'
+                        : 'border-(--border-subtle) bg-(--bg-elevated) text-slate-500 hover:border-(--accent-primary)/30 hover:text-slate-300'
                     )}
                   >
                     {label}
@@ -303,7 +302,7 @@ function SettingsPage() {
         {/* Active patch */}
         <div
           className={cn(
-            'rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 transition-opacity',
+            'rounded-xl border border-(--border-default) bg-(--bg-surface) p-5 transition-opacity',
             !enabled && 'pointer-events-none opacity-40'
           )}
         >
@@ -316,7 +315,7 @@ function SettingsPage() {
             onChange={(e) => setPatch(e.target.value)}
             placeholder="e.g. 15.1 (leave blank for all)"
             allowClear
-            className="[&.ant-input-affix-wrapper]:!rounded-xl [&.ant-input-affix-wrapper]:!border-[var(--border-default)] [&.ant-input-affix-wrapper]:!bg-[var(--bg-elevated)] [&_.ant-input]:!text-slate-100 [&_.ant-input::placeholder]:!text-slate-500"
+            className="[&.ant-input-affix-wrapper]:rounded-xl! [&.ant-input-affix-wrapper]:border-(--border-default)! [&.ant-input-affix-wrapper]:bg-(--bg-elevated)! [&_.ant-input]:text-slate-100! [&_.ant-input::placeholder]:text-slate-500!"
           />
         </div>
 
@@ -338,7 +337,7 @@ function SettingsPage() {
             disabled={isPending}
             className={cn(
               'ml-auto rounded-xl px-6 py-2.5 font-chakra text-sm font-semibold transition-all',
-              'bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/80',
+              'bg-(--accent-primary) text-white hover:bg-(--accent-primary)/80',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPending && 'animate-pulse'
             )}
@@ -360,96 +359,112 @@ function SettingsPage() {
 function ManualActionsCard() {
   const { mutate: collectPlayers, isPending: collectingPlayers } = useCollectPlayers();
   const { mutate: collectMatches, isPending: collectingMatches } = useCollectMatches();
-  const [playersResult, setPlayersResult] = useState<string | null>(null);
-  const [matchesResult, setMatchesResult] = useState<string | null>(null);
+  const { mutate: refreshViews, isPending: refreshingViews } = useRefreshViews();
+  const navigate = useNavigate();
 
   const handleCollectPlayers = () => {
-    setPlayersResult(null);
     collectPlayers(undefined, {
       onSuccess: (data) => {
-        message.success(`Collected ${data.totalPlayers} players`);
-        setPlayersResult(`${data.totalPlayers} players in ${(data.durationMs / 1000).toFixed(1)}s`);
+        message.success(
+          `Queued ${data.queued} refresh-player-list jobs (${data.regions.join(', ')})`
+        );
       },
-      onError: (err) => message.error(err.message || 'Failed to collect players'),
+      onError: (err) => message.error(err.message || 'Failed to enqueue jobs'),
     });
   };
 
   const handleCollectMatches = () => {
-    setMatchesResult(null);
     collectMatches(undefined, {
       onSuccess: (data) => {
-        message.success(`Collected ${data.totalNewMatches} new matches`);
-        setMatchesResult(
-          `${data.totalNewMatches} matches in ${(data.durationMs / 1000).toFixed(1)}s`
-        );
+        message.success(`Queued ${data.queued} collect-region jobs (${data.regions.join(', ')})`);
+        navigate({ to: '/jobs' });
       },
-      onError: (err) => message.error(err.message || 'Failed to collect matches'),
+      onError: (err) => message.error(err.message || 'Failed to enqueue jobs'),
+    });
+  };
+
+  const handleRefreshViews = () => {
+    refreshViews(undefined, {
+      onSuccess: () => message.success('Queued materialized view refresh job'),
+      onError: (err) => message.error(err.message || 'Failed to enqueue job'),
     });
   };
 
   return (
-    <div className="rounded-xl border border-[var(--accent-primary)]/20 bg-[var(--bg-surface)] p-5">
+    <div className="rounded-xl border border-(--accent-primary)/20 bg-(--bg-surface) p-5">
       <p className="mb-4 flex items-center gap-2 font-medium text-slate-200">
-        <Play size={16} className="text-[var(--accent-primary)]" />
+        <Play size={16} className="text-(--accent-primary)" />
         Manual Actions
       </p>
 
       <div className="space-y-3">
         {/* Collect Players */}
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-4">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-(--border-subtle) bg-(--bg-elevated) p-4">
           <div>
             <p className="mb-0.5 font-medium text-slate-200">Refresh Player List</p>
             <p className="text-xs text-slate-500">
-              Fetch top players from leaderboard for all active regions.
+              Enqueue jobs to fetch top players from leaderboard for all active regions.
             </p>
-            {playersResult && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
-                <CheckCircle2 size={12} />
-                {playersResult}
-              </p>
-            )}
           </div>
           <button
             onClick={handleCollectPlayers}
             disabled={collectingPlayers}
             className={cn(
-              'flex shrink-0 items-center gap-2 rounded-xl border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 px-4 py-2',
-              'font-chakra text-sm font-semibold text-[var(--accent-primary)] transition-all',
-              'hover:border-[var(--accent-primary)]/70 hover:bg-[var(--accent-primary)]/20',
+              'flex shrink-0 items-center gap-2 rounded-xl border border-(--accent-primary)/40 bg-(--accent-primary)/10 px-4 py-2',
+              'font-chakra text-sm font-semibold text-(--accent-primary) transition-all',
+              'hover:border-(--accent-primary)/70 hover:bg-(--accent-primary)/20',
               'disabled:cursor-not-allowed disabled:opacity-50'
             )}
           >
             <RefreshCw size={14} className={cn(collectingPlayers && 'animate-spin')} />
-            {collectingPlayers ? 'Collecting…' : 'Collect'}
+            {collectingPlayers ? 'Queuing…' : 'Refresh'}
           </button>
         </div>
 
         {/* Collect Matches */}
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-4">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-(--border-subtle) bg-(--bg-elevated) p-4">
           <div>
             <p className="mb-0.5 font-medium text-slate-200">Collect Matches</p>
             <p className="text-xs text-slate-500">
-              Crawl new match data from Riot API for all tracked players.
+              Enqueue jobs to crawl new match data from Riot API. Redirects to Jobs page to track
+              progress.
             </p>
-            {matchesResult && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
-                <CheckCircle2 size={12} />
-                {matchesResult}
-              </p>
-            )}
           </div>
           <button
             onClick={handleCollectMatches}
             disabled={collectingMatches}
             className={cn(
-              'flex shrink-0 items-center gap-2 rounded-xl border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 px-4 py-2',
+              'flex shrink-0 items-center gap-2 rounded-xl border border-(--accent-primary)/40 bg-[var(--accent-primary)]/10 px-4 py-2',
               'font-chakra text-sm font-semibold text-[var(--accent-primary)] transition-all',
               'hover:border-[var(--accent-primary)]/70 hover:bg-[var(--accent-primary)]/20',
               'disabled:cursor-not-allowed disabled:opacity-50'
             )}
           >
             <Play size={14} className={cn(collectingMatches && 'animate-pulse')} />
-            {collectingMatches ? 'Crawling…' : 'Crawl Now'}
+            {collectingMatches ? 'Queuing…' : 'Crawl Now'}
+          </button>
+        </div>
+
+        {/* Refresh Materialized Views */}
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-(--border-subtle) bg-(--bg-elevated) p-4">
+          <div>
+            <p className="mb-0.5 font-medium text-slate-200">Refresh Materialized Views</p>
+            <p className="text-xs text-slate-500">
+              Rebuild analytics views so the Meta page reflects the latest match data.
+            </p>
+          </div>
+          <button
+            onClick={handleRefreshViews}
+            disabled={refreshingViews}
+            className={cn(
+              'flex shrink-0 items-center gap-2 rounded-xl border border-(--accent-primary)/40 bg-(--accent-primary)/10 px-4 py-2',
+              'font-chakra text-sm font-semibold text-(--accent-primary) transition-all',
+              'hover:border-(--accent-primary)/70 hover:bg-(--accent-primary)/20',
+              'disabled:cursor-not-allowed disabled:opacity-50'
+            )}
+          >
+            <Eye size={14} className={cn(refreshingViews && 'animate-pulse')} />
+            {refreshingViews ? 'Queuing…' : 'Refresh'}
           </button>
         </div>
       </div>

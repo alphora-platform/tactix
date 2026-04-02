@@ -66,8 +66,13 @@ export function usePurgeMatchData() {
   });
 }
 
+export interface EnqueueResult {
+  queued: number;
+  regions: string[];
+}
+
 export function useCollectPlayers() {
-  return useMutation<{ totalPlayers: number; durationMs: number }>({
+  return useMutation<EnqueueResult>({
     mutationFn: async () => {
       const { data } = await apiClient.post('/data-collector/collect-players');
       return data;
@@ -76,11 +81,18 @@ export function useCollectPlayers() {
 }
 
 export function useCollectMatches() {
-  return useMutation<{ totalNewMatches: number; durationMs: number }>({
+  return useMutation<EnqueueResult>({
     mutationFn: async () => {
-      const { data } = await apiClient.post('/data-collector/collect-matches', undefined, {
-        timeout: 120_000,
-      });
+      const { data } = await apiClient.post('/data-collector/collect-matches');
+      return data;
+    },
+  });
+}
+
+export function useRefreshViews() {
+  return useMutation<{ queued: number; jobId: string }>({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/data-collector/refresh-views');
       return data;
     },
   });
