@@ -15,6 +15,7 @@ import { Route as StatsIndexRouteImport } from './routes/stats/index'
 import { Route as SignUpIndexRouteImport } from './routes/sign-up/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as Set17IndexRouteImport } from './routes/set17/index'
 import { Route as RegionsIndexRouteImport } from './routes/regions/index'
 import { Route as PlayerIndexRouteImport } from './routes/player/index'
 import { Route as PlaybookIndexRouteImport } from './routes/playbook/index'
@@ -22,7 +23,6 @@ import { Route as PbeIndexRouteImport } from './routes/pbe/index'
 import { Route as MetaIndexRouteImport } from './routes/meta/index'
 import { Route as MatchIndexRouteImport } from './routes/match/index'
 import { Route as LogsIndexRouteImport } from './routes/logs/index'
-import { Route as Set17IndexRouteImport } from './routes/set17/index'
 import { Route as JobsIndexRouteImport } from './routes/jobs/index'
 import { Route as MetaCompIdRouteImport } from './routes/meta/$compId'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
@@ -55,6 +55,11 @@ const SignInIndexRoute = SignInIndexRouteImport.update({
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Set17IndexRoute = Set17IndexRouteImport.update({
+  id: '/set17/',
+  path: '/set17/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegionsIndexRoute = RegionsIndexRouteImport.update({
@@ -90,11 +95,6 @@ const MatchIndexRoute = MatchIndexRouteImport.update({
 const LogsIndexRoute = LogsIndexRouteImport.update({
   id: '/logs/',
   path: '/logs/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Set17IndexRoute = Set17IndexRouteImport.update({
-  id: '/set17/',
-  path: '/set17/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JobsIndexRoute = JobsIndexRouteImport.update({
@@ -295,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/set17/': {
+      id: '/set17/'
+      path: '/set17'
+      fullPath: '/set17/'
+      preLoaderRoute: typeof Set17IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/regions/': {
       id: '/regions/'
       path: '/regions'
@@ -321,13 +328,6 @@ declare module '@tanstack/react-router' {
       path: '/pbe'
       fullPath: '/pbe/'
       preLoaderRoute: typeof PbeIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/set17/': {
-      id: '/set17/'
-      path: '/set17'
-      fullPath: '/set17/'
-      preLoaderRoute: typeof Set17IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meta/': {

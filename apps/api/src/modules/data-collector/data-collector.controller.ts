@@ -16,6 +16,7 @@ import {
 } from './data-collector.service';
 import { CollectorSchedulerService } from './collector-scheduler.service';
 import { AdminApiKeyGuard } from '../../common/guards/admin-api-key.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('data-collector')
 export class DataCollectorController {
@@ -27,14 +28,14 @@ export class DataCollectorController {
   ) {}
 
   @Post('collect-players')
-  @UseGuards(AdminApiKeyGuard)
+  @Public()
   async collectPlayers(): Promise<CollectionSummary> {
     this.logger.log('Manual player collection triggered');
     return this.dataCollectorService.collectPlayerLists();
   }
 
   @Post('collect-matches')
-  @UseGuards(AdminApiKeyGuard)
+  @Public()
   async collectMatches(): Promise<MatchCollectionSummary> {
     this.logger.log('Manual match collection triggered');
     return this.dataCollectorService.collectMatches();

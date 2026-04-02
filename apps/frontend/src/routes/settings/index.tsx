@@ -14,12 +14,21 @@ import {
   AlertTriangle,
   X,
   ExternalLink,
+  Play,
+  RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils/cn';
-import { useCrawlSettings, useUpdateCrawlSettings, useDbStats } from '@/hooks/useSettings';
+import {
+  useCrawlSettings,
+  useUpdateCrawlSettings,
+  useDbStats,
+  useCollectPlayers,
+  useCollectMatches,
+} from '@/hooks/useSettings';
 import { useEnqueuePurge } from '@/hooks/useJobs';
 
 export const Route = createFileRoute('/settings/')({
@@ -338,8 +347,111 @@ function SettingsPage() {
           </button>
         </div>
 
+        {/* Manual crawl actions */}
+        <ManualActionsCard />
+
         {/* Database management */}
         <DbManagementCard />
+      </div>
+    </div>
+  );
+}
+
+function ManualActionsCard() {
+  const { mutate: collectPlayers, isPending: collectingPlayers } = useCollectPlayers();
+  const { mutate: collectMatches, isPending: collectingMatches } = useCollectMatches();
+  const [playersResult, setPlayersResult] = useState<string | null>(null);
+  const [matchesResult, setMatchesResult] = useState<string | null>(null);
+
+  const handleCollectPlayers = () => {
+    setPlayersResult(null);
+    collectPlayers(undefined, {
+      onSuccess: (data) => {
+        message.success(`Collected ${data.totalPlayers} players`);
+        setPlayersResult(`${data.totalPlayers} players in ${(data.durationMs / 1000).toFixed(1)}s`);
+      },
+      onError: (err) => message.error(err.message || 'Failed to collect players'),
+    });
+  };
+
+  const handleCollectMatches = () => {
+    setMatchesResult(null);
+    collectMatches(undefined, {
+      onSuccess: (data) => {
+        message.success(`Collected ${data.totalNewMatches} new matches`);
+        setMatchesResult(
+          `${data.totalNewMatches} matches in ${(data.durationMs / 1000).toFixed(1)}s`
+        );
+      },
+      onError: (err) => message.error(err.message || 'Failed to collect matches'),
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-[var(--accent-primary)]/20 bg-[var(--bg-surface)] p-5">
+      <p className="mb-4 flex items-center gap-2 font-medium text-slate-200">
+        <Play size={16} className="text-[var(--accent-primary)]" />
+        Manual Actions
+      </p>
+
+      <div className="space-y-3">
+        {/* Collect Players */}
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-4">
+          <div>
+            <p className="mb-0.5 font-medium text-slate-200">Refresh Player List</p>
+            <p className="text-xs text-slate-500">
+              Fetch top players from leaderboard for all active regions.
+            </p>
+            {playersResult && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
+                <CheckCircle2 size={12} />
+                {playersResult}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleCollectPlayers}
+            disabled={collectingPlayers}
+            className={cn(
+              'flex shrink-0 items-center gap-2 rounded-xl border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 px-4 py-2',
+              'font-chakra text-sm font-semibold text-[var(--accent-primary)] transition-all',
+              'hover:border-[var(--accent-primary)]/70 hover:bg-[var(--accent-primary)]/20',
+              'disabled:cursor-not-allowed disabled:opacity-50'
+            )}
+          >
+            <RefreshCw size={14} className={cn(collectingPlayers && 'animate-spin')} />
+            {collectingPlayers ? 'Collecting…' : 'Collect'}
+          </button>
+        </div>
+
+        {/* Collect Matches */}
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-4">
+          <div>
+            <p className="mb-0.5 font-medium text-slate-200">Collect Matches</p>
+            <p className="text-xs text-slate-500">
+              Crawl new match data from Riot API for all tracked players.
+            </p>
+            {matchesResult && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-400">
+                <CheckCircle2 size={12} />
+                {matchesResult}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleCollectMatches}
+            disabled={collectingMatches}
+            className={cn(
+              'flex shrink-0 items-center gap-2 rounded-xl border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 px-4 py-2',
+              'font-chakra text-sm font-semibold text-[var(--accent-primary)] transition-all',
+              'hover:border-[var(--accent-primary)]/70 hover:bg-[var(--accent-primary)]/20',
+              'disabled:cursor-not-allowed disabled:opacity-50'
+            )}
+          >
+            <Play size={14} className={cn(collectingMatches && 'animate-pulse')} />
+            {collectingMatches ? 'Crawling…' : 'Crawl Now'}
+          </button>
+        </div>
       </div>
     </div>
   );

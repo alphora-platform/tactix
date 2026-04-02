@@ -66,6 +66,26 @@ export function usePurgeMatchData() {
   });
 }
 
+export function useCollectPlayers() {
+  return useMutation<{ totalPlayers: number; durationMs: number }>({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/data-collector/collect-players');
+      return data;
+    },
+  });
+}
+
+export function useCollectMatches() {
+  return useMutation<{ totalNewMatches: number; durationMs: number }>({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/data-collector/collect-matches', undefined, {
+        timeout: 120_000,
+      });
+      return data;
+    },
+  });
+}
+
 export function useUpdateCrawlSettings() {
   const queryClient = useQueryClient();
   return useMutation<CrawlSettings, Error, UpdateCrawlSettingsDto>({
