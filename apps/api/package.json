@@ -8,7 +8,8 @@
     "migration:revert": "npm run typeorm -- migration:revert -d src/modules/database/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate -d src/modules/database/data-source.ts",
     "migration:show": "npm run typeorm -- migration:show -d src/modules/database/data-source.ts",
-    "seed:set17": "../../node_modules/.bin/ts-node --project tsconfig.app.json src/database/seeds/set17-static-data.seed.ts"
+    "seed:set17": "../../node_modules/.bin/ts-node --project tsconfig.app.json src/database/seeds/set17-static-data.seed.ts",
+    "seed:admin": "../../node_modules/.bin/ts-node --project tsconfig.app.json src/database/seeds/admin-user.seed.ts"
   },
   "nx": {
     "name": "api",

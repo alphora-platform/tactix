@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import { LogBufferService } from './modules/logs/log-buffer.service';
 import { Player } from './database/entities';
 import { seedSet17StaticData } from './database/seeds/set17-static-data.seed';
+import { seedAdminUser } from './database/seeds/admin-user.seed';
 
 async function bootstrap() {
   const appMode = process.env.APP_MODE || 'api';
@@ -23,6 +24,13 @@ async function bootstrap() {
   if (appMode === 'seed-set17') {
     await AppDataSource.initialize();
     await seedSet17StaticData(AppDataSource);
+    await AppDataSource.destroy();
+    process.exit(0);
+  }
+
+  if (appMode === 'seed-admin') {
+    await AppDataSource.initialize();
+    await seedAdminUser(AppDataSource);
     await AppDataSource.destroy();
     process.exit(0);
   }

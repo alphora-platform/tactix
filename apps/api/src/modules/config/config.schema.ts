@@ -25,4 +25,9 @@ export const configValidationSchema = Joi.object({
   // JWT
   JWT_SECRET: Joi.string().required(),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
+
+  // Admin seed (used by APP_MODE=seed-admin)
+  ADMIN_EMAIL: Joi.string().email().optional(),
+  ADMIN_USERNAME: Joi.string().optional().default('admin'),
+  ADMIN_PASSWORD: Joi.string().optional(),
 });
