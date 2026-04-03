@@ -1,6 +1,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { PatchAnalyzerService } from './patch-analyzer.service';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('patch-analyzer')
 export class PatchAnalyzerController {
   constructor(private readonly patchAnalyzerService: PatchAnalyzerService) {}

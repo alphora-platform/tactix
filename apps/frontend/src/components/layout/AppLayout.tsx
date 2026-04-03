@@ -16,6 +16,7 @@ import {
   Users,
   Trophy,
   FlaskConical,
+  LogIn,
   LogOut,
   ScrollText,
   Settings,
@@ -44,6 +45,8 @@ const NAV_ITEMS = [
   { to: '/jobs', label: 'Jobs', icon: ListChecks },
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const;
+
+const PROTECTED_ROUTES = ['/jobs', '/settings', '/stats', '/logs'];
 
 /** Subset shown in the mobile bottom nav bar (max 5 for comfortable tap targets) */
 const MOBILE_NAV_ITEMS = NAV_ITEMS.filter(({ to }) =>
@@ -97,6 +100,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const user = useAuthStore((s) => s.user);
   const { mutate: signOut, isPending: signingOut } = useSignOut();
+
+  const visibleNavItems = user
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter(({ to }) => !PROTECTED_ROUTES.includes(to));
+  const visibleMobileNavItems = user
+    ? MOBILE_NAV_ITEMS
+    : MOBILE_NAV_ITEMS.filter(({ to }) => !PROTECTED_ROUTES.includes(to));
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sidebarOpen, _setSidebarOpen] = useState<boolean>(getSidebarOpen);
@@ -174,7 +184,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {/* Nav */}
         <nav className="flex-1 overflow-x-hidden overflow-y-auto px-2 py-4">
           <div className="space-y-0.5">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+            {visibleNavItems.map(({ to, label, icon: Icon }) => {
               const active = location.startsWith(to);
               return (
                 <Link
@@ -333,7 +343,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               />
             </Badge>
 
-            {user && (
+            {user ? (
               <div className="flex items-center gap-2 rounded-lg border border-(--border-default) bg-(--bg-elevated) px-3 py-1.5">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-br from-(--accent-primary) to-(--accent-cyan) text-[10px] font-bold text-white">
                   {user.username[0].toUpperCase()}
@@ -350,6 +360,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <LogOut size={14} />
                 </button>
               </div>
+            ) : (
+              <Link
+                to="/sign-in"
+                className="flex items-center gap-2 rounded-lg border border-(--border-default) bg-(--bg-elevated) px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-(--accent-primary)/60 hover:text-slate-100"
+              >
+                <LogIn size={14} />
+                <span className="font-chakra">Sign In</span>
+              </Link>
             )}
           </div>
 
@@ -369,7 +387,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </main>
 
         <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-15 items-center justify-around border-t border-(--border-default) bg-(--bg-surface)/90 px-2 backdrop-blur-md sm:hidden">
-          {MOBILE_NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+          {visibleMobileNavItems.map(({ to, label, icon: Icon }) => {
             const active = location.startsWith(to);
             return (
               <Link

@@ -10,7 +10,9 @@ import {
 import { MetadataCacheService } from './metadata-cache.service';
 import { GameDataLoaderService } from './game-data-loader.service';
 import { AdminApiKeyGuard } from '../../common/guards/admin-api-key.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('metadata')
 export class MetadataController {
   constructor(

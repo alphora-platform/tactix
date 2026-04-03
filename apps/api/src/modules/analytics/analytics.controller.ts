@@ -9,7 +9,9 @@ import { CompAnalyzerService } from './comp-analyzer.service';
 import { RegionComparisonService } from './region-comparison.service';
 import { PlaybookService } from './playbook.service';
 import type { RegionQueryDto, RegionCompareQueryDto } from './dto/region-comparison.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('analytics')
 export class AnalyticsController {
   private readonly logger = new Logger(AnalyticsController.name);

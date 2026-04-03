@@ -2,9 +2,7 @@ import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { CrawlSettingsService } from './crawl-settings.service';
 import { DbAdminService } from './db-admin.service';
 import { UpdateCrawlSettingsDto } from './dto/update-crawl-settings.dto';
-import { Public } from '../auth/decorators/public.decorator';
 
-@Public()
 @Controller('settings')
 export class SettingsController {
   constructor(

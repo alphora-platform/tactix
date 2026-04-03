@@ -3,10 +3,19 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuthStore } from '@/lib/store/auth.store';
 
 const AUTH_ROUTES = ['/sign-in', '/sign-up'];
+const PROTECTED_ROUTES = ['/jobs', '/settings', '/stats', '/logs'];
 
 export const Route = createRootRoute({
-  beforeLoad: () => {
-    // TODO: re-enable auth guard when auth feature is ready
+  beforeLoad: ({ location }) => {
+    const isProtected = PROTECTED_ROUTES.some(
+      (r) => location.pathname === r || location.pathname.startsWith(r + '/')
+    );
+    if (isProtected) {
+      const user = useAuthStore.getState().user;
+      if (!user) {
+        throw redirect({ to: '/sign-in', search: { redirect: location.pathname } });
+      }
+    }
   },
   component: RootLayout,
 });

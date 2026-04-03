@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query, Logger } from '@nestjs/common';
 import { TrackerService } from './tracker.service';
 import { TrackerQueryDto } from './dto/tracker-query.dto';
 import { EconQueryDto } from './dto/econ-query.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 /**
  * TrackerController
@@ -21,6 +22,7 @@ import { EconQueryDto } from './dto/econ-query.dto';
  *   GET /tracker/:puuid/tilt               → tilt detection across last 20 games
  *   GET /tracker/:puuid/report/weekly      → weekly weakness report (top 3 gaps)
  */
+@Public()
 @Controller('tracker')
 export class TrackerController {
   private readonly logger = new Logger(TrackerController.name);

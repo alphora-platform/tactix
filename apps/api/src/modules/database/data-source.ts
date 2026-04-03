@@ -13,6 +13,7 @@ import {
   CrawlSettings,
   Set17Champion,
   Set17Trait,
+  User,
 } from '../../database/entities';
 
 const envBool = (value: string | undefined): boolean =>
@@ -45,6 +46,7 @@ export const datasourceOption: DataSourceOptions = {
     CrawlSettings,
     Set17Champion,
     Set17Trait,
+    User,
   ],
   migrations:
     process.env.NODE_ENV === 'production'

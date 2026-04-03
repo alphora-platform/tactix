@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useSignIn } from '@/hooks/useAuth';
 
@@ -77,12 +77,7 @@ function SignInPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-(--text-muted)">
-            Don't have an account?{' '}
-            <Link to="/sign-up" className="text-(--accent-primary) hover:underline">
-              Sign up
-            </Link>
-          </p>
+          <p className="mt-5 text-center text-xs text-(--text-muted)">Admin access only</p>
         </div>
 
         <p className="mt-6 text-center text-[10px] text-slate-600">

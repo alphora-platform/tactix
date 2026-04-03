@@ -12,7 +12,6 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Observable, fromEvent, switchMap, filter } from 'rxjs';
-import { Public } from '../auth/decorators/public.decorator';
 import { SYSTEM_QUEUE, SYSTEM_JOB_NAMES } from './jobs.constants';
 import { JobsEventsService } from './jobs-events.service';
 
@@ -28,7 +27,6 @@ export interface JobSummary {
   error: string | null;
 }
 
-@Public()
 @Controller('jobs')
 export class JobsController {
   private readonly logger = new Logger(JobsController.name);

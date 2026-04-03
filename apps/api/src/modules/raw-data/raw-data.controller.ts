@@ -1,6 +1,8 @@
 import { Controller, Get, Param, Query, Logger } from '@nestjs/common';
 import { RawDataService } from './raw-data.service';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('raw-data')
 export class RawDataController {
   private readonly logger = new Logger(RawDataController.name);
